@@ -11,6 +11,7 @@ use App\Generated\Sql\Session\DeleteSessionByIdQuery;
 use App\Generated\Sql\Session\FindAllSessionsQuery;
 use App\Generated\Sql\Session\FindSessionByIdQuery;
 use App\Generated\Sql\Session\FindSessionsByUserIdQuery;
+use App\Generated\Sql\Session\RefreshSessionQuery;
 use App\Generated\Sql\Session\SessionRow;
 use App\Generated\Sql\Session\UpsertSessionQuery;
 use App\Platform\Storage\Sql\SqlExecutor;
@@ -18,7 +19,7 @@ use App\Platform\Storage\Sql\SqlExecutor;
 final readonly class SqlSessionRepository implements SessionRepository
 {
     public function __construct(
-        private readonly SqlExecutor $sqlExecutor,
+        private SqlExecutor $sqlExecutor,
     ) {}
 
     public function findById(string $id): ?Session
@@ -83,6 +84,20 @@ final readonly class SqlSessionRepository implements SessionRepository
         $this->sqlExecutor->execute(
             DeleteSessionByIdQuery::create(id: $id),
         );
+    }
+
+    public function refresh(string $id, int $expiresAt, int $updatedAt): ?Session
+    {
+        $row = $this->sqlExecutor->fetchOneRow(
+            RefreshSessionQuery::create(
+                id: $id,
+                expiresAt: $expiresAt,
+                updatedAt: $updatedAt,
+                now: $updatedAt,
+            ),
+        );
+
+        return $row === null ? null : $this->createSessionFromRow($row);
     }
 
     public function deleteExpired(): void

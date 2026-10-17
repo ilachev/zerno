@@ -20,6 +20,11 @@ interface SessionRepository
 
     public function save(Session $session): Session;
 
+    /**
+     * Updates timestamps only while the session exists and has not expired.
+     */
+    public function refresh(string $id, int $expiresAt, int $updatedAt): ?Session;
+
     public function delete(string $id): void;
 
     public function deleteExpired(): void;

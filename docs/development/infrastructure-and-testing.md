@@ -28,6 +28,8 @@
 
 Основная конфигурация лежит в `config/storage.php`.
 
+Runtime использует `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` и `DB_SCHEMA` (по умолчанию `public`). Имя схемы интерпретируется как один PostgreSQL identifier, а не как список `search_path`.
+
 По умолчанию используется:
 
 - `pgsql` как основной runtime adapter
@@ -143,15 +145,35 @@ Bootstrap:
 - требуют PostgreSQL profile;
 - запускаются отдельным профилем через `task test:integration`.
 
+Для тестов используются отдельные `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`. Значения обычных `DB_*` не используются. `task test:integration` и `task sql:check:pg` по умолчанию подключаются к `localhost:5432/app_test`, пользователь `app`, пароль `password`.
+
+Создайте тестовую БД один раз (локальный Docker Compose сам создаёт только runtime БД `app`):
+
+```bash
+docker compose exec db-postgres createdb -U app app_test
+task test:integration
+```
+
+Для отдельного PostgreSQL instance:
+
+```bash
+TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password task verify:integration
+```
+
+При прямом запуске PHPUnit `TEST_DB_NAME` необходимо задать явно. Пользователю БД нужны права создавать и удалять свои схемы. Каждый запуск получает отдельную схему, поэтому разные test runs могут использовать одну тестовую БД параллельно.
+
 ## Как устроены integration tests
 
 Bootstrap в `tests/Integration/bootstrap.php`:
 
+- проверяет отдельную тестовую конфигурацию до обращения к БД;
+- создаёт новую уникальную схему `phpunit_<random>`;
+- подключает runtime только к этой схеме через `DB_SCHEMA`;
 - создаёт единый `App`;
-- получает container;
-- очищает `public` schema в PostgreSQL integration profile;
-- заново прогоняет миграции;
-- сохраняет shared app в `TestAppFactory`.
+- прогоняет миграции и сохраняет shared app в `TestAppFactory`;
+- удаляет только созданную им схему при завершении процесса, включая ошибку bootstrap.
+
+Bootstrap не удаляет таблицы `public` и не выбирает существующую схему для очистки. `sql:check:pg` независимо создаёт и удаляет собственную схему `sql_gen_check_<random>` в той же тестовой БД. Regression tests проверяют сохранность sentinel-таблицы в `public` и изоляцию соседних test runs.
 
 Следствие:
 

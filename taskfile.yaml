@@ -79,6 +79,12 @@ tasks:
   test:integration:
     desc: Run integration tests against real PostgreSQL
     deps: [ var, install ]
+    env:
+      TEST_DB_HOST: '{{default "localhost" .TEST_DB_HOST}}'
+      TEST_DB_PORT: '{{default "5432" .TEST_DB_PORT}}'
+      TEST_DB_NAME: '{{default "app_test" .TEST_DB_NAME}}'
+      TEST_DB_USER: '{{default "app" .TEST_DB_USER}}'
+      TEST_DB_PASSWORD: '{{default "password" .TEST_DB_PASSWORD}}'
     cmds:
       - "{{.PHP}} vendor/bin/phpunit --colors=never -c phpunit.integration.xml {{.CLI_ARGS}}"
 
@@ -141,6 +147,7 @@ tasks:
         --schema=sql/schema.sql
         --bootstrap=codegen/sql-gen-bootstrap.php
         --profile-class=ProjectCodegen\\Sql\\BaseApiTemplateSqlGenerationProfile
+      - "{{.COMPOSER}} dump-autoload --quiet"
 
   sql:check:
     desc: Validate SQL sources and ensure generated SQL artifacts are synchronized
@@ -159,17 +166,18 @@ tasks:
   sql:check:pg:
     desc: Validate SQL queries against a live PostgreSQL database
     deps: [ tools:sql:runtime:setup ]
+    env:
+      DB_HOST: '{{default "localhost" .TEST_DB_HOST}}'
+      DB_PORT: '{{default "5432" .TEST_DB_PORT}}'
+      DB_NAME: '{{default "app_test" .TEST_DB_NAME}}'
+      DB_USER: '{{default "app" .TEST_DB_USER}}'
+      DB_PASSWORD: '{{default "password" .TEST_DB_PASSWORD}}'
     cmds:
       - mkdir -p sql/queries
       - >
         php tools/sql-gen/bin/sql-check-pg.php
         --input-dir=sql/queries
         --schema=sql/schema.sql
-        --db-host={{default "localhost" .DB_HOST}}
-        --db-port={{default "5432" .DB_PORT}}
-        --db-name={{default "app" .DB_NAME}}
-        --db-user={{default "app" .DB_USER}}
-        --db-password={{default "password" .DB_PASSWORD}}
 
   tools:proto:setup:
     desc: Setup protoc-php-gen plugin

@@ -32,7 +32,7 @@ final class PostgreSQLStorage extends AbstractStorage
 
         // Set the schema if provided
         if ($this->schema !== null) {
-            $this->connection->exec("SET search_path TO {$this->schema}");
+            $this->connection->exec('SET search_path TO "' . str_replace('"', '""', $this->schema) . '"');
         }
     }
 

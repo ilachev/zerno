@@ -5,10 +5,19 @@ declare(strict_types=1);
 namespace Tests\Integration\Session;
 
 use App\Capabilities\Session\Application\ClientDetector;
+use App\Capabilities\Session\Application\ClientIdentity;
 use App\Capabilities\Session\Application\SessionPayloadFactory;
+use App\Capabilities\Session\Domain\Session;
+use App\Capabilities\Session\Domain\SessionConfig;
 use App\Capabilities\Session\Domain\SessionService;
+use App\Capabilities\Session\Transport\Http\SessionMiddleware;
+use App\Platform\Http\RequestHandler;
 use App\Platform\Hydration\JsonFieldAdapter;
+use App\Platform\Logging\Logger;
+use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Tests\Integration\IntegrationTestCase;
 
 final class SessionFlowTest extends IntegrationTestCase
@@ -29,6 +38,53 @@ final class SessionFlowTest extends IntegrationTestCase
         $this->clientDetector = $this->container->get(ClientDetector::class);
         $this->sessionPayloadFactory = $this->container->get(SessionPayloadFactory::class);
         $this->jsonAdapter = $this->container->get(JsonFieldAdapter::class);
+    }
+
+    public function testMatchingFingerprintDoesNotRestoreAuthenticatedSession(): void
+    {
+        $request = $this->createClientRequest('192.168.20.10', 'curl/8.0');
+        $payload = $this->jsonAdapter->serialize($this->sessionPayloadFactory->createFromRequest($request));
+        $authenticatedSession = $this->sessionService->createSession(42, $payload);
+        $middleware = new SessionMiddleware(
+            $this->sessionService,
+            $this->container->get(Logger::class),
+            SessionConfig::fromArray(['session_ttl' => 1800]),
+            $this->sessionPayloadFactory,
+            $this->jsonAdapter,
+        );
+        $handler = new class implements RequestHandler {
+            public ?Session $session = null;
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $session = $request->getAttribute('session');
+                if (!$session instanceof Session) {
+                    throw new \LogicException('Session attribute is missing');
+                }
+
+                $this->session = $session;
+
+                return new Response(500);
+            }
+        };
+        $startedAt = time();
+
+        $middleware->process($request, $handler);
+
+        $anonymousSession = $handler->session;
+        self::assertNotNull($anonymousSession);
+        self::assertNull($anonymousSession->userId);
+        self::assertNotSame($authenticatedSession->id, $anonymousSession->id);
+        self::assertGreaterThanOrEqual($startedAt + 1800, $anonymousSession->expiresAt);
+        self::assertLessThanOrEqual(time() + 1800, $anonymousSession->expiresAt);
+        self::assertNotNull($this->sessionService->validateSession($anonymousSession->id));
+        self::assertSame(42, $this->sessionService->validateSession($authenticatedSession->id)?->userId);
+
+        $similarClients = $this->clientDetector->findSimilarClients($request->withAttribute('session', $anonymousSession));
+        self::assertContains(
+            $authenticatedSession->id,
+            array_map(static fn(ClientIdentity $client): string => $client->id, $similarClients),
+        );
     }
 
     /**
@@ -254,7 +310,7 @@ final class SessionFlowTest extends IntegrationTestCase
         ?string $acceptLanguage = 'en-US,en;q=0.9',
         ?string $acceptEncoding = 'gzip, deflate',
     ): ServerRequest {
-        $request = new ServerRequest('GET', '/');
+        $request = new ServerRequest('GET', '/', serverParams: ['REMOTE_ADDR' => $ip]);
         $request = $request->withHeader('User-Agent', $userAgent);
 
         if ($acceptLanguage !== null) {
@@ -264,26 +320,6 @@ final class SessionFlowTest extends IntegrationTestCase
         if ($acceptEncoding !== null) {
             $request = $request->withHeader('Accept-Encoding', $acceptEncoding);
         }
-
-        // Устанавливаем server params через рефлексию, избегая проблем с PHPStan
-        $request = $this->setServerParam($request, 'REMOTE_ADDR', $ip);
-
-        return $request;
-    }
-
-    /**
-     * Устанавливает параметр сервера в запросе через рефлексию,
-     * обходя проблемы с PHPStan.
-     */
-    private function setServerParam(ServerRequest $request, string $name, string $value): ServerRequest
-    {
-        $reflection = new \ReflectionClass($request);
-        $property = $reflection->getProperty('serverParams');
-        $property->setAccessible(true);
-        /** @var array<string, string> $serverParams */
-        $serverParams = $property->getValue($request) ?? [];
-        $serverParams[$name] = $value;
-        $property->setValue($request, $serverParams);
 
         return $request;
     }

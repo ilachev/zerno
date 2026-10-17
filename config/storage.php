@@ -17,7 +17,7 @@ return [
         'database' => getenv('DB_NAME') ?: 'app',
         'username' => getenv('DB_USER') ?: 'app',
         'password' => getenv('DB_PASSWORD') ?: 'password',
-        'schema' => 'public',
+        'schema' => getenv('DB_SCHEMA') ?: 'public',
         'migrations_path' => __DIR__ . '/../src/Platform/Storage/Migration/PostgreSQL',
     ],
 ];

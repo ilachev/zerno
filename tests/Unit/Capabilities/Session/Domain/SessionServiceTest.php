@@ -270,6 +270,23 @@ final class TestSessionRepository implements SessionRepository
         return $session;
     }
 
+    public function refresh(string $id, int $expiresAt, int $updatedAt): ?Session
+    {
+        $session = $this->sessions[$id] ?? null;
+        if ($session === null || $session->expiresAt < $updatedAt) {
+            return null;
+        }
+
+        return $this->sessions[$id] = new Session(
+            id: $session->id,
+            userId: $session->userId,
+            payload: $session->payload,
+            expiresAt: $expiresAt,
+            createdAt: $session->createdAt,
+            updatedAt: $updatedAt,
+        );
+    }
+
     public function delete(string $id): void
     {
         unset($this->sessions[$id]);

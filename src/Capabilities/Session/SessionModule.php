@@ -16,7 +16,6 @@ use App\Capabilities\Session\Domain\SessionService;
 use App\Capabilities\Session\Infrastructure\DefaultSessionPayloadFactory;
 use App\Capabilities\Session\Infrastructure\FingerprintClientDetector;
 use App\Capabilities\Session\Infrastructure\GeoLocation\IP2LocationGeoLocationService;
-use App\Capabilities\Session\Infrastructure\Persistence\CachedSessionRepository;
 use App\Capabilities\Session\Infrastructure\Persistence\SqlSessionRepository;
 use App\Capabilities\Session\Transport\Http\SessionMiddleware;
 use App\Platform\Cache\ScopedCacheFactory;
@@ -65,21 +64,7 @@ final readonly class SessionModule implements Capability
         $container->bind(SqlSessionRepository::class, SqlSessionRepository::class);
         $container->bind(ScopedCacheFactory::class, ScopedCacheFactory::class);
 
-        $container->set(
-            SessionRepository::class,
-            static function (Container $container): SessionRepository {
-                /** @var SqlSessionRepository $baseRepository */
-                $baseRepository = $container->get(SqlSessionRepository::class);
-
-                /** @var ScopedCacheFactory $scopedCacheFactory */
-                $scopedCacheFactory = $container->get(ScopedCacheFactory::class);
-
-                /** @var Logger $logger */
-                $logger = $container->get(Logger::class);
-
-                return new CachedSessionRepository($baseRepository, $scopedCacheFactory, $logger);
-            },
-        );
+        $container->bind(SessionRepository::class, SqlSessionRepository::class);
 
         $container->set(
             SessionService::class,
@@ -153,16 +138,12 @@ final readonly class SessionModule implements Capability
                 /** @var JsonFieldAdapter $jsonAdapter */
                 $jsonAdapter = $container->get(JsonFieldAdapter::class);
 
-                /** @var ClientDetector $clientDetector */
-                $clientDetector = $container->get(ClientDetector::class);
-
                 return new SessionMiddleware(
                     $sessionService,
                     $logger,
                     $config,
                     $sessionPayloadFactory,
                     $jsonAdapter,
-                    $clientDetector,
                 );
             },
         );

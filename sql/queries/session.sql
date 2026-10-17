@@ -46,3 +46,10 @@ RETURNING *;
 -- name: DeleteSessionById :exec
 DELETE FROM sessions
 WHERE id = :id;
+
+-- name: RefreshSession :one
+UPDATE sessions
+SET expires_at = :expires_at,
+    updated_at = :updated_at
+WHERE id = :id AND expires_at >= :now
+RETURNING *;

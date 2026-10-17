@@ -84,16 +84,7 @@ final readonly class SessionService
             $expireTime = PHP_INT_MAX;
         }
 
-        $refreshedSession = new Session(
-            id: $session->id,
-            userId: $session->userId,
-            payload: $session->payload,
-            expiresAt: $expireTime,
-            createdAt: $session->createdAt,
-            updatedAt: $now,
-        );
-
-        return $this->repository->save($refreshedSession);
+        return $this->repository->refresh($sessionId, $expireTime, $now);
     }
 
     public function deleteSession(string $sessionId): void

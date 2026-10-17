@@ -5,50 +5,36 @@ declare(strict_types=1);
 use App\Platform\Console\MigrateCommand;
 use App\Platform\Runtime\App;
 use App\Platform\Storage\Migration\MigrationService;
-use App\Platform\Storage\Storage;
+use Tests\Integration\PostgreSqlTestDatabase;
 use Tests\Integration\TestAppFactory;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-echo "Environment variables for database connection:\n";
-echo 'STORAGE_ENGINE: ' . (getenv('STORAGE_ENGINE') ?: 'not set') . "\n";
-echo 'DB_HOST: ' . (getenv('DB_HOST') ?: 'not set') . "\n";
-echo 'DB_PORT: ' . (getenv('DB_PORT') ?: 'not set') . "\n";
-echo 'DB_NAME: ' . (getenv('DB_NAME') ?: 'not set') . "\n";
-echo 'DB_USER: ' . (getenv('DB_USER') ?: 'not set') . "\n";
-echo 'GitHub Actions: ' . (getenv('GITHUB_ACTIONS') ?: 'not set') . "\n\n";
-
 try {
-    // Create a single application instance that will be reused across all tests
-    $app = new App(__DIR__ . '/../../config/container.php');
-    TestAppFactory::setApp($app);
+    $database = PostgreSqlTestDatabase::fromEnvironment();
+    $database->create();
+    register_shutdown_function(static function () use ($database): void {
+        $database->cleanup();
+    });
 
-    // Get services from the container
-    $container = $app->getContainer();
-
-    /** @var Storage $storage */
-    $storage = $container->get(Storage::class);
-
-    try {
-        $tables = $storage->query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'");
-        foreach ($tables as $table) {
-            $storage->execute("DROP TABLE IF EXISTS \"{$table['tablename']}\" CASCADE");
-        }
-    } catch (Exception $e) {
-        echo 'Warning during table cleanup: ' . $e->getMessage() . "\n";
-        echo "Continuing with migrations...\n";
+    foreach ($database->applicationEnvironment() as $name => $value) {
+        putenv($name . '=' . $value);
     }
 
+    echo "Integration database: {$database->database}; isolated schema: {$database->schema}\n";
+
+    $app = new App(__DIR__ . '/../../config/container.php');
+    $container = $app->getContainer();
     $migrationService = $container->get(MigrationService::class);
     $command = new MigrateCommand($migrationService);
     $command->migrate();
+    TestAppFactory::setApp($app);
 
     $varDir = __DIR__ . '/../../var';
     if (!is_dir($varDir)) {
         mkdir($varDir, 0o755, true);
     }
-} catch (Exception $e) {
-    echo 'Error in bootstrap: ' . $e->getMessage() . "\n";
-    echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
+} catch (Throwable $exception) {
+    fwrite(STDERR, 'Error in integration bootstrap: ' . $exception->getMessage() . "\n");
     exit(1);
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Capabilities\Session\Transport\Http;
 
-use App\Capabilities\Session\Application\ClientDetector;
 use App\Capabilities\Session\Application\SessionPayloadFactory;
 use App\Capabilities\Session\Domain\Session;
 use App\Capabilities\Session\Domain\SessionConfig;
@@ -24,7 +23,6 @@ final readonly class SessionMiddleware implements Middleware
         private SessionConfig $config,
         private SessionPayloadFactory $sessionPayloadFactory,
         private JsonFieldAdapter $jsonAdapter,
-        private ClientDetector $clientDetector,
     ) {}
 
     public function getContext(string $name): mixed
@@ -35,7 +33,6 @@ final readonly class SessionMiddleware implements Middleware
             'config' => $this->config,
             'sessionPayloadFactory' => $this->sessionPayloadFactory,
             'jsonAdapter' => $this->jsonAdapter,
-            'clientDetector' => $this->clientDetector,
             default => null,
         };
     }
@@ -55,70 +52,20 @@ final readonly class SessionMiddleware implements Middleware
             }
         }
 
-        $sessionPayload = $this->sessionPayloadFactory->createFromRequest($request);
-        $payload = $this->jsonAdapter->serialize($sessionPayload);
-        $isBrowser = $sessionPayload->isBrowser();
-
         if ($session === null) {
-            if (($isBrowser && $this->config->browserNewSession) || $hadSessionIdButInvalid) {
-                $session = $this->sessionService->createSession(
-                    userId: null,
-                    payload: $payload,
-                    ttl: $this->config->sessionTtl,
-                );
+            $sessionPayload = $this->sessionPayloadFactory->createFromRequest($request);
+            $session = $this->sessionService->createSession(
+                userId: null,
+                payload: $this->jsonAdapter->serialize($sessionPayload),
+                ttl: $this->config->sessionTtl,
+            );
 
-                $logContext = [
+            if ($hadSessionIdButInvalid) {
+                $this->logger->info('Invalid session ID detected, created new session', [
                     'session_id' => $session->id,
-                    'user_agent' => $sessionPayload->userAgent,
-                ];
-
-                if ($hadSessionIdButInvalid) {
-                    $this->logger->info('Invalid session ID detected, created new session', [
-                        ...$logContext,
-                        'invalid_session_id' => $sessionId,
-                    ]);
-                } else {
-                    $this->logger->debug('Created new browser session', $logContext);
-                }
-            } elseif ($this->config->useFingerprint) {
-                $tempSession = $this->sessionService->createSession(
-                    userId: null,
-                    payload: $payload,
-                    ttl: 60,
-                );
-
-                $requestWithTempSession = $request->withAttribute('session', $tempSession);
-                $similarClients = $this->clientDetector->findSimilarClients($requestWithTempSession);
-
-                if (!empty($similarClients)) {
-                    $bestMatch = $similarClients[0];
-                    $matchedSession = $this->sessionService->validateSession($bestMatch->id);
-
-                    if ($matchedSession !== null) {
-                        $session = $matchedSession;
-                        $this->logger->debug('Restored session by fingerprint', [
-                            'session_id' => $session->id,
-                            'client_ip' => $sessionPayload->ip,
-                            'user_agent' => $sessionPayload->userAgent,
-                        ]);
-
-                        $this->sessionService->deleteSession($tempSession->id);
-                    } else {
-                        $session = $tempSession;
-                    }
-                } else {
-                    $session = $tempSession;
-                    $this->logger->debug('Created new session, no similar clients found', [
-                        'session_id' => $session->id,
-                    ]);
-                }
+                    'invalid_session_id' => $sessionId,
+                ]);
             } else {
-                $session = $this->sessionService->createSession(
-                    userId: null,
-                    payload: $payload,
-                    ttl: $this->config->sessionTtl,
-                );
-
                 $this->logger->debug('Created new session', ['session_id' => $session->id]);
             }
         }
@@ -143,7 +90,9 @@ final readonly class SessionMiddleware implements Middleware
 
         if ($response->getStatusCode() < 400) {
             $refreshedSession = $this->sessionService->refreshSession($session->id, $this->config->sessionTtl);
-            $response = $this->addSessionCookie($response, $refreshedSession ?? $session);
+            $response = $refreshedSession !== null
+                ? $this->addSessionCookie($response, $refreshedSession)
+                : $this->expireSessionCookie($response);
         }
 
         return $response;

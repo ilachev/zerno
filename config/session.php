@@ -8,6 +8,4 @@ return new SessionConfig(
     cookieName: 'session',
     cookieTtl: 86400,
     sessionTtl: PHP_INT_MAX,
-    useFingerprint: true,
-    browserNewSession: true,
 );

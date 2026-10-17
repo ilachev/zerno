@@ -88,8 +88,7 @@ Pipeline в проекте рекурсивный. Каждый middleware по�
 - ищет session ID в `Authorization: Bearer ...` или cookie;
 - валидирует существующую сессию;
 - если сессии нет, формирует `SessionPayload`;
-- при необходимости создаёт новую анонимную сессию;
-- для небраузерных клиентов может попытаться восстановить сессию по fingerprint;
+- без действительного bearer token или cookie создаёт новую анонимную сессию с настроенным `sessionTtl`;
 - добавляет объект `session` в request attributes;
 - после успешного ответа refresh-ит TTL и выставляет `Set-Cookie`.
 
@@ -97,6 +96,8 @@ Pipeline в проекте рекурсивный. Каждый middleware по�
 
 - `requestContext` уже присутствует в request;
 - `session` уже присутствует в request.
+
+Fingerprint, IP и User-Agent не подтверждают владение сессией и не используются для восстановления session identity. `ClientDetector` доступен отдельно для аналитики похожих клиентов.
 
 ## 6. `ApiStatsMiddleware`
 

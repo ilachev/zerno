@@ -91,6 +91,8 @@
 - Обязательность: сильный reusable block, нормальный кандидат для многих backend-ов.
 - Что здесь считается core: session lifecycle, cookie/bearer restore, fingerprinting, client detection, geolocation hooks.
 - Optional-часть: конкретные payload conventions и enrichments.
+- Авторизация восстанавливается только по cookie/bearer token; fingerprint служит аналитике и не подтверждает личность.
+- Проверка и отзыв сессий читают авторитетную БД без кеширования. Продление выполняет `UPDATE ... RETURNING` существующей неистёкшей сессии и не может восстановить удалённую запись.
 
 ### `Capabilities/ApiStats`
 

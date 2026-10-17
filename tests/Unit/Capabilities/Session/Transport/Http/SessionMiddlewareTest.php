@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Capabilities\Session\Transport\Http;
 
-use App\Capabilities\Session\Application\ClientDetector;
-use App\Capabilities\Session\Application\ClientIdentity;
 use App\Capabilities\Session\Application\SessionPayloadFactory;
 use App\Capabilities\Session\Domain\Session;
 use App\Capabilities\Session\Domain\SessionConfig;
@@ -73,7 +71,6 @@ final class SessionMiddlewareTest extends TestCase
             'cookie_name' => 'session',
             'cookie_ttl' => 86400,
             'session_ttl' => 3600,
-            'use_fingerprint' => false,
         ]);
 
         // Create a deterministic session payload for the middleware flow.
@@ -83,16 +80,12 @@ final class SessionMiddlewareTest extends TestCase
         $sessionPayloadFactory = new TestSessionPayloadFactoryImpl($sessionPayload);
         $jsonAdapter = new TestJsonFieldAdapterImpl();
 
-        // Provide a deterministic client detector for the test flow.
-        $clientDetector = new TestClientDetectorImpl([]);
-
         $this->middleware = new SessionMiddleware(
             $this->sessionService,
             $this->logger,
             $config,
             $sessionPayloadFactory,
             $jsonAdapter,
-            $clientDetector,
         );
         $this->handler = new TestRequestHandler();
     }
@@ -253,6 +246,7 @@ final class SessionMiddlewareTest extends TestCase
     {
         $request = new ServerRequest('GET', '/');
         $this->handler->response = new Response(500);
+        $startedAt = time();
 
         $response = $this->middleware->process($request, $this->handler);
 
@@ -261,19 +255,15 @@ final class SessionMiddlewareTest extends TestCase
 
         // Error responses must not refresh session cookies.
         self::assertFalse($response->hasHeader('Set-Cookie'));
+
+        $session = $this->handler->lastRequest?->getAttribute('session');
+        self::assertInstanceOf(Session::class, $session);
+        self::assertGreaterThanOrEqual($startedAt + 3600, $session->expiresAt);
+        self::assertLessThanOrEqual(time() + 3600, $session->expiresAt);
     }
 
-    public function testReusesSimilarSessionWhenFingerprintMatches(): void
+    public function testMatchingFingerprintNeverRestoresSessionWithoutCredentials(): void
     {
-        // 1. Enable fingerprint matching in the config.
-        $configWithFingerprint = SessionConfig::fromArray([
-            'cookie_name' => 'session',
-            'cookie_ttl' => 86400,
-            'session_ttl' => 3600,
-            'use_fingerprint' => true,
-        ]);
-
-        // 2. Seed an existing session with a known fingerprint.
         $existingSession = new Session(
             id: 'existing-fingerprint-session-id',
             userId: 42,
@@ -284,55 +274,26 @@ final class SessionMiddlewareTest extends TestCase
         );
         $this->repository->sessions['existing-fingerprint-session-id'] = $existingSession;
 
-        // 3. Build ClientIdentity from the existing session.
-        $existingIdentity = new ClientIdentity(
-            id: 'existing-fingerprint-session-id',
-            ipAddress: '127.0.0.1',
-            userAgent: 'Test Agent',
-        );
-
-        // 4. Prepare a test ClientDetector that returns the matching client.
-        $clientDetector = new TestClientDetectorImpl([$existingIdentity]);
-
-        // 5. Build middleware with fingerprint-aware dependencies.
-        /** @var SessionPayloadFactory $sessionPayloadFactory */
-        $sessionPayloadFactory = $this->middleware->getContext('sessionPayloadFactory');
-
-        /** @var JsonFieldAdapter $jsonAdapter */
-        $jsonAdapter = $this->middleware->getContext('jsonAdapter');
-
-        $fingerprintMiddleware = new SessionMiddleware(
-            $this->sessionService,
-            $this->logger,
-            $configWithFingerprint,
-            $sessionPayloadFactory,
-            $jsonAdapter,
-            $clientDetector,
-        );
-
-        // 6. Create a request without cookies but with a matching fingerprint.
         $request = new ServerRequest('GET', '/');
         $this->handler->response = new Response();
 
-        // 7. Run middleware.
-        $response = $fingerprintMiddleware->process($request, $this->handler);
+        $firstResponse = $this->middleware->process($request, $this->handler);
+        $firstSession = $this->handler->lastRequest?->getAttribute('session');
+        self::assertInstanceOf(Session::class, $firstSession);
+        self::assertNull($firstSession->userId);
+        self::assertNotSame($existingSession->id, $firstSession->id);
+        self::assertSame($existingSession->payload, $firstSession->payload);
+        self::assertStringContainsString('session=' . $firstSession->id, $firstResponse->getHeaderLine('Set-Cookie'));
 
-        // 8. Ensure no new session was created.
-        self::assertCount(1, $this->repository->sessions);
-
-        // 9. Ensure request attributes reference the existing session.
-        $processedRequest = $this->handler->lastRequest;
-        self::assertNotNull($processedRequest);
-
-        $session = $processedRequest->getAttribute('session');
-        self::assertInstanceOf(Session::class, $session);
-        self::assertSame($existingSession, $session);
-        self::assertSame(42, $session->userId);
-
-        // 10. Ensure the response cookie points to the reused session.
-        self::assertTrue($response->hasHeader('Set-Cookie'));
-        $cookie = $response->getHeaderLine('Set-Cookie');
-        self::assertStringContainsString('session=existing-fingerprint-session-id', $cookie);
+        $secondResponse = $this->middleware->process($request, $this->handler);
+        $secondSession = $this->handler->lastRequest?->getAttribute('session');
+        self::assertInstanceOf(Session::class, $secondSession);
+        self::assertNull($secondSession->userId);
+        self::assertNotSame($existingSession->id, $secondSession->id);
+        self::assertNotSame($firstSession->id, $secondSession->id);
+        self::assertStringContainsString('session=' . $secondSession->id, $secondResponse->getHeaderLine('Set-Cookie'));
+        self::assertCount(3, $this->repository->sessions);
+        self::assertSame(0, $this->repository->findAllCalls);
     }
 
     public function testUsesActiveSessionIdFromResponseHeaders(): void
@@ -394,6 +355,32 @@ final class SessionMiddlewareTest extends TestCase
         self::assertTrue($response->hasHeader('Set-Cookie'));
         self::assertStringContainsString('session=deleted', $response->getHeaderLine('Set-Cookie'));
     }
+
+    public function testExpiresCookieWhenSessionIsRevokedDuringHandler(): void
+    {
+        $existingSession = $this->sessionService->createSession(42, '{}');
+        $request = (new ServerRequest('GET', '/'))
+            ->withCookieParams(['session' => $existingSession->id]);
+        $handler = new readonly class ($this->sessionService, $existingSession->id) implements RequestHandler {
+            public function __construct(
+                private SessionService $sessionService,
+                private string $sessionId,
+            ) {}
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $this->sessionService->deleteSession($this->sessionId);
+
+                return new Response();
+            }
+        };
+
+        $response = $this->middleware->process($request, $handler);
+
+        self::assertNull($this->sessionService->validateSession($existingSession->id));
+        self::assertStringContainsString('session=deleted', $response->getHeaderLine('Set-Cookie'));
+        self::assertStringNotContainsString('session=' . $existingSession->id, $response->getHeaderLine('Set-Cookie'));
+    }
 }
 
 final class TestRequestHandler implements RequestHandler
@@ -418,6 +405,8 @@ final class TestSessionRepository implements SessionRepository
     /** @var array<string, Session> */
     public array $sessions = [];
 
+    public int $findAllCalls = 0;
+
     public function findById(string $id): ?Session
     {
         return $this->sessions[$id] ?? null;
@@ -439,6 +428,8 @@ final class TestSessionRepository implements SessionRepository
      */
     public function findAll(): array
     {
+        ++$this->findAllCalls;
+
         return array_values($this->sessions);
     }
 
@@ -447,6 +438,23 @@ final class TestSessionRepository implements SessionRepository
         $this->sessions[$session->id] = $session;
 
         return $session;
+    }
+
+    public function refresh(string $id, int $expiresAt, int $updatedAt): ?Session
+    {
+        $session = $this->sessions[$id] ?? null;
+        if ($session === null || $session->expiresAt < $updatedAt) {
+            return null;
+        }
+
+        return $this->sessions[$id] = new Session(
+            id: $session->id,
+            userId: $session->userId,
+            payload: $session->payload,
+            expiresAt: $expiresAt,
+            createdAt: $session->createdAt,
+            updatedAt: $updatedAt,
+        );
     }
 
     public function delete(string $id): void
@@ -537,31 +545,5 @@ final readonly class TestJsonFieldAdapterImpl implements JsonFieldAdapter
     public function trySerialize(object $object, string $defaultJson = '{}'): string
     {
         return $this->serialize($object);
-    }
-}
-
-/**
- * Test ClientDetector implementation.
- */
-final readonly class TestClientDetectorImpl implements ClientDetector
-{
-    /**
-     * @param array<ClientIdentity> $similarClients clients that should be returned
-     */
-    public function __construct(
-        private array $similarClients = [],
-    ) {}
-
-    /**
-     * @return array<ClientIdentity>
-     */
-    public function findSimilarClients(ServerRequestInterface $request, bool $includeCurrent = false): array
-    {
-        return $this->similarClients;
-    }
-
-    public function isRequestSuspicious(ServerRequestInterface $request): bool
-    {
-        return false;
     }
 }
