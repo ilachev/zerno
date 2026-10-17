@@ -68,11 +68,15 @@ Client управляет attempts, backoff и общим deadline. Transport в
 
 Consumer задаёт URI, method, body и намерение retry/timeout; общие retry loops и budget accounting остаются в client. `HttpTransport` сохраняет контракт одной попытки.
 
-Приоритет развития задаёт [общий roadmap](../project/roadmap.md). Возможные направления, ещё не реализованный API:
+Направления подчинены [трём целям проекта](../project/principles.md): максимальная простота, максимальная функциональность и максимальная производительность. Приоритет развития задаёт [общий roadmap](../project/roadmap.md). Ниже — предложения, ещё не реализованный API:
 
-- безопаснее выражать idempotency и проверять options;
+- сначала исключить неявное повторение изменяющих запросов и проверять options до отправки: тест должен доказывать число попыток POST при timeout/503 с defaults и при явно разрешённом повторе;
 - различать transport failure classes;
 - добавлять typed upstream wrappers и codecs по реальным потребителям;
 - вводить metrics и concurrency только под измеренный workload.
+
+Для уже существующей загрузки GeoIP сначала измеряются размер архива и пиковая память текущего buffered path. При необходимости ограниченного download рассматриваются простой лимит размера и запись в stream/file sink; общий streaming framework или concurrency не требуются заранее. Новый путь должен проверять cleanup частичного файла, ошибки записи и расход памяти на растущем body. Это отдельный outbound-контракт, а не отсутствие stream emission у SAPI response adapter.
+
+Расширение retries оценивается вместе с числом upstream requests и полной latency, включая backoff. Повтор постоянной ошибки не является улучшением надёжности или производительности сам по себе. Новая taxonomy, wrapper или adapter должны сокращать код подтверждённого потребителя, а не увеличивать число обязательных концепций минимального HTTP-ядра.
 
 gRPC deadline propagation, PSR-18 adapter и generic SDK factory не являются обещанными следующими этапами.

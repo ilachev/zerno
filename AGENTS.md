@@ -7,7 +7,7 @@ These rules apply throughout the repository. Communicate with the user in Russia
 ## Start here
 
 1. Read [LLM onboarding](docs/llm-onboarding.md) and the task-specific documents linked there.
-2. Use [architecture](docs/architecture/overview.md) for implemented behavior and [vision](docs/project/vision.md) / [roadmap](docs/project/roadmap.md) for accepted direction and planned work. A plan does not establish that a feature exists.
+2. Read [development principles](docs/project/principles.md): simplicity, useful functionality and performance are joint requirements. Use [architecture](docs/architecture/overview.md) for implemented behavior and [vision](docs/project/vision.md) / [roadmap](docs/project/roadmap.md) for accepted direction and planned work. A plan does not establish that a feature exists.
 3. Use [the documentation index](docs/README.md) and [machine-readable inventory](docs/documentation-inventory.json) to find the relevant sources. Follow [documentation maintenance rules](docs/development/documentation.md).
 4. Inspect the code and tests before changing behavior. Resolve stale documentation against implementation, then update both where needed. Historical audits are evidence of past runs, not current instructions.
 
@@ -18,9 +18,16 @@ These rules apply throughout the repository. Communicate with the user in Russia
 - Runtime sources, generator dependencies and PHP quality tools are bundled. Do not add package installation or downloads to runtime, generation, builds or checks. Platform requirements are documented separately.
 - `config/core.php` is the minimal HTTP/PDO composition; `config/core-roadrunner.php` adds RoadRunner. `config/container.php` retains the optional protobuf API with sessions, statistics and integrations. Optional behavior must be explicitly composed.
 - Keep `App` and the common handler independent of the server loop. Support ordinary PHP/SAPI and the RoadRunner adapter without making every site use protobuf.
-- Keep domain data free of infrastructure and protocol types. Use simple domain data containers, services for behavior, application coordination and mappers for transformations. Handlers should be thin adapters.
+- Keep domain models independent of infrastructure and protocol types where domain separation is needed. Use application/domain services and mappers when actual policy or reuse justifies them. Do not require a full layer hierarchy or wrappers for a straightforward handler with explicit dependencies.
 - Prefer small reusable components with explicit constructors and providers. Add abstractions only when actual use cases justify them; solve root causes rather than narrow workarounds.
 - Capability cache consumers use `ScopedCacheFactory` / `ScopedCache`; backend wiring owns `CacheService`. Fingerprints are analytics data, never credentials.
+
+## Required decision criteria
+
+- Apply [the three development goals](docs/project/principles.md) to significant changes: simpler use and maintenance, broader useful scenarios, and measured runtime efficiency. Preserve correctness, data integrity and access protection when comparing alternatives.
+- For public contracts, core composition or hot paths, describe the developer steps, supported behavior, costs with/without the feature and relevant checks. Explain tradeoffs briefly in the task or PR.
+- Prefer small compatible primitives and complete examples. Keep optional behavior explicitly composed and check real startup/request I/O; do not claim zero overhead solely because a service is lazy.
+- New layers, interfaces, configuration switches and generator modules need a concrete consumer or demonstrated reduction in total complexity. Preserve explicit SQL and install-free delivery.
 
 ## Source boundaries
 

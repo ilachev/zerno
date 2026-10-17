@@ -26,7 +26,7 @@
       "path": "AGENTS.md",
       "kind": "instructions",
       "status": "current",
-      "summary": "Канонические правила работы агентов, границы исходников и обязательные проверки.",
+      "summary": "Канонические правила агентов, обязательные три цели развития, границы исходников и проверки.",
       "read_when": [
         "Любая работа агента"
       ],
@@ -82,6 +82,25 @@
       ]
     },
     {
+      "id": "development-principles",
+      "path": "docs/project/principles.md",
+      "kind": "instructions",
+      "status": "current",
+      "summary": "Совместные обязательные цели простоты, функциональности и производительности, правила выбора решений и проверки компромиссов.",
+      "read_when": [
+        "Планирование и ревью значимого изменения",
+        "Изменение контракта, состава ядра или горячего пути"
+      ],
+      "source_paths": [
+        "AGENTS.md",
+        "config/core.php",
+        "config/container.php",
+        "src/Platform/Runtime",
+        "src/Platform/Storage",
+        "tools/project.php"
+      ]
+    },
+    {
       "id": "product-vision",
       "path": "docs/project/vision.md",
       "kind": "design",
@@ -104,7 +123,7 @@
       "path": "docs/project/roadmap.md",
       "kind": "roadmap",
       "status": "accepted-plan",
-      "summary": "Шесть направлений с текущей базой, будущими результатами, приёмкой и очередностью.",
+      "summary": "Шесть направлений с результатами по трём целям, текущей базой, зависимостями и ограниченными этапами приёмки.",
       "read_when": [
         "Планирование следующей итерации",
         "Проверка завершённости этапа"
@@ -179,7 +198,7 @@
       "path": "docs/reusable-blocks.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Назначение блоков и разграничение core, optional mechanisms и приложения.",
+      "summary": "Границы core, optional и приложения, подключение и фактическая стоимость блоков.",
       "read_when": [
         "Добавление компонента",
         "Определение обязательности функции"
@@ -391,6 +410,26 @@
       ],
       "source_paths": [
         "docs/history/dependency-inventory-2026-10-17.json"
+      ]
+    },
+    {
+      "id": "development-principles-review",
+      "path": "docs/history/2026-10-17-development-principles-review.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Датированная ревизия документации и ограничений кода на 4c59899, основания уточнения трёх целей и порядка развития.",
+      "read_when": [
+        "Историческое обоснование принципов и приоритетов",
+        "Проверка границ проведённой ревизии"
+      ],
+      "source_paths": [
+        "src/Platform/Routing/Router.php",
+        "src/Platform/Http/Middleware/RoutingMiddleware.php",
+        "src/Platform/Http/Middleware/HttpLoggingMiddleware.php",
+        "src/Platform/Storage/Sql/SqlExecutor.php",
+        "src/Platform/Storage/Migration/MigrationService.php",
+        "src/Platform/Http/Client/HttpRequestOptions.php",
+        "tools/sql-gen/src/Parser/grammar/sql_subset.pp2"
       ]
     }
   ],

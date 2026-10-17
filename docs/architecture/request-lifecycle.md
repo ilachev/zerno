@@ -44,7 +44,7 @@ RoadRunner HTTP → PSR7Worker::waitRequest()
                → следующий waitRequest()
 ```
 
-[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Преобразование HTTP и отправка тела делегированы включённой библиотеке `PSR7Worker`; SAPI emitter в этом пути не участвует.
+[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Преобразование HTTP и отправка тела делегированы включённой библиотеке `PSR7Worker`; SAPI emitter в этом пути не участвует. Текущий `RoadRunnerServiceProvider` не меняет `PSR7Worker::chunkSize` (default `0`), поэтому `respond()` приводит body к строке. Библиотечный streaming path существует при положительном chunk size, но текущая конфигурация его не включает; ограниченную память файловой выдачи через RR пока нельзя считать обеспеченной.
 
 ## Общие middleware
 

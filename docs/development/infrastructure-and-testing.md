@@ -65,7 +65,7 @@ php tools/project.php migrate
 - API provider использует путь выбранного adapter из `config/storage.php`: `src/Platform/Storage/Migration/PostgreSQL` либо `SQLite`.
 - API PostgreSQL migrations создают `sessions` (JSONB payload и индексы), `api_stats` (ссылка на session, route/status/timing) и `users` (минимальная user/password схема). Эти таблицы принадлежат API-приложению, а не обязательной схеме ядра.
 
-Исходники миграций и их исполнение находятся в [`Storage/Migration`](../../src/Platform/Storage/Migration). [`sql/schema.sql`](../../sql/schema.sql) отдельно описывает схему для SQL tooling; HTTP entrypoints не применяют этот файл.
+Исходники миграций и их исполнение находятся в [`Storage/Migration`](../../src/Platform/Storage/Migration). [`sql/schema.sql`](../../sql/schema.sql) отдельно описывает схему для SQL tooling; HTTP entrypoints не применяют этот файл. Текущий `MigrationService` делит тексты `up()`/`down()` по `;` и исполняет части последовательно; общей транзакции на миграцию этот слой не создаёт. Сложные SQL-тела и восстановление после частичного DDL требуют отдельной проверки. Версия добавляется после выполнения частей, а не является доказательством атомарности.
 
 ## Локальные сервисы
 

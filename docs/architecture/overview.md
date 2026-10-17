@@ -26,6 +26,8 @@
 
 [`Pipeline`](../../src/Platform/Http/Middleware/Pipeline.php) собирается явно конфигурацией. Core: RequestContext → ErrorHandler → Routing → resolver. API: RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → resolver. Состав middleware не зашит в `App`.
 
+Для файловых ответов стоимость проверяется через весь путь: RR provider оставляет `PSR7Worker::chunkSize=0`, поэтому библиотека по умолчанию приводит body к строке; API HttpLogging читает остаток тела от текущей позиции до EOF. Наличие PSR-7 stream и SAPI emitter не устанавливает ограниченную память RR/API-композиции.
+
 [`RequestContext`](../../src/Platform/Runtime/RequestContext.php) передаётся через request attributes и содержит request ID и deadline. Бюджет новый для каждого запроса, из [`config/http.php`](../../config/http.php); он используется downstream только при явной передаче и не останавливает произвольный handler автоматически. `ErrorHandlerMiddleware` преобразует исключения следующих слоёв в JSON 500; transport/bootstrap ошибки лежат вне его границ.
 
 ## DI и время жизни

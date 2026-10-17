@@ -72,6 +72,8 @@ Canonical type model внутри generator — `Typhoon\Type`. Эта библ�
 
 [SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) исполняет query через `Storage`, а typed rows создаются через `DatabaseRow::fromDatabaseRow`. `:one` выбирает первый результат либо возвращает null; сам по себе этот marker не доказывает уникальность строки в БД. Транзакции предоставляет `Storage::transaction`.
 
+Сейчас даже `fetchOne` сначала получает весь result set: `Storage::query` PostgreSQL adapter вызывает `fetchAll`. `fetchAllRows` дополнительно создаёт массив typed rows. Поэтому `:one` не ограничивает работу БД или память PHP. Для растущих списков нужен явно ограниченный SQL с устойчивым порядком; `LIMIT` пока отсутствует в generator subset, хотя доступен в прямом параметризованном SQL через storage.
+
 Runtime contract FQCN и naming вынесены в `SqlGenerationProfile`. CLI поддерживает `--runtime-namespace` для default profile либо `--bootstrap` + `--profile-class` для внешнего profile; явно выбранный profile определяет contracts сам.
 
 Session и ApiStats уже используют generated SQL через ручные repositories. Для Session реализованы поиск, upsert, удаление и `RefreshSession` через `UPDATE ... RETURNING`. Это действующие потребители, а не первый запланированный MVP.
@@ -104,6 +106,10 @@ Join relation checks используют schema metadata, но не доказ�
 
 SQL остаётся читаемым источником запросов; generator не должен скрывать его за ORM, Active Record или query builder. Runtime не должен заново интерпретировать SQL или загружать generator libraries.
 
-Приоритет работ определяет [общий roadmap](../project/roadmap.md). Возможные component tasks: исправление nullability outer joins, более точное expression typing, составные relation checks и source-aware diagnostics. Расширение subset требует согласованных parser, semantic inference, generation и PostgreSQL checks. `*Params` и facade имеют смысл только при конкретном потребителе; обязательного следующего этапа для них нет.
+Каждое предложение оценивается по [трём целям проекта](../project/principles.md): максимальная простота, максимальная функциональность и максимальная производительность. Порядок работ задаёт [общий roadmap](../project/roadmap.md), а не список возможных возможностей generator-а.
+
+До расширения expressions нужно закрыть ошибочную nullability внешних joins либо явно отвергать такие запросы. Для сценария растущего списка сначала нужен минимальный поддерживаемый способ ограничить выборку и проверить устойчивый порядок, план, число строк и память PHP. Оптимизация `fetchOne` или row iteration требует измерений и не должна скрытно менять существующий контракт массивов.
+
+Более точное expression typing, составные relation checks и diagnostics добавляются под конкретные SQL-файлы. Расширение subset требует согласованных parser, semantic inference, generation и PostgreSQL checks. `*Params`, facade и новые AST-слои не являются самостоятельными целями: они допустимы только если упрощают подтверждённый сценарий без неоправданной runtime-стоимости.
 
 Команды, CLI options и bundled distribution описаны в [README sql-gen](../../tools/sql-gen/README.md).
