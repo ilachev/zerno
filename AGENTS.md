@@ -1,6 +1,6 @@
 # Agent instructions
 
-Type: `instructions`. Status: `current`. Reviewed: 2026-10-17.
+Type: `instructions`. Status: `current`. Reviewed: 2026-10-18.
 
 These rules apply throughout the repository. Communicate with the user in Russian. Write code comments in English. This is the canonical instruction file; `CLAUDE.md` is a compatibility entry point.
 
@@ -15,6 +15,7 @@ These rules apply throughout the repository. Communicate with the user in Russia
 
 - Zerno (Зерно), repository `zerno`, is a small autonomous PHP HTTP/PDO core for general-purpose websites and web applications. Municipal and public-sector developers are a priority audience. Keep CMS workflows, editorial roles and other product policy in application code.
 - Current work prioritizes reusable core capabilities. Examples are consumers and verification fixtures; keep catalog editing and publication workflows deferred while developing the core. A working example does not establish that its local helpers are public core APIs.
+- Develop Zerno's own model of ordinary PHP, explicit composition, visible SQL and autonomous delivery. Do not use Laravel feature parity or API imitation as the product specification. Distinctive design must improve the developer path or measured costs; retain useful standards and bundled components instead of inventing substitutes for novelty alone.
 - Database access is part of the core: PDO, explicit parameterized SQL, transactions and migrations. Do not introduce an ORM to hide SQL.
 - Runtime sources, generator dependencies and PHP quality tools are bundled. Do not add package installation or downloads to runtime, generation, builds or checks. Platform requirements are documented separately.
 - `config/core.php` is the minimal HTTP/PDO composition; `config/core-roadrunner.php` adds RoadRunner. `config/container.php` retains the optional protobuf API with sessions, statistics and integrations. Optional behavior must be explicitly composed.
