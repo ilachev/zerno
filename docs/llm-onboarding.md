@@ -4,29 +4,36 @@
 
 ## Что это за проект
 
-`base-api-template` — это backend template на PHP 8.5+ с маленьким runtime core, `protobuf-first` endpoint contracts, целевым `sqlc-like` persistence path и набором простых reusable-блоков.
+`base-api-template` развивается из backend template в небольшое автономное PHP веб-ядро для создания сайтов, в том числе муниципальных. Работа с БД через PDO и явный SQL входит в основу; CMS и продуктовая админка остаются прикладным кодом.
+
+Сейчас проект использует PHP 8.5+, RoadRunner adapter, `protobuf-first` API, типизированную SQL-генерацию и набор reusable-блоков. Установка и проверки ещё используют Composer и Task. Автономная поставка — цель перехода, а не уже выполненное свойство; аудит и последовательность работ описаны в [плане автономного ядра](./design/autonomous-core.md).
 
 Это не готовый продукт и не framework. Репозиторий должен восприниматься так:
 
 - `Platform` — runtime core;
 - `Capabilities` — reusable blocks;
-- `HealthCheck` и `SystemDescribe` — минимальные нейтральные примеры protobuf-first endpoint flow внутри core.
+- `HealthCheck` и `SystemDescribe` — минимальные нейтральные примеры текущего protobuf API.
 
 ## Цель проекта
 
-- production-ready backend template;
-- чистый PHP без framework coupling;
-- минимальная зависимость от внешних библиотек как архитектурного центра;
-- несколько простых building blocks вместо большой архитектурной системы.
+- небольшое PHP веб-ядро с доступной из коробки работой с БД;
+- простые building blocks и явная композиция приложения;
+- включённые в поставку фиксированные сторонние исходники там, где они полезны;
+- запуск, сборка и проверки без обязательной установки Composer, Task, npm и скачивания пакетов;
+- производительность, подтверждённая замерами одинаковых сценариев.
+
+Платформенные требования — PHP, расширения, PostgreSQL и выбранный HTTP runtime — учитываются отдельно. Изъятие менеджера пакетов из обязательного пути не означает отсутствия стороннего кода.
 
 ## Главные точки входа
 
-- `public/index.php` — HTTP entrypoint
-- `src/Platform/Runtime/App.php` — bootstrap и pipeline
-- `config/container.php` — DI wiring
+- `public/index.php` — текущий RoadRunner entrypoint: создаёт `App`, разрешает worker и запускает `RoadRunnerRuntime`
+- `src/Platform/Runtime/App.php` — bootstrap DI и общий `RequestHandler`; `handle()` обрабатывает запрос, `handleRequest()` сохранён для совместимости
+- `src/Platform/Runtime/RoadRunnerRuntime.php` — цикл получения запросов и отправки ответов через worker
+- `config/container.php` — DI wiring и фабрика `RequestHandler`, которая задаёт middleware pipeline
 - `protos/proto/app/v1/*.proto` — core API contracts
 - `taskfile.yaml` — команды разработки
 - `docs/reusable-blocks.md` — каноническая карта reusable-блоков проекта
+- `docs/design/autonomous-core.md` — аудит зависимостей и план автономной поставки
 - `docs/design/protoc-php-gen-product.md` — целевая модель protobuf codegen-tooling
 - `docs/design/sql-gen-product.md` — целевая модель typed SQL generation
 - `docs/design/http-client-product.md` — целевая модель outbound HTTP client
@@ -53,8 +60,8 @@ Reusable blocks:
 ## Что реально работает
 
 - runtime без product endpoints по умолчанию
-- анонимные и восстановленные сессии
-- fingerprint matching клиента
+- анонимные сессии и продолжение существующих сессий по bearer token или cookie
+- fingerprint matching для аналитики клиентов, без восстановления session identity
 - геолокация по IP
 - request log для API-вызовов
 - protobuf/codegen pipeline
@@ -73,12 +80,13 @@ Reusable blocks:
 ## Что важно считать инвариантами
 
 - не редактировать вручную `protos/gen/*`
-- для нового публичного API сначала менять `.proto`, потом запускать генерацию
+- для изменения текущего protobuf API сначала менять `.proto`, потом запускать генерацию
 - `Platform` не должен содержать продуктовую политику
 - reusable block должен оставаться полезным вне конкретного продукта
 - example code должен быть явно вторичен по отношению к runtime
 - default `task verify` не должен требовать поднятых внешних сервисов
-- проект живёт в long-running процессе RoadRunner, значит надо следить за памятью и накоплением состояния
+- текущий RoadRunner adapter работает в long-running процессе, значит надо следить за памятью и накоплением состояния; `App` получает общий `RequestHandler` и не запускает worker
+- состав middleware принадлежит `config/container.php`; отделение runtime adapter не должно менять порядок, маршруты и поведение сессий
 - persistence должен двигаться в сторону explicit SQL + typed generation, а не в сторону усложняющегося ORM-like слоя
 - type-system libraries допустимы только внутри generators и только там, где они реально заменяют ручной type rendering
 - внутри `tools/sql-gen` canonical PHP type model уже должен считаться Typhoon-based, а не строковым
@@ -117,10 +125,12 @@ task run
 1. `docs/architecture/request-lifecycle.md`
 2. `docs/reusable-blocks.md`
 3. `src/Platform/Runtime/App.php`
-4. `config/container.php`
-5. `src/Capabilities/*`
-6. `src/Platform/Storage/*`
-7. `protos/proto/app/v1/*`
+4. `src/Platform/Runtime/RoadRunnerRuntime.php`
+5. `config/container.php`
+6. `docs/design/autonomous-core.md`
+7. `src/Capabilities/*`
+8. `src/Platform/Storage/*`
+9. `protos/proto/app/v1/*`
 
 ## Текущие зоны риска
 

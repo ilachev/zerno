@@ -54,7 +54,7 @@ SQL-генератор сохраняется как локальный инст
 
 | Файлы | Что необходимо разделить |
 |---|---|
-| `Runtime/App.php`, `CoreServiceProvider.php`, `public/index.php` | Построение обработчика запроса и запуск/ответ worker |
+| `CoreServiceProvider.php`, `public/index.php` | Регистрация RR-сервисов ещё находится в общем provider; запуск worker уже вынесен в `RoadRunnerRuntime` |
 | `DI/DIContainer.php`, `Http/Endpoint/EndpointImplementationResolver.php` | Общие bindings и convention-based поиск generated endpoint implementations |
 | `RoutingServiceProvider.php`, `GeneratedOperationManifestProvider.php` | Router и конкретный generated provider с обходом каталога |
 | `Hydration/ReflectionCache.php`, `ReflectionHydrator.php`, reflection caches | Обычные DTO и распознавание/гидрация Google Protobuf Message |
@@ -62,7 +62,17 @@ SQL-генератор сохраняется как локальный инст
 | `Cache/FallbackStorage.php`, `RoadRunnerCacheService.php` | Общий cache contract и конкретные RR interfaces/backend |
 | `Config/ProjectPath.php`, endpoint resolver | Пути экземпляра приложения и расположение исходников ядра |
 
-Первая реализация может использовать существующий `Pipeline` и `RequestHandler`. Само выделение ядра не требует вводить новый слой однотипных kernel-классов.
+Первая реализация использует существующий `Pipeline` и `RequestHandler`. Само выделение ядра не требует вводить новый слой однотипных kernel-классов.
+
+## Выполненный первый шаг
+
+`App` реализует `RequestHandler` и получает обработчик из конфигурации контейнера. Он больше не получает RR worker и не содержит цикла сервера. Состав и порядок middleware перенесены в `config/container.php`; сессии, статистика и существующие API-маршруты сохранены в этой конфигурации.
+
+`RoadRunnerRuntime` выполняет `waitRequest → handle → respond`, а `public/index.php` связывает его с приложением. Тестовая минимальная конфигурация запускает тот же `App` без RR-сервисов; интеграционная проверка использует текущую API-композицию и PostgreSQL.
+
+Текущий entrypoint также проверен через настоящий RoadRunner 2025.1.15: GET health, POST system, 404 и повторный GET в одном worker с сохранением cookie, request headers и четырёх записей статистики в отдельной PostgreSQL-схеме. Этот запуск использовал существующий Composer autoload и тестовый fallback кеша; автономность и RR KV им не проверялись.
+
+Это разделение выполнения и композиции приложения. Обычный PHP/FPM entrypoint, независимая регистрация cache/runtime providers, автономный загрузчик и включение сторонних исходников ещё предстоят. Сравнительные замеры производительности пока не выполнены; ускорение этим изменением не заявляется.
 
 ## Как включать сторонний код
 

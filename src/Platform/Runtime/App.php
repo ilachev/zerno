@@ -4,31 +4,19 @@ declare(strict_types=1);
 
 namespace App\Platform\Runtime;
 
-use App\Capabilities\ApiStats\Transport\Http\ApiStatsMiddleware;
-use App\Capabilities\Session\Transport\Http\SessionMiddleware;
 use App\Platform\DI\Container;
 use App\Platform\DI\DIContainer;
-use App\Platform\Http\Middleware\{
-    ErrorHandlerMiddleware,
-    HttpLoggingMiddleware,
-    Pipeline,
-    RequestContextMiddleware,
-    RoutingMiddleware
-};
-use App\Platform\Http\RouteHandlerResolver;
+use App\Platform\Http\RequestHandler;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Spiral\RoadRunner\Http\PSR7Worker;
 
 /** @template T of object */
-final readonly class App
+final readonly class App implements RequestHandler
 {
     /** @var DIContainer<T> */
     private Container $container;
 
-    private PSR7Worker $worker;
-
-    private Pipeline $pipeline;
+    private RequestHandler $handler;
 
     /**
      * @return DIContainer<T>
@@ -40,7 +28,12 @@ final readonly class App
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->pipeline->handle($request);
+        return $this->handle($request);
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        return $this->handler->handle($request);
     }
 
     public function __construct(string $configPath)
@@ -51,35 +44,6 @@ final readonly class App
         $this->container = new DIContainer();
         $containerConfig($this->container);
 
-        $this->worker = $this->container->get(PSR7Worker::class);
-        $this->pipeline = $this->createPipeline();
-    }
-
-    public function run(): void
-    {
-        while (true) {
-            $request = $this->worker->waitRequest();
-            if ($request === null) {
-                break;
-            }
-
-            $response = $this->handleRequest($request);
-            $this->worker->respond($response);
-        }
-    }
-
-    private function createPipeline(): Pipeline
-    {
-        return new Pipeline(
-            $this->container->get(RouteHandlerResolver::class),
-            [
-                $this->container->get(RequestContextMiddleware::class),
-                $this->container->get(ErrorHandlerMiddleware::class),
-                $this->container->get(SessionMiddleware::class),
-                $this->container->get(ApiStatsMiddleware::class),
-                $this->container->get(RoutingMiddleware::class),
-                $this->container->get(HttpLoggingMiddleware::class),
-            ],
-        );
+        $this->handler = $this->container->get(RequestHandler::class);
     }
 }

@@ -7,9 +7,8 @@
 ```text
 Client
   -> RoadRunner HTTP
-  -> public/index.php
-  -> App
-  -> DI container
+  -> RoadRunnerRuntime / PSR7Worker
+  -> App::handle()
   -> Pipeline
   -> Middleware chain
   -> Router
@@ -27,7 +26,7 @@ server:
   command: "php public/index.php"
 ```
 
-Файл `public/index.php` создаёт `App` и вызывает `run()`.
+Файл `public/index.php` создаёт `App`, получает `PSR7Worker` из его контейнера и передаёт worker и приложение в `RoadRunnerRuntime`. Цикл обслуживания запросов запускается через `RoadRunnerRuntime::run()`.
 
 ## 2. Инициализация `App`
 
@@ -35,23 +34,28 @@ server:
 
 1. загружает `config/container.php`;
 2. создаёт `DIContainer`;
-3. регистрирует сервисы через service providers;
-4. получает `PSR7Worker`;
-5. собирает middleware pipeline из platform middleware и capability middleware.
- 
+3. выполняет конфигурацию контейнера, которая регистрирует service providers, capabilities и фабрику `RequestHandler`;
+4. получает готовый `RequestHandler` из контейнера.
+
+`App` реализует `RequestHandler`: метод `handle()` передаёт запрос настроенному обработчику. Существующий `handleRequest()` сохранён и вызывает `handle()`. Создание `App` не разрешает worker и не запускает цикл RoadRunner.
+
+В текущей композиции фабрика `RequestHandler` в `config/container.php` создаёт `Pipeline` из platform middleware и capability middleware. Выбор и порядок middleware принадлежат конфигурации приложения.
+
 Кеш при старте worker-а больше не очищается глобально.
 
 Deployment-aware invalidation теперь идёт через `namespace_seed` в cache config, а runtime invalidation внутри приложения должна опираться на namespace/scope rotation, а не на полный wipe shared backend-а.
 
 ## 3. Получение запроса
 
-Внутри `App::run()` работает бесконечный цикл:
+Внутри `src/Platform/Runtime/RoadRunnerRuntime.php` метод `run()` выполняет цикл:
 
-- `waitRequest()`
-- `handleRequest($request)`
-- `respond($response)`
+- `PSR7Worker::waitRequest()` получает запрос;
+- `App::handle($request)` возвращает ответ;
+- `PSR7Worker::respond($response)` отправляет ответ.
 
-Это long-running модель, поэтому любой singleton-like объект живёт дольше одного запроса.
+При `null` из `waitRequest()` цикл завершается. `RoadRunnerRuntime` принимает общий `RequestHandler`; знание о DI, capabilities и составе pipeline остаётся за приложением.
+
+Текущий RoadRunner adapter использует long-running модель, поэтому любой singleton-like объект живёт дольше одного запроса. Вызов `App::handle()` сам по себе не требует этого адаптера.
 
 ## 4. Выполнение middleware pipeline
 
@@ -60,7 +64,7 @@ Pipeline в проекте рекурсивный. Каждый middleware по�
 - текущий `ServerRequestInterface`;
 - следующий `RequestHandler`.
 
-Порядок выполнения:
+Порядок выполнения задаётся в `config/container.php`:
 
 1. `RequestContextMiddleware`
 2. `ErrorHandlerMiddleware`
