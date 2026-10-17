@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\DI;
 
-use App\Generated\Endpoint\Api\V1\HealthService\CheckEndpoint;
 use App\Platform\DI\Container;
 use App\Platform\DI\ContainerException;
 use App\Platform\DI\DIContainer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Tests\Unit\Platform\DI\Fixtures\{
     Circular1,
@@ -216,13 +216,83 @@ final class ContainerTest extends TestCase
         self::assertInstanceOf(Implementation2::class, $second);
     }
 
-    public function testResolvesGeneratedEndpointImplementationFromManifest(): void
+    public function testUnboundInterfaceIsNotRegistered(): void
     {
-        $endpoint = $this->container->get(CheckEndpoint::class);
+        self::assertFalse($this->container->has(TestInterface::class));
+    }
 
-        self::assertInstanceOf(
-            \App\Platform\Http\Endpoint\Api\V1\HealthService\CheckEndpoint::class,
-            $endpoint,
-        );
+    public function testUnboundInterfaceRequiresExplicitBinding(): void
+    {
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage('No binding found for interface ' . TestInterface::class);
+
+        $this->container->get(TestInterface::class);
+    }
+
+    public function testHasDoesNotAutoloadUnknownIds(): void
+    {
+        $autoloaded = [];
+        $observer = static function (string $class) use (&$autoloaded): void {
+            $autoloaded[] = $class;
+        };
+        spl_autoload_register($observer, prepend: true);
+
+        try {
+            $unknownClass = __NAMESPACE__ . '\UnregisteredService';
+
+            self::assertFalse($this->container->has($unknownClass));
+            self::assertSame([], $autoloaded);
+        } finally {
+            spl_autoload_unregister($observer);
+        }
+    }
+
+    #[DataProvider('registrationStates')]
+    public function testFactoryOverridesEarlierBinding(bool $checkRegistration, bool $resolve): void
+    {
+        $this->container->bind(TestInterface::class, Implementation1::class);
+        if ($checkRegistration) {
+            self::assertTrue($this->container->has(TestInterface::class));
+        }
+        if ($resolve) {
+            self::assertInstanceOf(Implementation1::class, $this->container->get(TestInterface::class));
+        }
+
+        $replacement = new Implementation2();
+        $this->container->set(TestInterface::class, static fn(): TestInterface => $replacement);
+
+        self::assertTrue($this->container->has(TestInterface::class));
+        self::assertSame($replacement, $this->container->get(TestInterface::class));
+        self::assertSame($replacement, $this->container->get(TestInterface::class));
+    }
+
+    #[DataProvider('registrationStates')]
+    public function testBindingOverridesEarlierFactory(bool $checkRegistration, bool $resolve): void
+    {
+        $original = new Implementation1();
+        $this->container->set(TestInterface::class, static fn(): TestInterface => $original);
+        if ($checkRegistration) {
+            self::assertTrue($this->container->has(TestInterface::class));
+        }
+        if ($resolve) {
+            self::assertSame($original, $this->container->get(TestInterface::class));
+        }
+
+        $this->container->bind(TestInterface::class, Implementation2::class);
+        $replacement = $this->container->get(TestInterface::class);
+
+        self::assertTrue($this->container->has(TestInterface::class));
+        self::assertInstanceOf(Implementation2::class, $replacement);
+        self::assertSame($replacement, $this->container->get(TestInterface::class));
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool}>
+     */
+    public static function registrationStates(): iterable
+    {
+        yield 'unresolved' => [false, false];
+        yield 'checked with has' => [true, false];
+        yield 'resolved' => [true, true];
     }
 }

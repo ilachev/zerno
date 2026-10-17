@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Platform\DI;
 
-use App\Platform\Http\Endpoint\EndpointImplementationResolver;
-
 /**
  * @template-covariant T of object
  * @implements Container<T>
@@ -42,13 +40,6 @@ final class DIContainer implements Container
      */
     private array $resolving = [];
 
-    private EndpointImplementationResolver $endpointImplementationResolver;
-
-    public function __construct()
-    {
-        $this->endpointImplementationResolver = new EndpointImplementationResolver();
-    }
-
     /**
      * @template U of object
      * @param class-string<U> $id
@@ -57,7 +48,7 @@ final class DIContainer implements Container
     public function set(string $id, callable $definition): void
     {
         $this->definitions[$id] = $definition;
-        unset($this->instances[$id], $this->autowirePlans[$id]);
+        unset($this->instances[$id], $this->autowirePlans[$id], $this->aliases[$id], $this->concretes[$id]);
     }
 
     /**
@@ -69,11 +60,7 @@ final class DIContainer implements Container
     {
         $this->aliases[$interface] = $concrete;
         $this->concretes[$interface] = $concrete;
-
-        // Clear cached instance of this interface when binding changes
-        if (isset($this->instances[$interface])) {
-            unset($this->instances[$interface]);
-        }
+        unset($this->definitions[$interface], $this->instances[$interface], $this->autowirePlans[$interface]);
     }
 
     /**
@@ -132,22 +119,11 @@ final class DIContainer implements Container
 
     public function has(string $id): bool
     {
-        // Direct check if this is an interface with a binding
-        if (interface_exists($id) && isset($this->aliases[$id])) {
+        if (isset($this->aliases[$id])) {
             return true;
         }
 
-        if (interface_exists($id)) {
-            $concrete = $this->concretes[$id] ?? $this->endpointImplementationResolver->resolve($id);
-            if ($concrete !== null) {
-                $this->concretes[$id] = $concrete;
-
-                return true;
-            }
-        }
-
-        // Check if we have the concrete implementation
-        $concrete = $this->concretes[$id] ?? $this->aliases[$id] ?? $id;
+        $concrete = $this->concretes[$id] ?? $id;
 
         return isset($this->instances[$concrete])
             || isset($this->definitions[$concrete]);
@@ -172,12 +148,7 @@ final class DIContainer implements Container
         }
 
         if (interface_exists($id)) {
-            $resolved = $this->endpointImplementationResolver->resolve($id);
-            if ($resolved === null) {
-                throw new ContainerException("No binding found for interface {$id}");
-            }
-
-            return $this->concretes[$id] = $resolved;
+            throw new ContainerException("No binding found for interface {$id}");
         }
 
         if (!class_exists($id)) {
