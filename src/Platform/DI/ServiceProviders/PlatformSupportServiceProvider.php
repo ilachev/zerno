@@ -7,7 +7,6 @@ namespace App\Platform\DI\ServiceProviders;
 use App\Platform\DataMapping\DataTransferObjectMapper;
 use App\Platform\DI\Container;
 use App\Platform\DI\ServiceProvider;
-use App\Platform\Http\JsonResponse;
 use App\Platform\Hydration\DefaultJsonFieldAdapter;
 use App\Platform\Hydration\Hydrator;
 use App\Platform\Hydration\JsonFieldAdapter;
@@ -19,9 +18,6 @@ final readonly class PlatformSupportServiceProvider implements ServiceProvider
 {
     public function register(Container $container): void
     {
-        // JsonResponse
-        $container->bind(JsonResponse::class, JsonResponse::class);
-
         // JSON field adapter
         $container->bind(JsonFieldAdapter::class, DefaultJsonFieldAdapter::class);
         $container->set(

@@ -14,6 +14,7 @@ use App\Platform\DI\ServiceProviders\HttpClientServiceProvider;
 use App\Platform\DI\ServiceProviders\HydratorServiceProvider;
 use App\Platform\DI\ServiceProviders\MigrationServiceProvider;
 use App\Platform\DI\ServiceProviders\PlatformSupportServiceProvider;
+use App\Platform\DI\ServiceProviders\RoadRunnerServiceProvider;
 use App\Platform\DI\ServiceProviders\RoutingServiceProvider;
 use App\Platform\DI\ServiceProviders\StorageServiceProvider;
 use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
@@ -27,6 +28,7 @@ use App\Platform\Http\RouteHandlerResolver;
 return static function (Container $container): void {
     $platformProviders = [
         new CoreServiceProvider(),
+        new RoadRunnerServiceProvider(),
         new CacheServiceProvider(),
         new StorageServiceProvider(),
         new MigrationServiceProvider(),
@@ -64,7 +66,4 @@ return static function (Container $container): void {
             ],
         ),
     );
-
-    // Expose the container for components that resolve it explicitly.
-    $container->set(Container::class, static fn() => $container);
 };

@@ -2,6 +2,8 @@
 
 Этот документ описывает фактический runtime flow HTTP-запроса.
 
+Ниже описана существующая API-композиция `config/container.php`. Минимальная композиция `config/core.php` задаёт явные маршруты из `config/routes.php` и цепочку `RequestContext → ErrorHandler → Routing → RouteHandlerResolver`, с доступной по обращению БД. Её обычная PHP-точка входа — `public/http.php`; RR-вариант — `config/core-roadrunner.php` и `.rr.core.yaml`. Подробности запуска находятся в [плане автономного ядра](../design/autonomous-core.md#минимальная-httppdo-композиция).
+
 ## Краткая схема
 
 ```text
@@ -27,6 +29,8 @@ server:
 ```
 
 Файл `public/index.php` создаёт `App`, получает `PSR7Worker` из его контейнера и передаёт worker и приложение в `RoadRunnerRuntime`. Цикл обслуживания запросов запускается через `RoadRunnerRuntime::run()`.
+
+По умолчанию используется `config/container.php`. Переменная окружения `APP_CONFIG` позволяет выбрать другой файл конфигурации; для минимального RR-приложения используется `config/core-roadrunner.php`.
 
 ## 2. Инициализация `App`
 
@@ -139,6 +143,8 @@ Fingerprint, IP и User-Agent не подтверждают владение с�
 - взять имя handler из request attributes;
 - разрешить handler через DI;
 - вызвать `handle($request)`.
+
+DI больше не ищет endpoint implementations автоматически. В API-композиции `RoutingServiceProvider` явно регистрирует bindings из generated operation manifests. Минимальная композиция регистрирует собственные handler factories и маршруты без этого provider.
 
 Таким образом, middleware не знает, как именно создаётся handler, а runtime resolution централизован.
 

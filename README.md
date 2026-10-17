@@ -6,6 +6,8 @@ A pure PHP backend template with Protocol Buffers for endpoint contracts, genera
 
 Current target state for this repository: a production-ready set of reusable backend blocks on pure PHP, without framework coupling. The repository keeps runtime primitives and optional integrations, but it should not feel like a heavy framework.
 
+The project is moving toward a small autonomous PHP web core with PDO and explicit SQL. Fixed third-party sources may be bundled; running, building and testing without package managers is the target. Composer and Task are still required by the current development workflow. See the [delivery plan](docs/design/autonomous-core.md).
+
 The default runtime stays focused on reusable blocks. The only built-in endpoint example is a neutral health check that demonstrates the protobuf-first endpoint flow.
 
 ## Features
@@ -53,6 +55,25 @@ task verify:full
 ```
 
 ## Running the Application
+
+The minimal HTTP/PDO composition uses explicit routes in `config/routes.php`, with GET and HEAD `/health`. It opens no database connection for the health request and enables no sessions, statistics, GeoIP or protobuf discovery. Run one of these servers:
+
+```bash
+# PHP development server; use public/http.php as the PHP-FPM front controller too
+php -S 127.0.0.1:8080 -t public public/http.php
+
+# RoadRunner using the same minimal application
+rr serve -c .rr.core.yaml
+```
+
+PDO and SQL services are available when requested by a handler factory. Configure PostgreSQL with `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` and optionally `DB_SCHEMA`. Application migrations belong in `src/Migrations` (`App\Migrations` namespace):
+
+```bash
+php bin/migrate.php migrate config/core.php
+php bin/migrate.php rollback config/core.php
+```
+
+The existing protobuf API remains available with its original application composition:
 
 The application uses RoadRunner for high performance. To run:
 

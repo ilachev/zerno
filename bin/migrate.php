@@ -10,8 +10,9 @@ use App\Platform\DI\Container;
 use App\Platform\DI\DIContainer;
 use App\Platform\Storage\Migration\MigrationService;
 
+$configPath = $argv[2] ?? __DIR__ . '/../config/container.php';
 /** @var callable(Container<object>): void $containerConfig */
-$containerConfig = require __DIR__ . '/../config/container.php';
+$containerConfig = require $configPath;
 
 $container = new DIContainer();
 $containerConfig($container);

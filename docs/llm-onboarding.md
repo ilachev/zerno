@@ -27,9 +27,12 @@
 ## Главные точки входа
 
 - `public/index.php` — текущий RoadRunner entrypoint: создаёт `App`, разрешает worker и запускает `RoadRunnerRuntime`
+- `public/http.php` — обычная PHP/SAPI точка входа для минимальной композиции, включая PHP-FPM
 - `src/Platform/Runtime/App.php` — bootstrap DI и общий `RequestHandler`; `handle()` обрабатывает запрос, `handleRequest()` сохранён для совместимости
 - `src/Platform/Runtime/RoadRunnerRuntime.php` — цикл получения запросов и отправки ответов через worker
 - `config/container.php` — DI wiring и фабрика `RequestHandler`, которая задаёт middleware pipeline
+- `config/core.php`, `config/routes.php` — минимальная HTTP/PDO-композиция и явные маршруты
+- `config/core-roadrunner.php`, `.rr.core.yaml` — та же минимальная композиция с RR adapter
 - `protos/proto/app/v1/*.proto` — core API contracts
 - `taskfile.yaml` — команды разработки
 - `docs/reusable-blocks.md` — каноническая карта reusable-блоков проекта
@@ -86,7 +89,8 @@ Reusable blocks:
 - example code должен быть явно вторичен по отношению к runtime
 - default `task verify` не должен требовать поднятых внешних сервисов
 - текущий RoadRunner adapter работает в long-running процессе, значит надо следить за памятью и накоплением состояния; `App` получает общий `RequestHandler` и не запускает worker
-- состав middleware принадлежит `config/container.php`; отделение runtime adapter не должно менять порядок, маршруты и поведение сессий
+- состав middleware принадлежит конфигурации приложения: `config/container.php` сохраняет API-композицию, `config/core.php` задаёт минимальный HTTP/PDO вариант
+- DI не ищет generated endpoints автоматически; API provider регистрирует их bindings явно, а `has()` проверяет регистрации без autoload
 - persistence должен двигаться в сторону explicit SQL + typed generation, а не в сторону усложняющегося ORM-like слоя
 - type-system libraries допустимы только внутри generators и только там, где они реально заменяют ручной type rendering
 - внутри `tools/sql-gen` canonical PHP type model уже должен считаться Typhoon-based, а не строковым

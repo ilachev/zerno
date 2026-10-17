@@ -18,20 +18,22 @@ use App\Platform\Storage\StorageConfig;
  */
 final readonly class MigrationServiceProvider implements ServiceProvider
 {
+    public function __construct(private ?string $migrationsPath = null) {}
+
     public function register(Container $container): void
     {
+        $migrationsPath = $this->migrationsPath;
         // Migration loader
         $container->set(
             MigrationLoader::class,
-            static function (Container $container): MigrationLoader {
+            static function (Container $container) use ($migrationsPath): MigrationLoader {
                 /** @var StorageConfig $storageConfig */
                 $storageConfig = $container->get(StorageConfig::class);
-                $migrationsPath = $storageConfig->getMigrationsPath();
 
                 /** @var Logger $logger */
                 $logger = $container->get(Logger::class);
 
-                return new MigrationLoader($migrationsPath, $logger);
+                return new MigrationLoader($migrationsPath ?? $storageConfig->getMigrationsPath(), $logger);
             },
         );
 

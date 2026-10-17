@@ -54,8 +54,8 @@ SQL-генератор сохраняется как локальный инст
 
 | Файлы | Что необходимо разделить |
 |---|---|
-| `CoreServiceProvider.php`, `public/index.php` | Регистрация RR-сервисов ещё находится в общем provider; запуск worker уже вынесен в `RoadRunnerRuntime` |
-| `DI/DIContainer.php`, `Http/Endpoint/EndpointImplementationResolver.php` | Общие bindings и convention-based поиск generated endpoint implementations |
+| `RoadRunnerServiceProvider.php`, `public/index.php` | RR-сервисы выделены в отдельный provider и подключаются конфигурацией приложения |
+| `DI/DIContainer.php`, `RoutingServiceProvider.php` | DI использует явные bindings; generated endpoint bindings регистрирует только API provider |
 | `RoutingServiceProvider.php`, `GeneratedOperationManifestProvider.php` | Router и конкретный generated provider с обходом каталога |
 | `Hydration/ReflectionCache.php`, `ReflectionHydrator.php`, reflection caches | Обычные DTO и распознавание/гидрация Google Protobuf Message |
 | `SessionModule.php`, `IP2LocationGeoLocationService.php` | Жизненный цикл сессии и принудительное подключение GeoIP/cache |
@@ -72,7 +72,42 @@ SQL-генератор сохраняется как локальный инст
 
 Текущий entrypoint также проверен через настоящий RoadRunner 2025.1.15: GET health, POST system, 404 и повторный GET в одном worker с сохранением cookie, request headers и четырёх записей статистики в отдельной PostgreSQL-схеме. Этот запуск использовал существующий Composer autoload и тестовый fallback кеша; автономность и RR KV им не проверялись.
 
-Это разделение выполнения и композиции приложения. Обычный PHP/FPM entrypoint, независимая регистрация cache/runtime providers, автономный загрузчик и включение сторонних исходников ещё предстоят. Сравнительные замеры производительности пока не выполнены; ускорение этим изменением не заявляется.
+Сравнительные замеры производительности пока не выполнены; ускорение этим изменением не заявляется.
+
+## Минимальная HTTP/PDO-композиция
+
+`config/core.php` собирает существующие HTTP-блоки и лениво регистрирует PDO/SQL и миграции. Маршруты перечислены явно в `config/routes.php`. По умолчанию доступны GET и HEAD `/health`; ответ GET — `{"status":"ok"}`. Обработка этого запроса не создаёт соединение с БД. Сессии, API-статистика, GeoIP, protobuf discovery и cache backend в эту конфигурацию не включены.
+
+Один обработчик можно запускать двумя способами:
+
+```bash
+# Local PHP server; public/http.php is also the PHP-FPM front controller.
+php -S 127.0.0.1:8080 -t public public/http.php
+
+# RoadRunner with the same routes and middleware.
+rr serve -c .rr.core.yaml
+```
+
+Порты в примерах совпадают: запускать серверы по очереди. Для PHP-FPM веб-сервер должен передавать запросы в `public/http.php`, сохранять исходный request URI и обслуживать только каталог `public`. Forwarded-заголовки не определяют scheme или host автоматически; доверие к reverse proxy требует отдельной конфигурации.
+
+`public/http.php` переводит SAPI globals, raw body и uploads в PSR-7 request. Emitter передаёт status и отдельные значения headers, читает response body частями и исключает тело для HEAD и статусов, запрещающих тело. Ошибки запроса получают 400 без диагностических подробностей. Ответы ошибок middleware содержат JSON-объект `error`.
+
+`config/core-roadrunner.php` добавляет только RR provider к минимальной композиции. Прежний protobuf API, сессии, статистика и RR cache сохраняются в `config/container.php`; `public/index.php` по умолчанию использует его. Обе точки входа принимают `APP_CONFIG`: для сравнения одной API-композиции можно передать абсолютный путь к её файлу. `config/core-roadrunner.php` предназначен для RR, `config/core.php` — для обычного PHP.
+
+База данных настраивается существующими `DB_*` и `STORAGE_ENGINE`. В обработчике можно получить `Storage` или `SqlExecutor` через явную фабрику контейнера; параметры запросов и транзакции предоставляют существующие PDO-блоки. Ядро не создаёт таблицы при HTTP-запросе.
+
+Для минимального приложения миграции размещаются в `src/Migrations` с namespace `App\Migrations` и интерфейсом `Migration`. Команды используют ту же конфигурацию:
+
+```bash
+php bin/migrate.php migrate config/core.php
+php bin/migrate.php rollback config/core.php
+```
+
+Пустой каталог миграций не создаёт таблицы приложения; служебная таблица версий создаётся при запуске команды. Прежний запуск без второго аргумента использует API-конфигурацию и её миграции.
+
+GET, HEAD и JSON 404 проверены через PHP development server, настоящий PHP-FPM и RoadRunner с одинаковой минимальной композицией и заведомо недоступным storage engine. Дополнительно через FPM проверены повторяющиеся headers/cookies, сохранение status при Location, потоковый ответ, 204 без тела, JSON body, form data, вложенный multipart upload и 400 для некорректного host. Проверки выполнялись на отдельных локальных портах и временной конфигурации.
+
+Composer autoload и установленные пакеты пока используются обоими вариантами запуска. Автономный загрузчик, фиксированная поставка сторонних исходников и инструментов и сравнительные замеры остаются следующими шагами.
 
 ## Как включать сторонний код
 
