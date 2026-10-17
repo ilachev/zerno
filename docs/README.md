@@ -13,6 +13,7 @@
 7. [`protoc-php-gen` как продукт](./design/protoc-php-gen-product.md) — текущий supported scope и целевая modular model генератора.
 8. [`sql-gen` как продукт](./design/sql-gen-product.md) — целевая `sqlc-like` модель для typed SQL generation.
 9. [`Platform/Http/Client` как продукт](./design/http-client-product.md) — целевая модель outbound HTTP client с reliability policy.
+10. [Автономное веб-ядро](./design/autonomous-core.md) — аудит текущих зависимостей, границы самостоятельной поставки и план перехода; это целевая модель, ещё не реализованный способ запуска.
 
 ## Как читать
 

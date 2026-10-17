@@ -1,0 +1,2783 @@
+{
+  "format_version": 1,
+  "audit_date": "2026-10-17",
+  "status": "audit snapshot; third_party delivery and Composer-free entrypoints are not implemented",
+  "measurement": "Logical byte counts of installed regular files; no filesystem allocation, archives, vendor/composer or executable memory. Tree SHA-256 hashes sorted relative-path + NUL + file-SHA256 + newline. A local integrity snapshot does not authenticate upstream origin.",
+  "projects": [
+    {
+      "path": ".",
+      "manifest": "composer.json",
+      "lock_present": true,
+      "version_evidence": "composer.lock and vendor/composer/installed.json",
+      "installed_package_count": 76,
+      "runtime_package_count": 14,
+      "development_only_package_count": 62,
+      "runtime_packages": [
+        {
+          "name": "google/protobuf",
+          "version": "v5.34.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/protocolbuffers/protobuf-php.git",
+            "reference": "1debe453db83159b98a38df5a3737feb1e8ef016"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "require": {
+            "php": ">=8.2.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Google\\Protobuf\\": "src/Google/Protobuf",
+              "GPBMetadata\\Google\\Protobuf\\": "src/GPBMetadata/Google/Protobuf"
+            }
+          },
+          "installed_content": {
+            "files": 135,
+            "bytes": 767975,
+            "php_files": 131,
+            "php_bytes": 765111,
+            "tree_sha256": "8f542bf1438b355ec7dd607201227207e2fcd326502dfdda456b7280781ec401",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "ip2location/ip2location-php",
+          "version": "9.8.1",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/chrislim2888/IP2Location-PHP-Module.git",
+            "reference": "e18e5372cfa4b57f33d2dc8c15d24cee1ee6d1ce"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "ext-bcmath": "*",
+            "ext-curl": "*",
+            "ext-json": "*",
+            "php": ">=7.2"
+          },
+          "autoload": {
+            "psr-4": {
+              "IP2Location\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 32,
+            "bytes": 7674218,
+            "php_files": 13,
+            "php_bytes": 107540,
+            "tree_sha256": "bbeb08215b64ec2237d1b7b94633637d9cef3a7ef6acacadc2a8b4921411e1db",
+            "license_files": [
+              "LICENSE.TXT"
+            ]
+          }
+        },
+        {
+          "name": "nyholm/psr7",
+          "version": "1.8.2",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/Nyholm/psr7.git",
+            "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=7.2",
+            "psr/http-factory": "^1.0",
+            "psr/http-message": "^1.1 || ^2.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Nyholm\\Psr7\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 15,
+            "bytes": 63682,
+            "php_files": 11,
+            "php_bytes": 53764,
+            "tree_sha256": "44085faff9fb3d65e49e2156b8b18c2ab75df3b42112cb516ba7bd436cc6fa4d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/http-factory",
+          "version": "1.1.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/http-factory.git",
+            "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=7.1",
+            "psr/http-message": "^1.0 || ^2.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Psr\\Http\\Message\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 9,
+            "bytes": 7262,
+            "php_files": 6,
+            "php_bytes": 4843,
+            "tree_sha256": "38b25316067acac0cbce4ee7a8bf0164191dd4b2e0d5431b217c6bd9a99699cf",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/http-message",
+          "version": "2.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/http-message.git",
+            "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": "^7.2 || ^8.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Psr\\Http\\Message\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 13,
+            "bytes": 65727,
+            "php_files": 7,
+            "php_bytes": 47392,
+            "tree_sha256": "b1409554fe2d8daf3b3b5b1a100c466cdaaec0dc0c6adaa20c67f1a9c1ebbd28",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/log",
+          "version": "3.0.2",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/log.git",
+            "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=8.0.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Psr\\Log\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 10578,
+            "php_files": 8,
+            "php_bytes": 7592,
+            "tree_sha256": "b933809d2ca2735cac89fc5827378f0ec528f1248b75a58b0f0eadf8d7869454",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/simple-cache",
+          "version": "3.0.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/simple-cache.git",
+            "reference": "764e0b3939f5ca87cb904f570ef9be2d78a07865"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=8.0.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Psr\\SimpleCache\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 7779,
+            "php_files": 3,
+            "php_bytes": 5255,
+            "tree_sha256": "ee8008184c2fd5d7436f12fd649bd136e3c4de21af01fc671da1fb349bfbcb11",
+            "license_files": [
+              "LICENSE.md"
+            ]
+          }
+        },
+        {
+          "name": "roadrunner-php/roadrunner-api-dto",
+          "version": "v1.14.1",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-php/roadrunner-api-dto.git",
+            "reference": "a7664d4a4c451631fba7d5504fdf4f94a81a19c3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "google/protobuf": "^4.31.1||^5.34.0",
+            "php": "^8.1"
+          },
+          "autoload": {
+            "psr-4": {
+              "Temporal\\": "generated/Temporal",
+              "RoadRunner\\": "generated/RoadRunner",
+              "GPBMetadata\\": "generated/GPBMetadata"
+            }
+          },
+          "installed_content": {
+            "files": 900,
+            "bytes": 4490832,
+            "php_files": 892,
+            "php_bytes": 4478707,
+            "tree_sha256": "fd52a9ef240fdf5953970bc80c5058efd6d4d08523ad1c2ffe9c532d3ff9c0e4",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "spiral/goridge",
+          "version": "4.2.1",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-php/goridge.git",
+            "reference": "2a372118dac1f0c0511e2862f963ce649fefd9fa"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "ext-json": "*",
+            "ext-sockets": "*",
+            "php": ">=8.1",
+            "spiral/roadrunner": "^2023 || ^2024.1 || ^2025.1"
+          },
+          "autoload": {
+            "psr-4": {
+              "Spiral\\Goridge\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 41,
+            "bytes": 75061,
+            "php_files": 30,
+            "php_bytes": 58669,
+            "tree_sha256": "199b2200e49328f8e2eed3b74edafb92024fef234f08cf065238e4fea23f11db",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "spiral/roadrunner",
+          "version": "v2025.1.11",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-server/roadrunner.git",
+            "reference": "e2c3615ad42d34cc30e01978c091c6ca51d0a005"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {},
+          "autoload": {},
+          "installed_content": {
+            "files": 0,
+            "bytes": 0,
+            "php_files": 0,
+            "php_bytes": 0,
+            "tree_sha256": null,
+            "license_files": []
+          }
+        },
+        {
+          "name": "spiral/roadrunner-http",
+          "version": "v4.1.0",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-php/http.git",
+            "reference": "b69cf62dcab7d4b1945fef7b40339edd4fc016c8"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "ext-json": "*",
+            "php": ">=8.1",
+            "psr/http-factory": "^1.0.1",
+            "psr/http-message": "^1.0.1 || ^2.0",
+            "roadrunner-php/roadrunner-api-dto": "^1.6",
+            "spiral/roadrunner": "^2023.3 || ^2024.1 || ^2025.1",
+            "spiral/roadrunner-worker": "^3.5",
+            "symfony/polyfill-php83": "^1.29"
+          },
+          "autoload": {
+            "psr-4": {
+              "Spiral\\RoadRunner\\Http\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 10,
+            "bytes": 31724,
+            "php_files": 7,
+            "php_bytes": 21558,
+            "tree_sha256": "f662f1bb1cd24478e6870f7c8c85bfdc3518e70e934b41d33f3de71e5f47fd9e",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "spiral/roadrunner-kv",
+          "version": "v4.3.1",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-php/kv.git",
+            "reference": "0db13f212c64463bd26cf71e28d0a8bdf997a4a0"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "ext-json": "*",
+            "php": ">=8.1",
+            "psr/simple-cache": "2 - 3",
+            "roadrunner-php/roadrunner-api-dto": "^1.0",
+            "spiral/goridge": "^4.2",
+            "spiral/roadrunner": "^2023.1 || ^2024.1 || ^2025.1"
+          },
+          "autoload": {
+            "psr-4": {
+              "Spiral\\RoadRunner\\KeyValue\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 23,
+            "bytes": 37144,
+            "php_files": 19,
+            "php_bytes": 26862,
+            "tree_sha256": "8fa4588f4f0c93789e3a2784bb70bcf4cfca234a0326b30df9387a6b42114674",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "spiral/roadrunner-worker",
+          "version": "v3.6.2",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/roadrunner-php/worker.git",
+            "reference": "8d9905b1e6677f34ff8623893f35b5e2fa828e37"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "composer-runtime-api": "^2.0",
+            "ext-json": "*",
+            "ext-sockets": "*",
+            "php": ">=8.1",
+            "psr/log": "^2.0 || ^3.0",
+            "spiral/goridge": "^4.1.0",
+            "spiral/roadrunner": "^2023.1 || ^2024.1 || ^2025.1"
+          },
+          "autoload": {
+            "psr-4": {
+              "Spiral\\RoadRunner\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 25,
+            "bytes": 32773,
+            "php_files": 22,
+            "php_bytes": 25965,
+            "tree_sha256": "4050d50e6adb15066be144fc0896d4644c56f09f89163eb01700164e434d3c47",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-php83",
+          "version": "v1.32.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-php83.git",
+            "reference": "2fb86d65e2d424369ad2905e83b236a8805ba491"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=7.2"
+          },
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Php83\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 17,
+            "bytes": 16594,
+            "php_files": 14,
+            "php_bytes": 13587,
+            "tree_sha256": "a27263b7eaa2eb100f9e4f0c8662a50393586b773f3237b706bc82e67dcec432",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        }
+      ],
+      "feature_closures": {
+        "nyholm/psr7": [
+          "nyholm/psr7",
+          "psr/http-factory",
+          "psr/http-message"
+        ],
+        "spiral/roadrunner-worker": [
+          "psr/log",
+          "spiral/goridge",
+          "spiral/roadrunner",
+          "spiral/roadrunner-worker"
+        ],
+        "spiral/roadrunner-http": [
+          "google/protobuf",
+          "psr/http-factory",
+          "psr/http-message",
+          "psr/log",
+          "roadrunner-php/roadrunner-api-dto",
+          "spiral/goridge",
+          "spiral/roadrunner",
+          "spiral/roadrunner-http",
+          "spiral/roadrunner-worker",
+          "symfony/polyfill-php83"
+        ],
+        "spiral/roadrunner-kv": [
+          "google/protobuf",
+          "psr/simple-cache",
+          "roadrunner-php/roadrunner-api-dto",
+          "spiral/goridge",
+          "spiral/roadrunner",
+          "spiral/roadrunner-kv"
+        ],
+        "ip2location/ip2location-php": [
+          "ip2location/ip2location-php"
+        ]
+      }
+    },
+    {
+      "path": "tools/sql-gen",
+      "manifest": "tools/sql-gen/composer.json",
+      "lock_present": true,
+      "version_evidence": "composer.lock and vendor/composer/installed.json",
+      "installed_package_count": 69,
+      "runtime_package_count": 7,
+      "development_only_package_count": 62,
+      "runtime_packages": [
+        {
+          "name": "brick/math",
+          "version": "0.14.8",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/brick/math.git",
+            "reference": "63422359a44b7f06cae63c3b429b59e8efcc0629"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": "^8.2"
+          },
+          "autoload": {
+            "psr-4": {
+              "Brick\\Math\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 19,
+            "bytes": 187733,
+            "php_files": 16,
+            "php_bytes": 160132,
+            "tree_sha256": "501a9909e214aedd187a3d63ca0de800d5ead125216262ab23458811fc9769d6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "nette/php-generator",
+          "version": "v4.2.2",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nette/php-generator.git",
+            "reference": "0d7060926f5c3e8c488b9b9ced42d857f12a34b5"
+          },
+          "licenses": [
+            "BSD-3-Clause",
+            "GPL-2.0-only",
+            "GPL-3.0-only"
+          ],
+          "require": {
+            "nette/utils": "^4.0.6",
+            "php": "8.1 - 8.5"
+          },
+          "autoload": {
+            "psr-4": {
+              "Nette\\": "src"
+            },
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 44,
+            "bytes": 168515,
+            "php_files": 41,
+            "php_bytes": 138637,
+            "tree_sha256": "51f583a253eee7525149f43d6ac8e4a42be3e5ee3ab386f5faa9bd37d2283252",
+            "license_files": [
+              "license.md"
+            ]
+          }
+        },
+        {
+          "name": "nette/utils",
+          "version": "v4.1.3",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nette/utils.git",
+            "reference": "bb3ea637e3d131d72acc033cfc2746ee893349fe"
+          },
+          "licenses": [
+            "BSD-3-Clause",
+            "GPL-2.0-only",
+            "GPL-3.0-only"
+          ],
+          "require": {
+            "php": "8.2 - 8.5"
+          },
+          "autoload": {
+            "psr-4": {
+              "Nette\\": "src"
+            },
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 37,
+            "bytes": 200983,
+            "php_files": 34,
+            "php_bytes": 193957,
+            "tree_sha256": "f2b67a494b2f2d5f7f3733703ec07a7e225dcb04ded82da9b058c48783520b3a",
+            "license_files": [
+              "license.md"
+            ]
+          }
+        },
+        {
+          "name": "phplrt/phplrt",
+          "version": "3.7.5",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/phplrt/phplrt.git",
+            "reference": "336d21ebb680d5760b48d326936595d297151e3a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "ext-json": "*",
+            "ext-mbstring": "*",
+            "ext-pcre": "*",
+            "ext-spl": "*",
+            "php": "^8.1",
+            "symfony/deprecation-contracts": "^2.5|^3.0"
+          },
+          "autoload": {
+            "files": [
+              "libs/contracts/lexer/src/polyfill.php",
+              "libs/lexer/src/polyfill.php",
+              "libs/parser/src/polyfill.php"
+            ],
+            "psr-4": {
+              "Phplrt\\Lexer\\": "libs/lexer/src",
+              "Phplrt\\Buffer\\": "libs/buffer/src",
+              "Phplrt\\Parser\\": "libs/parser/src",
+              "Phplrt\\Source\\": "libs/source/src",
+              "Phplrt\\Visitor\\": "libs/visitor/src",
+              "Phplrt\\Compiler\\": "libs/compiler/src",
+              "Phplrt\\Position\\": "libs/position/src",
+              "Phplrt\\Exception\\": "libs/exception/src",
+              "Phplrt\\Contracts\\Ast\\": "libs/contracts/ast/src",
+              "Phplrt\\Contracts\\Lexer\\": "libs/contracts/lexer/src",
+              "Phplrt\\Contracts\\Parser\\": "libs/contracts/parser/src",
+              "Phplrt\\Contracts\\Source\\": "libs/contracts/source/src",
+              "Phplrt\\Contracts\\Position\\": "libs/contracts/position/src",
+              "Phplrt\\Contracts\\Exception\\": "libs/contracts/exception/src"
+            }
+          },
+          "installed_content": {
+            "files": 261,
+            "bytes": 370191,
+            "php_files": 186,
+            "php_bytes": 286648,
+            "tree_sha256": "e4cf8333c2363a18615ed32e2af0dac148766554a5560d216a6b8c11eb8f5df0",
+            "license_files": [
+              "LICENSE.md",
+              "libs/buffer/LICENSE.md",
+              "libs/compiler/LICENSE.md",
+              "libs/contracts/ast/LICENSE.md",
+              "libs/contracts/exception/LICENSE.md",
+              "libs/contracts/lexer/LICENSE.md",
+              "libs/contracts/parser/LICENSE.md",
+              "libs/contracts/position/LICENSE.md",
+              "libs/contracts/source/LICENSE.md",
+              "libs/exception/LICENSE.md",
+              "libs/lexer/LICENSE.md",
+              "libs/parser/LICENSE.md",
+              "libs/position/LICENSE.md",
+              "libs/source/LICENSE.md",
+              "libs/visitor/LICENSE.md"
+            ]
+          }
+        },
+        {
+          "name": "symfony/deprecation-contracts",
+          "version": "v3.6.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/deprecation-contracts.git",
+            "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=8.1"
+          },
+          "autoload": {
+            "files": [
+              "function.php"
+            ]
+          },
+          "installed_content": {
+            "files": 5,
+            "bytes": 4272,
+            "php_files": 1,
+            "php_bytes": 1014,
+            "tree_sha256": "b3aba492423ca91f66ffa866ce79ed92240c0954c8cf64fcff10c413b67c62f6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-php83",
+          "version": "v1.33.0",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-php83.git",
+            "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "php": ">=7.2"
+          },
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Php83\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 17,
+            "bytes": 16594,
+            "php_files": 14,
+            "php_bytes": 13587,
+            "tree_sha256": "0163cccdec578c45873cfd7224cbdb7b73d1efecc6b6544b0f2923e404b8d7bb",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "typhoon/type",
+          "version": "0.6.0",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/typhoon-php/type.git",
+            "reference": "a7282d377ad5d3b7eea1adb45b615b88b37d8950"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "require": {
+            "brick/math": "^0.14.0",
+            "php": "^8.2",
+            "symfony/polyfill-php83": "^1.33"
+          },
+          "autoload": {
+            "files": [
+              "src/Type/constructors.php",
+              "src/Type/fromReflection.php",
+              "src/Type/stringify.php"
+            ],
+            "psr-4": {
+              "Typhoon\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 85,
+            "bytes": 120813,
+            "php_files": 78,
+            "php_bytes": 85109,
+            "tree_sha256": "f04091603a0e3249efa765975c918f4d6588c64e39e8483c82edaff159d5b4a3",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "tools/protoc-php-gen",
+      "manifest": "tools/protoc-php-gen/composer.json",
+      "lock_present": false,
+      "version_evidence": "vendor/composer/installed.json only; lock is excluded by project .gitignore",
+      "installed_package_count": 68,
+      "runtime_package_count": 3,
+      "development_only_package_count": 65,
+      "runtime_packages": [
+        {
+          "name": "google/protobuf",
+          "version": "v5.36.2",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/protocolbuffers/protobuf-php.git",
+            "reference": "020bc8e831611869ac387ddd38fbbadd78d15195"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "require": {
+            "php": ">=8.2.0"
+          },
+          "autoload": {
+            "psr-4": {
+              "Google\\Protobuf\\": "src/Google/Protobuf",
+              "GPBMetadata\\Google\\Protobuf\\": "src/GPBMetadata/Google/Protobuf"
+            }
+          },
+          "installed_content": {
+            "files": 138,
+            "bytes": 782628,
+            "php_files": 134,
+            "php_bytes": 779763,
+            "tree_sha256": "9ce12de70e040f596eaf3b60774152bae4a8121eea697373907f079fe71dd0f2",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "nette/php-generator",
+          "version": "v4.2.2",
+          "direct": true,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nette/php-generator.git",
+            "reference": "0d7060926f5c3e8c488b9b9ced42d857f12a34b5"
+          },
+          "licenses": [
+            "BSD-3-Clause",
+            "GPL-2.0-only",
+            "GPL-3.0-only"
+          ],
+          "require": {
+            "nette/utils": "^4.0.6",
+            "php": "8.1 - 8.5"
+          },
+          "autoload": {
+            "psr-4": {
+              "Nette\\": "src"
+            },
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 44,
+            "bytes": 168515,
+            "php_files": 41,
+            "php_bytes": 138637,
+            "tree_sha256": "51f583a253eee7525149f43d6ac8e4a42be3e5ee3ab386f5faa9bd37d2283252",
+            "license_files": [
+              "license.md"
+            ]
+          }
+        },
+        {
+          "name": "nette/utils",
+          "version": "v4.1.5",
+          "direct": false,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nette/utils.git",
+            "reference": "b043439dbdf954e6c28b5ea7e34b0100f83165e0"
+          },
+          "licenses": [
+            "BSD-3-Clause",
+            "GPL-2.0-only",
+            "GPL-3.0-only"
+          ],
+          "require": {
+            "php": "8.2 - 8.5"
+          },
+          "autoload": {
+            "psr-4": {
+              "Nette\\": "src"
+            },
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 39,
+            "bytes": 231220,
+            "php_files": 36,
+            "php_bytes": 224210,
+            "tree_sha256": "27fe7ffe275d4aa16a6d50fbe6fa5296a709d9b5ab91dc72a52990299778acba",
+            "license_files": [
+              "license.md"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "development_tools": [
+    {
+      "name": "phpunit/phpunit",
+      "version": "11.5.55",
+      "closure_package_count": 27,
+      "closure_bytes": 5629280,
+      "packages": [
+        {
+          "name": "myclabs/deep-copy",
+          "version": "1.13.4",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/myclabs/DeepCopy.git",
+            "reference": "07d290f0c47959fd5eed98c95ee5602db07e0b6a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "src/DeepCopy/deep_copy.php"
+            ],
+            "psr-4": {
+              "DeepCopy\\": "src/DeepCopy/"
+            }
+          },
+          "installed_content": {
+            "files": 30,
+            "bytes": 37238,
+            "php_files": 27,
+            "php_bytes": 24372,
+            "tree_sha256": "757547a17dbc12c8d2b9c862ab301c82fab68508b42ee19c54b2c867824ab351",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "nikic/php-parser",
+          "version": "v5.7.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/nikic/PHP-Parser.git",
+            "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "psr-4": {
+              "PhpParser\\": "lib/PhpParser"
+            }
+          },
+          "installed_content": {
+            "files": 273,
+            "bytes": 983761,
+            "php_files": 269,
+            "php_bytes": 968545,
+            "tree_sha256": "2f52f2ed763f63c2e6df48d25a30083b78a63acec6f77aae34367dfe940e737f",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phar-io/manifest",
+          "version": "2.0.4",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/phar-io/manifest.git",
+            "reference": "54750ef60c58e43759730615a392c31c80e23176"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 62,
+            "bytes": 89342,
+            "php_files": 53,
+            "php_bytes": 70862,
+            "tree_sha256": "bd5b1d3040deb24642c148a0076583ed0f32468eabe8a7b5e7550b3c81dd64db",
+            "license_files": [
+              "LICENSE",
+              "src/values/License.php",
+              "src/xml/LicenseElement.php"
+            ]
+          }
+        },
+        {
+          "name": "phar-io/version",
+          "version": "3.2.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/phar-io/version.git",
+            "reference": "4f7fd7836c6f332bb2933569e566a0d6c4cbed74"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 25,
+            "bytes": 32535,
+            "php_files": 21,
+            "php_bytes": 24194,
+            "tree_sha256": "dc1aea38e0521ea462d2982d7eb6be1a5d8599390a864c9b9c8413d61358bcda",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/php-code-coverage",
+          "version": "11.0.12",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
+            "reference": "2c1ed04922802c15e1de5d7447b4856de949cf56"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 117,
+            "bytes": 1148341,
+            "php_files": 82,
+            "php_bytes": 320475,
+            "tree_sha256": "dbf201d0a7e366f0d5219f04167757f70d1062c7c26ad932ed71a8d4284ee3d7",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/php-file-iterator",
+          "version": "5.1.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/php-file-iterator.git",
+            "reference": "2f3a64888c814fc235386b7387dd5b5ed92ad903"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 9,
+            "bytes": 24029,
+            "php_files": 4,
+            "php_bytes": 11598,
+            "tree_sha256": "537e41ac702c569ceeca86d2a660dd30107c2794d1f6e20cce9f98c5d3b1882a",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/php-invoker",
+          "version": "5.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/php-invoker.git",
+            "reference": "c1ca3814734c07492b3d4c5f794f4b0995333da2"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 9,
+            "bytes": 11274,
+            "php_files": 4,
+            "php_bytes": 3740,
+            "tree_sha256": "a1da85b6f71f614a67d66f5c59405c393b0d8d40f6e45a9372d9b8fd9ea3a7c9",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/php-text-template",
+          "version": "4.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/php-text-template.git",
+            "reference": "3e0404dc6b300e6bf56415467ebcb3fe4f33e964"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 12390,
+            "php_files": 4,
+            "php_bytes": 4375,
+            "tree_sha256": "76893b99d4abf2a780894e3d709064106e97767a2488cdd8d759230b10fc451f",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/php-timer",
+          "version": "7.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/php-timer.git",
+            "reference": "3b415def83fbcb41f991d9ebf16ae4ad8b7837b3"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 18949,
+            "php_files": 6,
+            "php_bytes": 6767,
+            "tree_sha256": "28c55b0d07586a9ba827fd30838bc19983f31320c86c51a486fcaf0fb486906a",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "phpunit/phpunit",
+          "version": "11.5.55",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/phpunit.git",
+            "reference": "adc7262fccc12de2b30f12a8aa0b33775d814f00"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "files": [
+              "src/Framework/Assert/Functions.php"
+            ],
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 977,
+            "bytes": 2758469,
+            "php_files": 938,
+            "php_bytes": 2289378,
+            "tree_sha256": "7aa398dbc272ff5ed275491f3516287f3ecef489718b60807e49d17745d60a28",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/cli-parser",
+          "version": "3.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/cli-parser.git",
+            "reference": "15c5dd40dc4f38794d383bb95465193f5e0ae180"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 15955,
+            "php_files": 6,
+            "php_bytes": 9223,
+            "tree_sha256": "cc73a1c7c9d0ae4c2eb4f201196519120397770843bad10f41abe5e61c59fe52",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/code-unit",
+          "version": "3.0.3",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/code-unit.git",
+            "reference": "54391c61e4af8078e5b276ab082b6d3c54c9ad64"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 21,
+            "bytes": 36654,
+            "php_files": 16,
+            "php_bytes": 27356,
+            "tree_sha256": "27ca6fffb3768826125f963b4f754dcca9f563a0331056252f54ab12aa7fb080",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/code-unit-reverse-lookup",
+          "version": "4.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/code-unit-reverse-lookup.git",
+            "reference": "183a9b2632194febd219bb9246eee421dad8d45e"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 10727,
+            "php_files": 1,
+            "php_bytes": 3607,
+            "tree_sha256": "735d0e130ed76490fef23d6680872692318d1e3df56737cc0bf502ac54eb0af6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/comparator",
+          "version": "6.3.3",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/comparator.git",
+            "reference": "2c95e1e86cb8dd41beb8d502057d1081ccc8eca9"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 23,
+            "bytes": 51496,
+            "php_files": 18,
+            "php_bytes": 36079,
+            "tree_sha256": "3f31b12335ba526cfccfe7e442bfb29091184a5b9d34dde3c04a5e2363a539ac",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/complexity",
+          "version": "4.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/complexity.git",
+            "reference": "ee41d384ab1906c68852636b6de493846e13e5a0"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 13,
+            "bytes": 21736,
+            "php_files": 8,
+            "php_bytes": 13955,
+            "tree_sha256": "2f67d71965964ba86e2c8e5e5eb1e4dc9a2e022d1b973f4e63415b8a4af91bdf",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/diff",
+          "version": "6.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/diff.git",
+            "reference": "b4ccd857127db5d41a5b676f24b51371d76d8544"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 21,
+            "bytes": 64146,
+            "php_files": 16,
+            "php_bytes": 45258,
+            "tree_sha256": "3d2189df454ab455655b891c0bdc63513b81cbf65f715479618b635b6d56b05e",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/environment",
+          "version": "7.2.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/environment.git",
+            "reference": "a5c75038693ad2e8d4b6c15ba2403532647830c4"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 26436,
+            "php_files": 2,
+            "php_bytes": 12651,
+            "tree_sha256": "b54ba0c568804b29f9e4b0a2d5e489e989b7f45832a1f77e764baac12574d798",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/exporter",
+          "version": "6.3.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/exporter.git",
+            "reference": "70a298763b40b213ec087c51c739efcaa90bcd74"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 22545,
+            "php_files": 1,
+            "php_bytes": 13520,
+            "tree_sha256": "0dae98e3250cf6693eff6e0d397764e6121bc4f81c0128c8dc70a50acd932d35",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/global-state",
+          "version": "7.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/global-state.git",
+            "reference": "3be331570a721f9a4b5917f4209773de17f747d7"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 31692,
+            "php_files": 6,
+            "php_bytes": 21828,
+            "tree_sha256": "e36d33b55b9c45ba904084282bb45bda144267e80d911dc133b353c4175c4e0b",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/lines-of-code",
+          "version": "3.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/lines-of-code.git",
+            "reference": "d36ad0d782e5756913e42ad87cb2890f4ffe467a"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 12,
+            "bytes": 16920,
+            "php_files": 7,
+            "php_bytes": 9534,
+            "tree_sha256": "79db1bc2d7337f47dc509afcdc559d9bb58302f6164929589d450d7795304407",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/object-enumerator",
+          "version": "6.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/object-enumerator.git",
+            "reference": "f5b498e631a74204185071eb41f33f38d64608aa"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 10508,
+            "php_files": 1,
+            "php_bytes": 1935,
+            "tree_sha256": "8e7dd19e1a9519d2b28e16e7b4e9ead8d062c9e916ad60af2ebc9b45ea0b1c65",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/object-reflector",
+          "version": "4.0.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/object-reflector.git",
+            "reference": "6e1a43b411b2ad34146dee7524cb13a068bb35f9"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 8889,
+            "php_files": 1,
+            "php_bytes": 1009,
+            "tree_sha256": "d7eeb6f308db22d687ae31f44ab4ab1639c5059bcf170ba2b06ba48a66b37cba",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/recursion-context",
+          "version": "6.0.3",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/recursion-context.git",
+            "reference": "f6458abbf32a6c8174f8f26261475dc133b3d9dc"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 12056,
+            "php_files": 1,
+            "php_bytes": 4012,
+            "tree_sha256": "a86cc80e6e8fe8089346bc99a2906cde9fdbbeadd3da566f10645334bb05d634",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/type",
+          "version": "5.1.3",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/type.git",
+            "reference": "f77d2d4e78738c98d9a68d2596fe5e8fa380f449"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 26,
+            "bytes": 53144,
+            "php_files": 21,
+            "php_bytes": 40530,
+            "tree_sha256": "f0adac95b2e68b065fde798ad450d04fd46592bb76bd980d347787547abafc2b",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/version",
+          "version": "5.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/version.git",
+            "reference": "c687e3387b99f5b03b6caa64c74b63e2936ff874"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 10742,
+            "php_files": 1,
+            "php_bytes": 2436,
+            "tree_sha256": "3b232a7a0fff763a32c8a4c85137616057692a822e2bd57b90bf3714f1a8c2b2",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "staabm/side-effects-detector",
+          "version": "1.0.5",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/staabm/side-effects-detector.git",
+            "reference": "d8334211a140ce329c13726d4a715adbddd0a163"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "classmap": [
+              "lib/"
+            ]
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 103563,
+            "php_files": 3,
+            "php_bytes": 99745,
+            "tree_sha256": "8f877f847dc18e6ecb6db8558b3cd1adc990f0eecba79d4778aa2d6f05d8ff28",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "theseer/tokenizer",
+          "version": "1.3.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/theseer/tokenizer.git",
+            "reference": "b7489ce515e168639d17feec34b8847c326b0b3c"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 13,
+            "bytes": 15743,
+            "php_files": 8,
+            "php_bytes": 9432,
+            "tree_sha256": "0dcd0199ebf549c2fd41019cf4c58afd39ae917051037475291d92d88fff222d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "phpstan/phpstan",
+      "version": "2.1.42",
+      "closure_package_count": 1,
+      "closure_bytes": 26250036,
+      "packages": [
+        {
+          "name": "phpstan/phpstan",
+          "version": "2.1.42",
+          "source": null,
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ]
+          },
+          "installed_content": {
+            "files": 9,
+            "bytes": 26250036,
+            "php_files": 1,
+            "php_bytes": 6457,
+            "tree_sha256": "ec7b4630d4258103cb0dde2fa54318a5b8c79d97a3edd739b9e3fe001ca696c6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "friendsofphp/php-cs-fixer",
+      "version": "v3.94.2",
+      "closure_package_count": 36,
+      "closure_bytes": 5842694,
+      "packages": [
+        {
+          "name": "clue/ndjson-react",
+          "version": "v1.3.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/clue/reactphp-ndjson.git",
+            "reference": "392dc165fce93b5bb5c637b67e59619223c931b0"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Clue\\React\\NDJson\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 27964,
+            "php_files": 2,
+            "php_bytes": 9219,
+            "tree_sha256": "135a29f2eadf59321d857b93888ce110198eadaf2fe9536c650d3eb0462a7c63",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "composer/pcre",
+          "version": "3.3.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/composer/pcre.git",
+            "reference": "b2bed4734f0cc156ee1fe9c0da2550420d99a21e"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Composer\\Pcre\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 21,
+            "bytes": 64595,
+            "php_files": 17,
+            "php_bytes": 52880,
+            "tree_sha256": "be2ec19f5a5c5df0bcb81503a94f62947a4048ddb5ba9b4316b87da2b4617159",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "composer/semver",
+          "version": "3.4.4",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/composer/semver.git",
+            "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Composer\\Semver\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 16,
+            "bytes": 99220,
+            "php_files": 12,
+            "php_bytes": 83170,
+            "tree_sha256": "5cd8f061733065d74501f9b97f717d6808a37c831be44da7e1e36213597ff70d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "composer/xdebug-handler",
+          "version": "3.0.5",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/composer/xdebug-handler.git",
+            "reference": "6c1925561632e83d60a44492e0b344cf48ab85ef"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Composer\\XdebugHandler\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 8,
+            "bytes": 55706,
+            "php_files": 4,
+            "php_bytes": 32954,
+            "tree_sha256": "9d357e8124f21868463703496cfbef019795ccafea158dbcc916348a89e46799",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "evenement/evenement",
+          "version": "v3.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/igorw/evenement.git",
+            "reference": "0a16b0d71ab13284339abb99d9d2bd813640efbc"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Evenement\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 8932,
+            "php_files": 3,
+            "php_bytes": 5342,
+            "tree_sha256": "aa3c865427f3692135377e06d5176b473047b0e1a392cfd4230724688cb6ef87",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "fidry/cpu-core-counter",
+          "version": "1.3.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/theofidry/cpu-core-counter.git",
+            "reference": "db9508f7b1474469d9d3c53b86f817e344732678"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Fidry\\CpuCoreCounter\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 35,
+            "bytes": 57222,
+            "php_files": 31,
+            "php_bytes": 50718,
+            "tree_sha256": "f765a99fbad4c4dcbb6b9d1afde7d7fd60464335d74aa6180491e0184081e9bf",
+            "license_files": [
+              "LICENSE.md"
+            ]
+          }
+        },
+        {
+          "name": "friendsofphp/php-cs-fixer",
+          "version": "v3.94.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer.git",
+            "reference": "7787ceff91365ba7d623ec410b8f429cdebb4f63"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "PhpCsFixer\\": "src/"
+            },
+            "exclude-from-classmap": [
+              "src/**/Internal/"
+            ]
+          },
+          "installed_content": {
+            "files": 662,
+            "bytes": 3151473,
+            "php_files": 655,
+            "php_bytes": 3114102,
+            "tree_sha256": "506eb4e58c980416160c8b0edb2bfc48290e0c4653a02e3d1146e470e5cf973d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/container",
+          "version": "2.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/container.git",
+            "reference": "c71ecc56dfe541dbd90c5360474fbc405f8d5963"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Psr\\Container\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 3803,
+            "php_files": 3,
+            "php_bytes": 1388,
+            "tree_sha256": "5e2a84cbf295cc0d49a4e3c4c103efc01cd535c5baf1ea8d89a7d4406b2554b7",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/event-dispatcher",
+          "version": "1.0.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/event-dispatcher.git",
+            "reference": "dbefd12671e8a14ec7f180cab83036ed26714bb0"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Psr\\EventDispatcher\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 8,
+            "bytes": 4014,
+            "php_files": 3,
+            "php_bytes": 1740,
+            "tree_sha256": "fd77b5ee72fc62eeb4240d87c9c0c30503fbd3fa35e09b1252fa0390209f9932",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "psr/log",
+          "version": "3.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/php-fig/log.git",
+            "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Psr\\Log\\": "src"
+            }
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 10578,
+            "php_files": 8,
+            "php_bytes": 7592,
+            "tree_sha256": "b933809d2ca2735cac89fc5827378f0ec528f1248b75a58b0f0eadf8d7869454",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/cache",
+          "version": "v1.2.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/cache.git",
+            "reference": "d47c472b64aa5608225f47965a484b75c7817d5b"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\Cache\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 31775,
+            "php_files": 2,
+            "php_bytes": 13897,
+            "tree_sha256": "6f312ee533b3463416cab7212b5c5d920fdb86e1e83573e49e899b60db6c00cb",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/child-process",
+          "version": "v0.6.7",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/child-process.git",
+            "reference": "970f0e71945556422ee4570ccbabaedc3cf04ad3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\ChildProcess\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 5,
+            "bytes": 50778,
+            "php_files": 1,
+            "php_bytes": 18202,
+            "tree_sha256": "3e3857699c4f6d529b3ab07ce1ab19b6d955ce4e93506d82736cf264e86a3077",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/dns",
+          "version": "v1.14.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/dns.git",
+            "reference": "7562c05391f42701c1fccf189c8225fece1cd7c3"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\Dns\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 28,
+            "bytes": 136469,
+            "php_files": 24,
+            "php_bytes": 104309,
+            "tree_sha256": "2ecfb9b58f0d20ae8f1eeff5e8610f250e7a5be56925dee1db71def79ecc71dd",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/event-loop",
+          "version": "v1.6.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/event-loop.git",
+            "reference": "ba276bda6083df7e0050fd9b33f66ad7a4ac747a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\EventLoop\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 18,
+            "bytes": 137736,
+            "php_files": 14,
+            "php_bytes": 86657,
+            "tree_sha256": "ab44f5bda2d8c0480b557be600ded7625afc4c70297a8ed389c4c78df3f17952",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/promise",
+          "version": "v3.3.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/promise.git",
+            "reference": "23444f53a813a3296c1368bb104793ce8d88f04a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "src/functions_include.php"
+            ],
+            "psr-4": {
+              "React\\Promise\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 14,
+            "bytes": 70248,
+            "php_files": 10,
+            "php_bytes": 37123,
+            "tree_sha256": "f4128b5a3cdd614be319eaa62244a23ed64417cdfe0a6e817f0dd1ac20a0dd76",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/socket",
+          "version": "v1.17.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/socket.git",
+            "reference": "ef5b17b81f6f60504c539313f94f2d826c5faa08"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\Socket\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 25,
+            "bytes": 202796,
+            "php_files": 21,
+            "php_bytes": 117725,
+            "tree_sha256": "9915dfe8b8847c9199095022ad7bdf489164bc7622daafad7206d4c7dc565f03",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "react/stream",
+          "version": "v1.4.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/reactphp/stream.git",
+            "reference": "1e5b0acb8fe55143b5b426817155190eb6f5b18d"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "React\\Stream\\": "src/"
+            }
+          },
+          "installed_content": {
+            "files": 13,
+            "bytes": 123570,
+            "php_files": 9,
+            "php_bytes": 59366,
+            "tree_sha256": "9c00c8578be71b5f90a13973565f3205ea8017eeb676eef4ddc02573cc1ec5fc",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "sebastian/diff",
+          "version": "6.0.2",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sebastianbergmann/diff.git",
+            "reference": "b4ccd857127db5d41a5b676f24b51371d76d8544"
+          },
+          "licenses": [
+            "BSD-3-Clause"
+          ],
+          "autoload": {
+            "classmap": [
+              "src/"
+            ]
+          },
+          "installed_content": {
+            "files": 21,
+            "bytes": 64146,
+            "php_files": 16,
+            "php_bytes": 45258,
+            "tree_sha256": "3d2189df454ab455655b891c0bdc63513b81cbf65f715479618b635b6d56b05e",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/console",
+          "version": "v8.0.7",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/console.git",
+            "reference": "15ed9008a4ebe2d6a78e4937f74e0c13ef2e618a"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\Console\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 140,
+            "bytes": 622215,
+            "php_files": 132,
+            "php_bytes": 589191,
+            "tree_sha256": "1fe8563437b81b7a66919a6a8b6a443dd5b6587814956c2b7c1667e67b5cf0a2",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/deprecation-contracts",
+          "version": "v3.6.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/deprecation-contracts.git",
+            "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "function.php"
+            ]
+          },
+          "installed_content": {
+            "files": 5,
+            "bytes": 4272,
+            "php_files": 1,
+            "php_bytes": 1014,
+            "tree_sha256": "b3aba492423ca91f66ffa866ce79ed92240c0954c8cf64fcff10c413b67c62f6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/event-dispatcher",
+          "version": "v8.0.4",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/event-dispatcher.git",
+            "reference": "99301401da182b6cfaa4700dbe9987bb75474b47"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\EventDispatcher\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 14,
+            "bytes": 52531,
+            "php_files": 10,
+            "php_bytes": 46432,
+            "tree_sha256": "946591a86df8f0e83fe4c817a317a4b75d0746f61ab441d08768f4612f6af6e4",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/event-dispatcher-contracts",
+          "version": "v3.6.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/event-dispatcher-contracts.git",
+            "reference": "59eb412e93815df44f05f342958efa9f46b1e586"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Contracts\\EventDispatcher\\": ""
+            }
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 5075,
+            "php_files": 2,
+            "php_bytes": 2518,
+            "tree_sha256": "6a276f61183e50fbca548dc009bfa2b55b0d162180c539f49a662a9ea90b3b4d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/filesystem",
+          "version": "v8.0.6",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/filesystem.git",
+            "reference": "7bf9162d7a0dff98d079b72948508fa48018a770"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\Filesystem\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 12,
+            "bytes": 63557,
+            "php_files": 8,
+            "php_bytes": 59483,
+            "tree_sha256": "84c5f688e13fd8b8928df5e377cfc6b3b0c00acec079e5366f0a3ea236ddb53d",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/finder",
+          "version": "v8.0.6",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/finder.git",
+            "reference": "441404f09a54de6d1bd6ad219e088cdf4c91f97c"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\Finder\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 27,
+            "bytes": 76060,
+            "php_files": 23,
+            "php_bytes": 71165,
+            "tree_sha256": "4c58fc2f41cbff40c51ef5dba5714eb1f8ee0d9a9c8f999d3dac173630e54ac0",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/options-resolver",
+          "version": "v8.0.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/options-resolver.git",
+            "reference": "d2b592535ffa6600c265a3893a7f7fd2bad82dd7"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\OptionsResolver\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 17,
+            "bytes": 66644,
+            "php_files": 13,
+            "php_bytes": 60436,
+            "tree_sha256": "606d7eed5aad4bf6cd9e558cb548aa61c889ef6ddd04ac09596a8978d136612a",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-ctype",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-ctype.git",
+            "reference": "a3cc8b044a6ea513310cbd48ef7333b384945638"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Ctype\\": ""
+            }
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 12216,
+            "php_files": 3,
+            "php_bytes": 9837,
+            "tree_sha256": "048a1fca383cc2a64f43c861e4287287c56ba067852d203bf8e8523fc335da1e",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-intl-grapheme",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-intl-grapheme.git",
+            "reference": "380872130d3a5dd3ace2f4010d95125fde5d5c70"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Intl\\Grapheme\\": ""
+            }
+          },
+          "installed_content": {
+            "files": 6,
+            "bytes": 19705,
+            "php_files": 3,
+            "php_bytes": 15945,
+            "tree_sha256": "490662478a05ee51b4adf2ca14db97a4a81dd355af0b414fc73efb7eef477691",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-intl-normalizer",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-intl-normalizer.git",
+            "reference": "3833d7255cc303546435cb650316bff708a1c75c"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Intl\\Normalizer\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 151172,
+            "php_files": 8,
+            "php_bytes": 148653,
+            "tree_sha256": "1f56e03df62d72a935cb5838abe5b1b85ce47cde68a75a7f116df52ef3dd14f5",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-mbstring",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-mbstring.git",
+            "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Mbstring\\": ""
+            }
+          },
+          "installed_content": {
+            "files": 10,
+            "bytes": 116559,
+            "php_files": 7,
+            "php_bytes": 114111,
+            "tree_sha256": "b396a46a2542be385f3a2740f34a063d5ef36adc87298d8991cc2b7878627f1f",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-php80",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-php80.git",
+            "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Php80\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 11,
+            "bytes": 12530,
+            "php_files": 8,
+            "php_bytes": 9530,
+            "tree_sha256": "2c7f6379124829c351a08f2a201a54d123833c09ff290f81d3c910c031e85aca",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-php81",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-php81.git",
+            "reference": "4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Php81\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 7,
+            "bytes": 5961,
+            "php_files": 4,
+            "php_bytes": 3304,
+            "tree_sha256": "836034716f38b4d1f5c7dc1365225a0e70a1cb0eb71b6a80c884ab1f51c2708c",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/polyfill-php84",
+          "version": "v1.33.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/polyfill-php84.git",
+            "reference": "d8ced4d875142b6a7426000426b8abc631d6b191"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "bootstrap.php"
+            ],
+            "psr-4": {
+              "Symfony\\Polyfill\\Php84\\": ""
+            },
+            "classmap": [
+              "Resources/stubs"
+            ]
+          },
+          "installed_content": {
+            "files": 8,
+            "bytes": 20667,
+            "php_files": 5,
+            "php_bytes": 17724,
+            "tree_sha256": "99c3303c39302469b684abcd875bd75b84813e6d0e6c674dbc6365eefe967aa6",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/process",
+          "version": "v8.0.5",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/process.git",
+            "reference": "b5f3aa6762e33fd95efbaa2ec4f4bc9fdd16d674"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\Process\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 27,
+            "bytes": 109863,
+            "php_files": 23,
+            "php_bytes": 103206,
+            "tree_sha256": "3499a0c5255dae391e16de0382e195ab6f49de00feb0b48a5532edf6c563be47",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/service-contracts",
+          "version": "v3.6.1",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/service-contracts.git",
+            "reference": "45112560a3ba2d715666a509a0bc9521d10b6c43"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Contracts\\Service\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Test/"
+            ]
+          },
+          "installed_content": {
+            "files": 15,
+            "bytes": 23896,
+            "php_files": 11,
+            "php_bytes": 21199,
+            "tree_sha256": "7b06b04c4dc6474a30b20a8411699ea73ece00b0572f95615d0cb9a9572989dc",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/stopwatch",
+          "version": "v8.0.0",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/stopwatch.git",
+            "reference": "67df1914c6ccd2d7b52f70d40cf2aea02159d942"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "psr-4": {
+              "Symfony\\Component\\Stopwatch\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 8,
+            "bytes": 18589,
+            "php_files": 4,
+            "php_bytes": 15144,
+            "tree_sha256": "1c0e907b30c7d7380a1ad8865c5a80cb7f8b9282d0521adf734a346007f736de",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        },
+        {
+          "name": "symfony/string",
+          "version": "v8.0.6",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/string.git",
+            "reference": "6c9e1108041b5dce21a9a4984b531c4923aa9ec4"
+          },
+          "licenses": [
+            "MIT"
+          ],
+          "autoload": {
+            "files": [
+              "Resources/functions.php"
+            ],
+            "psr-4": {
+              "Symfony\\Component\\String\\": ""
+            },
+            "exclude-from-classmap": [
+              "/Tests/"
+            ]
+          },
+          "installed_content": {
+            "files": 23,
+            "bytes": 160157,
+            "php_files": 19,
+            "php_bytes": 155843,
+            "tree_sha256": "dc09bbf5932ea179dc8aec29957d132ee7f4717661f6045034cefab554c8dcdd",
+            "license_files": [
+              "LICENSE"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "local_standalone_tools": [
+    {
+      "path": "vendor/phpstan/phpstan/phpstan.phar",
+      "bytes": 26213076,
+      "sha256": "af6a7c8dfeaa82379c4b31f661917ee55e400d16e827973ae8bd2806e97e128b",
+      "note": "Local PHPStan PHAR; this hash identifies audited bytes, not publisher authentication. No standalone PHPUnit or PHP-CS-Fixer PHAR was found in their installed package trees."
+    }
+  ],
+  "tracked_external_data": [
+    {
+      "path": "db/geoip/IP2LOCATION-LITE-DB11.BIN",
+      "bytes": 99340010,
+      "sha256": "7cc84ce1cd3326d6ac4caddff8a1420ebd474a1c0abc9830b1721eadf45de3d8",
+      "redistribution_terms": "not established by this audit; PHP library license does not establish database redistribution terms"
+    }
+  ],
+  "composer_free_probes": [
+    {
+      "name": "HTTP request, route, response and generated SQL parameter object",
+      "composer_classloader_loaded": false,
+      "result": "passed",
+      "scope": "Existing installed source trees loaded through a temporary namespace loader; no new runtime bootstrap was committed; no database query executed."
+    },
+    {
+      "name": "SQL generation and artifact consistency",
+      "composer_classloader_loaded": false,
+      "engine_packages": 7,
+      "function_bootstraps": 8,
+      "generated_files": 10,
+      "result": "passed",
+      "scope": "Compared generated content with tracked working-tree artifacts without writing generated files; no PostgreSQL query executed."
+    }
+  ]
+}
