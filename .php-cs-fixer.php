@@ -17,6 +17,7 @@ $config = new Config()
             ->in(__DIR__ . '/public')
             ->in(__DIR__ . '/tools/http-fixtures')
             ->in(__DIR__ . '/load-tests/baseline')
+            ->in(__DIR__ . '/examples/document-catalog')
             ->append([
                 __FILE__,
                 __DIR__ . '/bootstrap.php',
@@ -69,6 +70,7 @@ $config = new Config()
         'concat_space' => ['spacing' => 'one'],
         'date_time_immutable' => true,
         'final_class' => true,
+        'fopen_flags' => ['b_mode' => true],
         'final_public_method_for_abstract_class' => true,
         'global_namespace_import' => [
             'import_constants' => false,

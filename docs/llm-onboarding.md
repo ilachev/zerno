@@ -4,7 +4,7 @@
 
 ## Минимальный контекст
 
-«Зерно» (`zerno`) — небольшое универсальное автономное PHP HTTP/PDO-ядро для разработчиков веб-приложений. Разработчики муниципальных и государственных сайтов — одна из приоритетных аудиторий, которая не ограничивает назначение ядра. Продуктовая цель описана в [видении](project/vision.md), принятые направления — в [roadmap](project/roadmap.md). HTML, формы, полноценный вход и редакторский каталог пока являются планом, а не готовой платформой.
+«Зерно» (`zerno`) — небольшое универсальное автономное PHP HTTP/PDO-ядро для разработчиков веб-приложений. Разработчики муниципальных и государственных сайтов — одна из приоритетных аудиторий, которая не ограничивает назначение ядра. Продуктовая цель описана в [видении](project/vision.md), принятые направления — в [roadmap](project/roadmap.md). [Публичный каталог](../examples/document-catalog/README.md) уже собирает HTML-список, карточку и PDF download; формы, полноценный вход и редактор остаются планом.
 
 БД входит в основу: PDO, параметры SQL, транзакции, миграции и типизированные generated queries. Репозиторий содержит фиксированные сторонние исходники и инструменты; установка пакетов через Composer, npm или Task не требуется ни для разработки, ни для сборки. PHP, расширения, PostgreSQL и выбранные server/compiler executables остаются требованиями платформы.
 
@@ -16,13 +16,14 @@
 4. Различать реализованное поведение, принятое направление, предложение и открытый вопрос. Исторический аудит не устанавливает текущий контракт.
 5. После правки обновить документы, которыми затронутое поведение описывается, и выполнить требуемые проверки.
 
-## Два профиля приложения
+## Композиции приложения
 
 | Профиль | Композиция | Запуск и поведение |
 |---|---|---|
 | Минимальный HTTP/PDO | `config/core.php`, `config/routes.php` | `public/http.php` через PHP/SAPI/FPM; явные GET/HEAD `/health`, без открытия БД и включения capabilities |
 | Минимальный с RR | `config/core-roadrunner.php` | `.rr.core.yaml`, общий handler и отдельный worker loop |
 | Необязательный protobuf API | `config/container.php` | По умолчанию `public/index.php` / `.rr.yaml`; generated routes, Session, ApiStats, GeoIP и cache integrations |
+| Публичный пример | `examples/document-catalog/config.php`, `roadrunner.php` | Собственные SQL/миграция/шаблоны; RR явно включает chunk 8192, GET/HEAD каталог без сессий |
 
 `App` реализует общий `RequestHandler`; он не запускает RoadRunner. Middleware выбирает конфигурация. Наличие optional-пакета в поставке не означает его выполнение при минимальном HTTP-запросе.
 
@@ -39,6 +40,7 @@
 | Session, статистика, cache | [Жизненный цикл](architecture/request-lifecycle.md), [карта блоков](reusable-blocks.md) | `src/Capabilities`, `src/Platform/Cache`, API providers |
 | Поставка, сборка и инструменты | [Автономность](design/autonomous-core.md), [проверки](development/infrastructure-and-testing.md) | `bootstrap.php`, `bootstrap`, `third_party/manifest.json`, `tools/project.php` |
 | Новая функциональность | [Roadmap](project/roadmap.md), [проект каталога](project/document-catalog-example.md) | Сначала текущая реализация, затем минимальный сквозной сценарий |
+| HTML и файлы каталога | [Запуск примера](../examples/document-catalog/README.md), [проверки и замеры](history/2026-10-17-public-catalog.md) | `examples/document-catalog`, `tests/Integration/Examples`, `load-tests/catalog` |
 | Обновление знаний | [Правила документации](development/documentation.md), [инвентарь](documentation-inventory.json) | Документ-владелец факта и связанные `source_paths` |
 
 ## Источники истины

@@ -54,9 +54,9 @@
 
 - `src/Platform/Http/Handler/HealthHandler.php` и `config/routes.php` показывают минимальный обычный HTTP flow.
 - `HealthService.Check` и `SystemService.Describe` показывают optional protobuf flow для GET и POST, а не обязательный контракт всех сайтов.
-- [Каталог документов](project/document-catalog-example.md) — проект отдельного сквозного приложения, пока без реализации. Его будущие `Document`, editor roles и publication states должны жить вне `Platform`.
+- [Каталог документов](../examples/document-catalog/README.md) — отдельное приложение с работающими публичными списком, карточкой и скачиванием. Его `Document`, SQL, PHP-шаблоны и publication states живут вне `Platform`; редактор остаётся в [плане](project/document-catalog-example.md).
 
-HTML rendering, формы, CSRF, вход, прикладные permissions, файловая публикация и HTTP page cache запланированы в roadmap. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
+HTML rendering и read-only файловая выдача проверяются на каталоге. Общие формы, CSRF, вход, прикладные permissions, редакторская публикация и HTTP page cache остаются в roadmap. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
 
 ## Решение перед добавлением блока
 

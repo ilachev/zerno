@@ -1,0 +1,15 @@
+version: '3'
+
+server:
+  command: "php -d opcache.enable_cli=1 public/index.php"
+  env:
+    APP_CONFIG: examples/document-catalog/roadrunner.php
+
+http:
+  address: 127.0.0.1:8081
+  pool:
+    num_workers: 1
+
+logs:
+  level: error
+  mode: production

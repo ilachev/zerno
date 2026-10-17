@@ -176,7 +176,7 @@ function docsCheckLinks(string $root, string $relative): int
 function docsRequiredPaths(string $root): array
 {
     $paths = ['README.md', 'AGENTS.md', 'CLAUDE.md', 'tools/sql-gen/README.md', 'tools/protoc-php-gen/README.md', 'third_party/README.md'];
-    foreach (['docs', 'tools'] as $directory) {
+    foreach (['docs', 'tools', 'examples'] as $directory) {
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $directory, FilesystemIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file instanceof SplFileInfo && $file->isFile()

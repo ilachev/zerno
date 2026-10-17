@@ -55,7 +55,7 @@ php tools/project.php verify:full
 php tools/project.php build local
 ```
 
-`verify:full` требует настроенной PostgreSQL test database. Runtime-архив в `dist/` содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с manifests/notices и документацию. Generators, quality tools и тесты в него не включаются; команды разработки из документации рассчитаны на исходный checkout. OpenAPI sidecar берётся из committed `docs/api.swagger.json` и относится только к optional API.
+`verify:full` требует настроенной PostgreSQL test database. Runtime-архив в `dist/` содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с manifests/notices, документацию и opt-in пример `examples/document-catalog`. Его namespace регистрирует только собственный bootstrap при выборе конфигурации, основной bootstrap не подключает приложение каталога. Generators, quality tools, load tests и тесты в архив не включаются; команды разработки из документации рассчитаны на исходный checkout. OpenAPI sidecar берётся из committed `docs/api.swagger.json` и относится только к optional API.
 
 Сборщик проверяет third-party integrity перед упаковкой; он не регенерирует protobuf и не скачивает зависимости. Побайтовая стабильность aggregate metadata SDK не гарантируется текущим `protoc`; это не мешает отдельно проверять смысл дескрипторов и синхронизацию остальных артефактов.
 

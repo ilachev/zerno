@@ -54,6 +54,11 @@ tasks:
     cmds:
       - "{{.PHP}} tools/project.php perf:baseline {{.CLI_ARGS}}"
 
+  perf:catalog:
+    desc: Run the public catalog HTML scenario
+    cmds:
+      - "{{.PHP}} tools/project.php perf:catalog {{.CLI_ARGS}}"
+
   perf:cleanup:
     desc: Remove isolated baseline data
     cmds:

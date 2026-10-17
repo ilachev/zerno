@@ -23,7 +23,7 @@
 
 Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
 
-Серверный HTML, прикладные формы, вход по учётным данным, CSRF и редакторский интерфейс находятся в плане развития. Первый сквозной пример — [каталог документов](docs/project/document-catalog-example.md): публичные список, карточка и скачивание, затем защищённый поток публикации. Приложение каталога ещё не реализовано.
+Первый сквозной пример — [публичный каталог документов](examples/document-catalog/README.md): HTML-список с ограниченной пагинацией, карточка и потоковое скачивание PDF. Он имеет собственные маршруты, явный SQL, миграцию и PHP-шаблоны; подключается отдельной конфигурацией без JavaScript, сессий и установки пакетов. Формы, вход по учётным данным, CSRF и редакторский поток остаются [следующими этапами](docs/project/document-catalog-example.md).
 
 ## Быстрый старт
 
@@ -86,7 +86,7 @@ php tools/project.php build local
 
 `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` и `TEST_DB_PASSWORD` задают тестовую БД независимо от application `DB_*`. Defaults runner: `localhost:5432/app_test`, пользователь `app`, пароль `password`. БД создаётся заранее; каждый integration run создаёт и удаляет собственную случайную схему.
 
-Сборка создаёт `dist/zerno-local.tar.gz` и `dist/zerno-openapi-local.json`. Runtime-архив содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с notices/manifests и документацию. Тесты, инструменты качества и generator distributions остаются в исходном репозитории. OpenAPI sidecar берётся из `docs/api.swagger.json` и относится к необязательному protobuf API.
+Сборка создаёт `dist/zerno-local.tar.gz` и `dist/zerno-openapi-local.json`. Runtime-архив содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с notices/manifests, документацию и явно подключаемый `examples/document-catalog`. Тесты, load tests, инструменты качества и generator distributions остаются в исходном репозитории. OpenAPI sidecar берётся из `docs/api.swagger.json` и относится к необязательному protobuf API.
 
 CI и release workflow выполняют `verify:full` и сборку. Протоколы не регенерируются в CI; это явная команда разработки. Сборка не устанавливает пакеты. Task остаётся необязательной обёрткой над PHP runner.
 

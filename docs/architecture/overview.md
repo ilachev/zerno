@@ -13,6 +13,7 @@
 | HTTP/PDO-ядро | PSR-7 factories, logger, request context, errors, router, PDO/SQL, миграции | [`config/core.php`](../../config/core.php) |
 | Ядро через RoadRunner | То же плюс RR worker/logger | [`config/core-roadrunner.php`](../../config/core-roadrunner.php) |
 | Существующее API | Generated protobuf endpoints/routes, session, API statistics, GeoIP, cache, HTTP client, hydration | [`config/container.php`](../../config/container.php) |
+| Публичный каталог | Ядро плюс прикладные SQL, HTML и private PDF storage; без Session/ApiStats | [`examples/document-catalog/config.php`](../../examples/document-catalog/config.php) |
 
 Минимальный набор маршрутов — явные GET/HEAD `/health` в [`config/routes.php`](../../config/routes.php). Ответ health не создаёт сессию, не пишет статистику и не открывает БД. API `/api/v1/health` относится к другой композиции и проходит её middleware.
 
@@ -26,7 +27,9 @@
 
 [`Pipeline`](../../src/Platform/Http/Middleware/Pipeline.php) собирается явно конфигурацией. Core: RequestContext → ErrorHandler → Routing → resolver. API: RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → resolver. Состав middleware не зашит в `App`.
 
-Для файловых ответов стоимость проверяется через весь путь: RR provider оставляет `PSR7Worker::chunkSize=0`, поэтому библиотека по умолчанию приводит body к строке; API HttpLogging читает остаток тела от текущей позиции до EOF. Наличие PSR-7 stream и SAPI emitter не устанавливает ограниченную память RR/API-композиции.
+Для файловых ответов стоимость проверяется через весь путь. RR provider по умолчанию оставляет `chunkSize=0` и материализацию body; каталог явно задаёт 8192 для seekable files. Runtime исключает чтение тела HEAD/1xx/204/304 и закрывает response streams после отправки. API HttpLogging по-прежнему читает остаток тела до EOF: bounded memory каталога не является гарантией для API-композиции.
+
+[`Пример каталога`](../../examples/document-catalog/README.md) имеет собственный opt-in autoload, миграцию, прямой параметризованный SQL с LIMIT 21, HTML-шаблоны и GET/HEAD routes. Только published записи видны списку, карточке и download; файлы выбираются по связанному opaque key вне webroot, с проверкой типа/размера и выдачей attachment. HTML ошибки, no-store и выбор PDF — политика примера. Общего renderer/forms/auth workflow ядро не навязывает.
 
 [`RequestContext`](../../src/Platform/Runtime/RequestContext.php) передаётся через request attributes и содержит request ID и deadline. Бюджет новый для каждого запроса, из [`config/http.php`](../../config/http.php); он используется downstream только при явной передаче и не останавливает произвольный handler автоматически. `ErrorHandlerMiddleware` преобразует исключения следующих слоёв в JSON 500; transport/bootstrap ошибки лежат вне его границ.
 

@@ -142,17 +142,15 @@
       "path": "docs/project/document-catalog-example.md",
       "kind": "design",
       "status": "accepted-plan",
-      "summary": "Дизайн ещё не реализованного каталога: публичное чтение, затем редактор, публикация и аудит.",
+      "summary": "Реализованный публичный каталог и принятый план редактора, upload, публикации и аудита.",
       "read_when": [
         "Разработка первого сквозного примера",
         "Границы файлов, прав и публикации"
       ],
       "source_paths": [
-        "config/routes.php",
-        "src/Platform/Http",
-        "src/Platform/Storage",
-        "src/Capabilities/Session",
-        "tests/Integration"
+        "examples/document-catalog",
+        "tests/Integration/Examples/DocumentCatalog",
+        "src/Platform/Runtime/RoadRunnerRuntime.php"
       ]
     },
     {
@@ -466,6 +464,41 @@
         "tests/Unit/Platform/Routing",
         "docs/history/2026-10-17-core-http-baseline.json"
       ]
+    },
+    {
+      "id": "public-catalog-guide",
+      "path": "examples/document-catalog/README.md",
+      "kind": "operations",
+      "status": "current",
+      "summary": "Запуск отдельного публичного HTML/PDO-каталога: миграция/seed, SAPI/RR и private PDF storage.",
+      "read_when": [
+        "Запуск и изменение примера каталога",
+        "Проверка границ приложения и core"
+      ],
+      "source_paths": [
+        "examples/document-catalog/config.php",
+        "examples/document-catalog/src",
+        "examples/document-catalog/migrations",
+        "examples/document-catalog/seed.php"
+      ]
+    },
+    {
+      "id": "public-catalog-verification",
+      "path": "docs/history/2026-10-17-public-catalog.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Проверки публичного HTML/SQL-каталога, потоковой выдачи и ограниченные FPM/RR измерения.",
+      "read_when": [
+        "Проверка свидетельств публичного этапа",
+        "Воспроизведение HTML/файлового замера"
+      ],
+      "source_paths": [
+        "examples/document-catalog",
+        "tests/Integration/Examples/DocumentCatalog",
+        "load-tests/catalog",
+        "src/Platform/Runtime/RoadRunnerRuntime.php",
+        "docs/history/2026-10-17-public-catalog.json"
+      ]
     }
   ],
   "artifacts": [
@@ -525,6 +558,21 @@
         "load-tests/baseline",
         "src/Platform/Routing/Router.php",
         "tools/project.php"
+      ]
+    },
+    {
+      "id": "public-catalog-data",
+      "path": "docs/history/2026-10-17-public-catalog.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Измеренные окружение/исходники, HTML k6 summaries и потоковые проверки PDF с CPU/RSS.",
+      "read_when": [
+        "Проверка чисел и границ публичного каталога"
+      ],
+      "source_paths": [
+        "examples/document-catalog",
+        "load-tests/catalog",
+        "src/Platform/Runtime/RoadRunnerRuntime.php"
       ]
     }
   ],

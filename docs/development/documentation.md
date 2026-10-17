@@ -46,7 +46,7 @@
 - `artifacts`: те же поля для generated reference, inventory и исторического JSON;
 - `exclusions`: явно исключённые классы файлов и причина.
 
-Включать корневые instructions/README, все `docs/**/*.md`, README собственных инструментов и `third_party/README.md`. Upstream README внутри bundled packages, PHAR contents и generated PHP не являются собственными руководствами. Их состав учитывается supply manifests. `source_paths` — навигация к проверяемым исходникам, а не гарантия полного графа зависимостей.
+Включать корневые instructions/README, все `docs/**/*.md`, README собственных инструментов и примеров, `third_party/README.md`. Upstream README внутри bundled packages, PHAR contents и generated PHP не являются собственными руководствами. Их состав учитывается supply manifests. `source_paths` — навигация к проверяемым исходникам, а не гарантия полного графа зависимостей.
 
 ## Процедура изменения
 

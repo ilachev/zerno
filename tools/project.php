@@ -48,6 +48,7 @@ function projectCommand(string $command, array $arguments = []): void
                 run                    Start services and the API RoadRunner runtime
                 perf:prepare           Create an isolated PostgreSQL baseline fixture; uses TEST_DB_*
                 perf:baseline          Run the JSON or SELECT k6 baseline; uses BASE_URL and CASE
+                perf:catalog           Run the public catalog HTML k6 scenario; uses BASE_URL and CASE
                 perf:cleanup <schema>  Remove a baseline fixture created by perf:prepare
                 perf:test [scenario]   Run a legacy k6 scenario
                 perf:test:all          Run all k6 scenarios
@@ -98,7 +99,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', 'examples/document-catalog', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',
@@ -209,8 +210,10 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'perf:baseline':
+        case 'perf:catalog':
             projectRequireExecutable('k6');
-            projectRun(['k6', 'run', '--no-usage-report', $root . '/load-tests/baseline/scenario.js', ...$arguments], $root);
+            $scenario = $command === 'perf:catalog' ? 'catalog' : 'baseline';
+            projectRun(['k6', 'run', '--no-usage-report', $root . '/load-tests/' . $scenario . '/scenario.js', ...$arguments], $root);
 
             return;
         case 'perf:test':
@@ -359,7 +362,7 @@ function projectRemoveDirectory(string $directory): void
 
 function projectGzip(string $source, string $destination): void
 {
-    $input = fopen($source, 'r');
+    $input = fopen($source, 'rb');
     if ($input === false) {
         throw new RuntimeException('Could not read release archive: ' . $source);
     }
@@ -400,6 +403,7 @@ function projectBuild(string $version): void
         foreach ([
             'bootstrap.php', 'bootstrap', 'src', 'gen', 'protos', 'config', 'public', 'bin',
             'third_party/runtime', 'db/geoip', 'docs', 'README.md',
+            'examples/document-catalog',
             '.rr.yaml', '.rr.core.yaml',
         ] as $relative) {
             $path = $root . '/' . $relative;

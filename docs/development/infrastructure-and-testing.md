@@ -104,6 +104,8 @@ docker compose exec db-postgres createdb -U app app_test
 
 `verify` не требует PostgreSQL, Redis, `rr` или protobuf compiler. `verify:full` требует PostgreSQL, но не запускает `proto:gen:all`, FPM/RR серверы или load tests. Команды генерации protobuf отдельно требуют native compilers из таблицы выше.
 
+Пример `examples/document-catalog` также входит в root style/PHPStan checks; `tests/bootstrap.php` регистрирует его namespace только в dev-контуре. Каталог использует ту же PostgreSQL test database с собственной случайной схемой для каждого test case и временными файлами. Эти проверки включены в `verify:integration`. Нагрузочный HTML-сценарий запускается отдельно: `php tools/project.php perf:catalog`, параметры `BASE_URL`, `CASE=list|detail`, `DOCUMENT_ID`, `EXPECTED_TITLE`, `VUS`, `DURATION`, `SUMMARY_PATH`; он требует заранее запущенного каталога. Подготовка описана в [README примера](../../examples/document-catalog/README.md), протокол и результаты — в [отчёте](../history/2026-10-17-public-catalog.md).
+
 Настройка, команды и ограничения реальных HTTP/performance запусков находятся в [HTTP и baseline guide](http-and-baseline.md). PHP fixtures `tools/http-fixtures` и `load-tests/baseline` входят в root style/PHPStan checks; в runtime-архив и обычную композицию приложения они не включаются.
 
 Выборочные команды:

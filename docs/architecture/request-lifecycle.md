@@ -2,7 +2,7 @@
 
 Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-Документ описывает две существующие композиции приложения. Общая карта компонентов находится в [обзоре архитектуры](overview.md), команды запуска и проверки — в [инфраструктуре и тестировании](../development/infrastructure-and-testing.md).
+Документ описывает существующие композиции приложения. Общая карта компонентов находится в [обзоре архитектуры](overview.md), команды запуска и проверки — в [инфраструктуре и тестировании](../development/infrastructure-and-testing.md).
 
 ## Композиция и точка входа
 
@@ -11,6 +11,7 @@
 | Минимальное HTTP/PDO-ядро | [`config/core.php`](../../config/core.php) | Явные [`config/routes.php`](../../config/routes.php) | RequestContext → ErrorHandler → Routing → RouteHandlerResolver |
 | То же ядро в RoadRunner | [`config/core-roadrunner.php`](../../config/core-roadrunner.php) | Те же явные маршруты | Тот же pipeline; добавлена регистрация RR worker и logger |
 | Существующее protobuf API | [`config/container.php`](../../config/container.php) | Generated operation manifests | RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → RouteHandlerResolver |
+| Публичный каталог | [`examples/document-catalog/config.php`](../../examples/document-catalog/config.php), `roadrunner.php` | Собственные GET/HEAD | RequestContext → Errors → Routing → RouteHandlerResolver |
 
 Минимальное ядро обрабатывает `GET /health` и явно зарегистрированный `HEAD /health`; тело ответа обработчика — `{"status":"ok"}`. Оно не подключает capability middleware, protobuf endpoints, GeoIP и RR KV. `Storage` и миграции зарегистрированы, но `/health` не открывает соединение с БД.
 
@@ -44,13 +45,15 @@ RoadRunner HTTP → PSR7Worker::waitRequest()
                → следующий waitRequest()
 ```
 
-[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Преобразование HTTP и отправка тела делегированы включённой библиотеке `PSR7Worker`; SAPI emitter в этом пути не участвует. Текущий `RoadRunnerServiceProvider` не меняет `PSR7Worker::chunkSize` (default `0`), поэтому `respond()` приводит body к строке. Библиотечный streaming path существует при положительном chunk size, но текущая конфигурация его не включает; ограниченную память файловой выдачи через RR пока нельзя считать обеспеченной.
+[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Перед `respond()` runtime заменяет body пустым для HEAD/1xx/204/304, не читая исходный поток; для 1xx/204 удаляет Content-Length. После отправки исходный и временный response streams закрываются в `finally`, включая transport error. Runtime владеет их завершением: handler должен возвращать новый stream для каждого запроса. Прямой `App::handle()` ничего не отправляет и не закрывает.
+
+Преобразование HTTP и отправка делегированы включённому `PSR7Worker`; SAPI emitter здесь не участвует. `RoadRunnerServiceProvider(chunkSize: 8192)` явно включает чтение частями; default `0` сохраняет прежнюю материализацию body строкой. Каталог включает chunk 8192 для seekable regular files, остальные конфигурации остаются с default. Bundled streaming path требует seekable body и не поддерживает informational 1xx; общей поддержки произвольных потоков он не обещает. Проверенные размеры и память описаны в [отчёте каталога](../history/2026-10-17-public-catalog.md).
 
 ## Общие middleware
 
 [`Pipeline`](../../src/Platform/Http/Middleware/Pipeline.php) вызывает middleware в порядке массива конфигурации. Каждый следующий слой получает переданную ему копию PSR-7 request; response возвращается через вызвавшие слои в обратном порядке. Изменение attributes во внутреннем слое не меняет request, сохранённый внешним слоем.
 
-[`RequestContextMiddleware`](../../src/Platform/Http/Middleware/RequestContextMiddleware.php) выполняется первым в обеих композициях:
+[`RequestContextMiddleware`](../../src/Platform/Http/Middleware/RequestContextMiddleware.php) выполняется первым во всех перечисленных композициях:
 
 - сохраняет непустой `X-Request-ID` клиента или генерирует новый;
 - создаёт новый `Deadline` по [`config/http.php`](../../config/http.php), сейчас 15 секунд;
@@ -61,6 +64,8 @@ RoadRunner HTTP → PSR7Worker::waitRequest()
 Deadline — бюджет для явно подключённого downstream-кода, а не принудительное прерывание запроса. [`RequestContextAttributes::inheritDeadline()`](../../src/Platform/Http/RequestContextAttributes.php) переносит его в options исходящего HTTP-вызова, если у options ещё нет своего deadline. Общий входящий deadline из клиентских заголовков не наследуется.
 
 [`ErrorHandlerMiddleware`](../../src/Platform/Http/Middleware/ErrorHandlerMiddleware.php) оборачивает следующие слои: логирует `Throwable` и возвращает JSON `500` с общей ошибкой. Он не оборачивает предшествующий код `RequestContextMiddleware`, создание приложения, преобразование входящего запроса или transport emission.
+
+В каталоге вместо него подключён прикладной [`Errors`](../../examples/document-catalog/src/Errors.php): исключения следующих слоёв превращаются в общую HTML 500. JSON 404/405 от router заменяются HTML-ответами, Allow сохраняется. Ошибки конкретных handlers уже HTML. Эта адаптация не меняет JSON-контракт минимального ядра и API.
 
 ## Routing и конечный handler
 
