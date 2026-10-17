@@ -154,7 +154,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "example": "base-api-template",
+          "example": "zerno",
           "description": "Runtime name"
         },
         "mode": {

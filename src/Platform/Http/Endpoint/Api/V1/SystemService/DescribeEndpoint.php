@@ -33,7 +33,7 @@ final readonly class DescribeEndpoint implements \App\Generated\Endpoint\Api\V1\
         }
 
         return (new SystemDescribeResponse())
-            ->setName('base-api-template')
+            ->setName('zerno')
             ->setMode('core')
             ->setCaller($request->getCaller())
             ->setCapabilities($capabilities)

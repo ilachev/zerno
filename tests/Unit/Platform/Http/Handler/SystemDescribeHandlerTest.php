@@ -35,7 +35,7 @@ final class SystemDescribeHandlerTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
         self::assertIsArray($payload);
-        self::assertSame('base-api-template', $payload['name'] ?? null);
+        self::assertSame('zerno', $payload['name'] ?? null);
         self::assertSame('core', $payload['mode'] ?? null);
         self::assertSame('client', $payload['caller'] ?? null);
         self::assertTrue($payload['runtimeIncluded'] ?? false);

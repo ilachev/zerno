@@ -4,7 +4,7 @@
 
 ## Текущая роль
 
-[Platform/Http/Client](../../src/Platform/Http/Client) — дополнительный outbound HTTP-компонент ProtoPHPStack. Он не является обязательной частью минимального HTTP/PDO-профиля.
+[Platform/Http/Client](../../src/Platform/Http/Client) — дополнительный outbound HTTP-компонент «Зерна». Он не является обязательной частью минимального HTTP/PDO-профиля.
 
 `HttpClientServiceProvider` подключает `ResilientHttpClient` и `CurlTransport` в существующем `config/container.php`. `config/core.php` этот provider не регистрирует. Для cURL transport требуется платформенное PHP-расширение `curl`.
 

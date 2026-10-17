@@ -6,7 +6,7 @@
 
 ## Запуск
 
-Из корня ProtoPHPStack:
+Из корня проекта «Зерно»:
 
 ```bash
 php tools/project.php sql:gen

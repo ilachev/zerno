@@ -4,7 +4,7 @@
 
 ## Когда применять
 
-Эти правила относятся к protobuf API ProtoPHPStack. Обычные HTTP endpoints минимального профиля задаются в [config/routes.php](../../config/routes.php) и не требуют protobuf, generated registries или этого plugin.
+Эти правила относятся к protobuf API «Зерна». Обычные HTTP endpoints минимального профиля задаются в [config/routes.php](../../config/routes.php) и не требуют protobuf, generated registries или этого plugin.
 
 Перед изменением определить выбранный профиль: [config/core.php](../../config/core.php) или [config/container.php](../../config/container.php). Текущий контракт plugin описан в [protoc-php-gen-product.md](./protoc-php-gen-product.md); приоритет новых возможностей задаёт [общий roadmap](../project/roadmap.md).
 

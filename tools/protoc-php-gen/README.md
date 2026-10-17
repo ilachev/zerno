@@ -2,7 +2,7 @@
 
 Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-`protoc-php-gen` — локальный `protoc` plugin ProtoPHPStack для дополнительного protobuf API-профиля. Обычный HTTP-профиль с явными [PHP routes](../../config/routes.php) его не использует.
+`protoc-php-gen` — локальный `protoc` plugin «Зерна» для дополнительного protobuf API-профиля. Обычный HTTP-профиль с явными [PHP routes](../../config/routes.php) его не использует.
 
 ## Текущие модули
 

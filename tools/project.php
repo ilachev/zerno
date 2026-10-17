@@ -433,11 +433,11 @@ function projectBuild(string $version): void
         $archive->addEmptyDir('var');
         unset($archive);
         projectGzip($tarPath, $tarPath . '.gz');
-        $output = $root . '/dist/api-template-' . $version . '.tar.gz';
+        $output = $root . '/dist/zerno-' . $version . '.tar.gz';
         if (!rename($tarPath . '.gz', $output)) {
             throw new RuntimeException('Could not publish release archive: ' . $output);
         }
-        $openApi = $root . '/dist/api-swagger-' . $version . '.json';
+        $openApi = $root . '/dist/zerno-openapi-' . $version . '.json';
         if (!copy($root . '/docs/api.swagger.json', $openApi)) {
             throw new RuntimeException('Could not copy OpenAPI release sidecar.');
         }

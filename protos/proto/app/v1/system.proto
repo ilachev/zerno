@@ -53,7 +53,7 @@ message SystemDescribeRequest {
 message SystemDescribeResponse {
   string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Runtime name"
-    example: "\"base-api-template\""
+    example: "\"zerno\""
   }];
   string mode = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Runtime mode"

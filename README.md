@@ -1,97 +1,116 @@
-# ProtoPHPStack
+# Зерно
 
-Type: `navigation`. Status: `current`. Reviewed: 2026-10-17.
+Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-[![CI](https://github.com/ilachev/ProtoPHPStack/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/ProtoPHPStack/actions/workflows/ci.yml)
+[![CI](https://github.com/ilachev/zerno/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/zerno/actions/workflows/ci.yml)
 
-A small PHP HTTP/PDO core with explicit routes, prepared SQL, transactions and migrations. Optional profiles retain the protobuf API, generated endpoint handlers, OpenAPI, sessions, API statistics and RoadRunner.
+**Зерно (`zerno`) — небольшое автономное веб-ядро на PHP.** Основа, из которой разработчик собирает серверный сайт или веб-приложение: явные HTTP-маршруты, обработчики, PDO, подготовленные SQL-запросы, транзакции и миграции.
 
-Runtime sources, generator dependencies and pinned PHP quality tools are included in the repository. Running, generating, checking and packaging requires no package manager or dependency installation. Task is an optional alias for the PHP command runner. See the [delivery architecture](docs/design/autonomous-core.md) and [documentation index](docs/README.md).
+Ядро универсально. При развитии проекта особое внимание уделяется потребностям муниципальных и государственных организаций: понятному устройству, контролируемой поставке и возможности сопровождать сайты в собственной инфраструктуре. Страницы, предметная модель, роли и редакционные процессы определяет приложение.
 
-## Project direction and documentation
+## Принципы
 
-Start with [LLM onboarding](docs/llm-onboarding.md) or the [documentation index](docs/README.md). The [vision](docs/project/vision.md) defines product boundaries; the [roadmap](docs/project/roadmap.md) separates the implemented baseline from planned HTML, forms, protected areas, publication and operational work. The first planned application is a [document catalog](docs/project/document-catalog-example.md); it is not implemented yet. Current runtime behavior is documented in the [architecture overview](docs/architecture/overview.md).
+- **Автономная поставка.** Сторонние PHP-исходники, зависимости генераторов и закреплённые инструменты качества включены в репозиторий. Для запуска, разработки, генерации, проверок и сборки нет шага установки пакетов. Composer, npm и Task не требуются.
+- **Явная композиция.** Минимальное HTTP/PDO-приложение подключает необходимую основу; сессии, статистика, protobuf API и runtime integrations выбираются конфигурацией.
+- **БД входит в основу.** SQL остаётся исходником запросов; PDO, параметры, транзакции, миграции и типизированная генерация доступны из коробки.
+- **Производительность через измерения.** Цель — небольшие накладные расходы PHP. Сравнительный baseline FPM/RoadRunner ещё предстоит получить; измерения и критерии описаны в [roadmap](docs/project/roadmap.md).
 
-## Platform requirements
+Автономность означает отсутствие установки зависимостей проекта, а включённый сторонний код остаётся сторонним. PHP, расширения, СУБД и выбранный сервер являются требованиями платформы. Состав distributions, notices и происхождение файлов описаны в [архитектуре поставки](docs/design/autonomous-core.md).
 
-- PHP 8.5+ with PDO; use `pdo_pgsql` for PostgreSQL or `pdo_sqlite` for SQLite.
-- The optional GeoIP integration requires `bcmath` and `curl`.
-- Quality tools also use DOM/XML, XMLWriter, mbstring and tokenizer. Release compression uses Phar and zlib.
-- PostgreSQL is required for integration tests and PostgreSQL SQL validation.
-- RoadRunner is required only for its runtime profile; `protoc` for protobuf generation, and `protoc-gen-openapiv2` for OpenAPI regeneration. These are platform executables, not downloaded by project commands.
+## Текущее состояние
 
-## Check and build
+Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
+
+Серверный HTML, прикладные формы, вход по учётным данным, CSRF и редакторский интерфейс находятся в плане развития. Первый сквозной пример — [каталог документов](docs/project/document-catalog-example.md): публичные список, карточка и скачивание, затем защищённый поток публикации. Приложение каталога ещё не реализовано.
+
+## Быстрый старт
+
+Для минимального запуска нужны PHP 8.5+ и PDO. Все команды выполняются из корня репозитория.
 
 ```bash
-# Available commands; no installation step
-php tools/project.php help
+git clone https://github.com/ilachev/zerno.git
+cd zerno
 
-# Local gate: dependency integrity, documentation, style, analysis, SQL synchronization and unit tests
-php tools/project.php verify
-
-# A focused unit test; PHPUnit arguments are forwarded directly
-php tools/project.php test tests/Unit/Platform/Runtime/AppTest.php
-
-# Generate or verify typed SQL
-php tools/project.php sql:gen
-php tools/project.php sql:check
-
-# Full checks: both generator quality gates plus PostgreSQL validation and integration
-TEST_DB_HOST=127.0.0.1 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:full
-
-# Runtime-only archive and OpenAPI sidecar in dist/
-php tools/project.php build local
+php -S 127.0.0.1:8080 -t public public/http.php
 ```
 
-`TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` and `TEST_DB_PASSWORD` configure isolated integration runs. The runner defaults to `localhost:5432/app_test`, user `app`, password `password`. Create that test database before integration checks; each run creates and removes its own random schema. Application `DB_*` settings are not used to select the test database.
+Открыть [локальный health endpoint](http://127.0.0.1:8080/health). GET возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Этот запрос не открывает соединение с БД, не создаёт сессию и не запускает API-статистику, GeoIP или protobuf discovery.
 
-The release archive includes application sources, committed generated artifacts, configuration, entrypoints, runtime dependencies with their notices, the dependency manifest and documentation. It excludes tests, generator dependencies and quality tools. The OpenAPI sidecar comes from `docs/api.swagger.json`.
-
-## Run the minimal HTTP/PDO application
-
-Explicit routes in `config/routes.php` provide GET and HEAD `/health`. The health request opens no database connection and enables no sessions, statistics, GeoIP or protobuf discovery.
+`public/http.php` служит и front controller для PHP-FPM. Требования к веб-серверу и конфигурации описаны в [инфраструктуре](docs/development/infrastructure-and-testing.md). Ту же минимальную композицию можно запустить через установленный RoadRunner:
 
 ```bash
-# Local development; public/http.php is also the PHP-FPM front controller
-php -S 127.0.0.1:8080 -t public public/http.php
-
-# The same minimal application through RoadRunner
 rr serve -c .rr.core.yaml
 ```
 
-PDO and typed SQL execution are available when requested by a handler factory. Configure PostgreSQL with `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` and optionally `DB_SCHEMA`. Application migrations belong in `src/Migrations`, namespace `App\Migrations`:
+Примеры используют один порт; серверы запускаются по очереди.
+
+## Работа с БД
+
+Целевой движок — PostgreSQL с расширением `pdo_pgsql`. Подключение настраивается через `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` и необязательный `DB_SCHEMA`. В минимальной композиции storage создаётся при запросе `Storage` или `SqlExecutor` обработчиком. Существующий SQLite adapter остаётся дополнительным вариантом и не заменяет PostgreSQL-проверки.
+
+Миграции приложения находятся в `src/Migrations`, namespace `App\Migrations`; ядро не запускает их при HTTP-запросе:
 
 ```bash
 php tools/project.php migrate migrate config/core.php
 php tools/project.php migrate rollback config/core.php
 ```
 
-## Optional protobuf API
+Текущий `rollback` откатывает все загруженные выполненные миграции. Подробности движков, схем и CLI — в [инфраструктуре и проверках](docs/development/infrastructure-and-testing.md).
 
-The existing API composition lives in `config/container.php` and runs through `public/index.php`. Its RoadRunner configuration is `.rr.yaml`; sessions, GeoIP and API statistics remain enabled in this profile.
+## Разработка, проверки и сборка
 
 ```bash
-# Existing Docker services and API migrations
+php tools/project.php help
+php tools/project.php docs:check
+php tools/project.php verify
+
+# Focused unit test; PHPUnit arguments are forwarded directly.
+php tools/project.php test tests/Unit/Platform/Runtime/AppTest.php
+
+# Generate or check typed SQL.
+php tools/project.php sql:gen
+php tools/project.php sql:check
+
+# Full checks require a separately prepared PostgreSQL test database.
+TEST_DB_HOST=127.0.0.1 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:full
+
+# Runtime archive and optional API reference in dist/.
+php tools/project.php build local
+```
+
+`verify` проверяет bundled integrity, документацию, стиль, PHPStan, синхронизацию SQL и root unit tests без внешних сервисов. `verify:full` добавляет gates обоих генераторов и PostgreSQL SQL/integration checks. Для инструментов качества нужны расширения PHP, включая DOM/XML, XMLWriter, mbstring и tokenizer; упаковка использует Phar и zlib.
+
+`TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` и `TEST_DB_PASSWORD` задают тестовую БД независимо от application `DB_*`. Defaults runner: `localhost:5432/app_test`, пользователь `app`, пароль `password`. БД создаётся заранее; каждый integration run создаёт и удаляет собственную случайную схему.
+
+Сборка создаёт `dist/zerno-local.tar.gz` и `dist/zerno-openapi-local.json`. Runtime-архив содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с notices/manifests и документацию. Тесты, инструменты качества и generator distributions остаются в исходном репозитории. OpenAPI sidecar берётся из `docs/api.swagger.json` и относится к необязательному protobuf API.
+
+CI и release workflow выполняют `verify:full` и сборку. Протоколы не регенерируются в CI; это явная команда разработки. Сборка не устанавливает пакеты. Task остаётся необязательной обёрткой над PHP runner.
+
+## Необязательный protobuf API
+
+API-композиция находится в `config/container.php`, использует `public/index.php` и `.rr.yaml`. Сессии, GeoIP, кеш и API-статистика включены в этом профиле; ему нужны соответствующие сервисы и расширения, включая `bcmath` и `curl`.
+
+```bash
+# Existing Compose services and API migrations.
 php tools/project.php services:start
 
-# The Compose configuration creates app; create app_test once for integration checks
+# Compose creates app; create app_test once for integration checks.
 docker compose exec db-postgres createdb -U app app_test
 
-# Run the API profile
 rr serve -c .rr.yaml
 
-# Regenerate contracts, endpoints and OpenAPI when the platform compilers are available
+# Regeneration requires protoc and protoc-gen-openapiv2.
 php tools/project.php proto:gen:all
 
 php tools/project.php services:stop
 ```
 
-Application requests use `bootstrap.php`; tests use `tests/bootstrap.php`. Runtime packages are under `third_party/runtime`, generator packages under `third_party/codegen`, and quality tools under `third_party/tools`. `php tools/project.php third-party:check` verifies the included files against the recorded hashes.
+Docker Compose, RoadRunner, `protoc` и `protoc-gen-openapiv2` — платформенные инструменты соответствующего профиля; команды проекта их не скачивают. Исходящий HTTP-клиент использует расширение `curl`. Карта входов, выходов и границы protobuf находятся в [документации API-контура](docs/architecture/protobuf-and-codegen.md).
 
-## CI and releases
+## Документация
 
-CI runs `php tools/project.php verify:full` and builds the runtime archive. Release verification runs the same checks and packages committed generated artifacts; regeneration is an explicit development command. No dependency installer or Task setup runs in either workflow.
-
-## Conventions
-
-Use strict types, explicit constructors and small reusable components. Keep product policy in application code, and generated files under generator control. The canonical engineering rules are in [AGENTS.md](AGENTS.md).
+- [Карта документации](docs/README.md) — текущая архитектура, направления, компоненты и история.
+- [Назначение проекта](docs/project/vision.md) и [roadmap](docs/project/roadmap.md) — границы, последовательность и критерии развития.
+- [Обзор архитектуры](docs/architecture/overview.md) — работающие профили и компоненты.
+- [AGENTS.md](AGENTS.md) и [LLM onboarding](docs/llm-onboarding.md) — правила работы и маршрут чтения для агентов.
+- [Машинный инвентарь](docs/documentation-inventory.json) — документы, статусы и связанные исходники.

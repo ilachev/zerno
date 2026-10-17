@@ -48,6 +48,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/api-template-${{ github.event.release.tag_name }}.tar.gz
-            dist/api-swagger-${{ github.event.release.tag_name }}.json
+            dist/zerno-${{ github.event.release.tag_name }}.tar.gz
+            dist/zerno-openapi-${{ github.event.release.tag_name }}.json
           token: ${{ secrets.GITHUB_TOKEN }}

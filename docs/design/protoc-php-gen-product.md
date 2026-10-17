@@ -4,7 +4,7 @@
 
 ## Текущая роль
 
-[tools/protoc-php-gen](../../tools/protoc-php-gen/README.md) — локальный `protoc` plugin ProtoPHPStack. Он нужен приложениям, выбирающим protobuf API; минимальный HTTP-профиль с явными PHP-маршрутами работает без него.
+[tools/protoc-php-gen](../../tools/protoc-php-gen/README.md) — локальный `protoc` plugin «Зерна». Он нужен приложениям, выбирающим protobuf API; минимальный HTTP-профиль с явными PHP-маршрутами работает без него.
 
 Plugin читает binary `CodeGeneratorRequest`, строит typed descriptor model и возвращает `CodeGeneratorResponse`. `TypeResolver` разрешает protobuf-типы в PHP-классы. Сам plugin не генерирует PHP message classes или OpenAPI: это отдельные команды `protoc` и `protoc-gen-openapiv2`.
 
@@ -18,7 +18,7 @@ Plugin читает binary `CodeGeneratorRequest`, строит typed descriptor
 
 Флаги по умолчанию выключены. Это проверяется в [PluginOptionsTest](../../tools/protoc-php-gen/tests/Unit/Plugin/PluginOptionsTest.php). `endpoint_profile_class` должен указывать загружаемый класс, реализующий `EndpointProfile`; встроенного project profile по умолчанию нет. Необязательный `bootstrap` загружает внешний profile.
 
-В ProtoPHPStack profile находится в [codegen/Protobuf/BaseApiTemplateEndpointProfile.php](../../codegen/Protobuf/BaseApiTemplateEndpointProfile.php). Сохранённый FQCN не требует переименования вместе с проектом.
+В «Зерне» profile находится в [codegen/Protobuf/BaseApiTemplateEndpointProfile.php](../../codegen/Protobuf/BaseApiTemplateEndpointProfile.php). Сохранённый FQCN не требует переименования вместе с проектом.
 
 ## Текущий output contract
 

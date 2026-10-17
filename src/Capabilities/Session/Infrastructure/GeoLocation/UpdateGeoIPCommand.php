@@ -124,7 +124,7 @@ final readonly class UpdateGeoIPCommand
                     followRedirects: true,
                     maxRedirects: 3,
                     idempotent: true,
-                    userAgent: 'base-api-template-http-client/' . PHP_VERSION,
+                    userAgent: 'zerno-http-client/' . PHP_VERSION,
                     retryPolicy: new RetryPolicy(
                         maxAttempts: 3,
                         baseDelayMilliseconds: 250,
