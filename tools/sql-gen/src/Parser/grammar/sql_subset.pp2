@@ -44,10 +44,13 @@
 %token T_SEMICOLON   ;
 %skip  T_WS          \s+
 
-#Query: SelectStmt() | InsertStmt() | DeleteStmt();
+#Query: SelectStmt() | InsertStmt() | UpdateStmt() | DeleteStmt();
 #SelectStmt: <T_SELECT> SelectList() <T_FROM> TableRef() JoinClause()* WhereClause()? OrderByClause()? <T_SEMICOLON>?;
 #InsertStmt: <T_INSERT> <T_INTO> <T_IDENT> <T_LPAREN> IdentList() <T_RPAREN> <T_VALUES> <T_LPAREN> PlaceholderList() <T_RPAREN> ConflictClause()? ReturningClause()? <T_SEMICOLON>?;
 #DeleteStmt: <T_DELETE> <T_FROM> <T_IDENT> WhereClause() <T_SEMICOLON>?;
+#UpdateStmt: <T_UPDATE> <T_IDENT> <T_SET> UpdateAssignments() WhereClause()? ReturningClause()? <T_SEMICOLON>?;
+#UpdateAssignments: UpdateAssignment() (<T_COMMA> UpdateAssignment())*;
+#UpdateAssignment: <T_IDENT> <T_EQ> Placeholder();
 #SelectList: SelectItem() (<T_COMMA> SelectItem())*;
 #SelectItem: WildcardSelection() | AliasedCase() | AliasedFunction() | AliasedColumn();
 #AliasedColumn: ColumnRef() ((<T_AS>)? <T_IDENT>)?;

@@ -29,6 +29,8 @@ use SqlGen\Ast\SelectProjectionWildcard;
 use SqlGen\Ast\SelectQuery;
 use SqlGen\Ast\SelectTableReference;
 use SqlGen\Ast\SqlQuery;
+use SqlGen\Ast\UpdateAssignment;
+use SqlGen\Ast\UpdateQuery;
 
 final class PhplrtSqlParser implements SqlQueryParser
 {
@@ -58,6 +60,11 @@ final class PhplrtSqlParser implements SqlQueryParser
         $insert = $this->findFirstChildNode($parsed, 'InsertStmt');
         if ($insert instanceof PrintableNode) {
             return $this->normalizeInsertQuery($insert);
+        }
+
+        $update = $this->findFirstChildNode($parsed, 'UpdateStmt');
+        if ($update instanceof PrintableNode) {
+            return $this->normalizeUpdateQuery($update);
         }
 
         $delete = $this->findFirstChildNode($parsed, 'DeleteStmt');
@@ -148,6 +155,44 @@ final class PhplrtSqlParser implements SqlQueryParser
             table: $tableName,
             values: $values,
             conflict: $conflictNode instanceof PrintableNode ? $this->normalizeConflictClause($conflictNode) : null,
+            returning: $returningNode instanceof PrintableNode ? $this->normalizeReturningClause($returningNode) : [],
+        );
+    }
+
+    private function normalizeUpdateQuery(PrintableNode $update): UpdateQuery
+    {
+        $tableName = $this->findDirectTokenValueAfter($update, 'T_UPDATE', 'T_IDENT');
+        $assignmentsNode = $this->findFirstChildNode($update, 'UpdateAssignments');
+        if ($tableName === null || !$assignmentsNode instanceof PrintableNode) {
+            throw new \RuntimeException('UpdateStmt must contain a table name and assignments.');
+        }
+
+        $assignments = [];
+        foreach ($assignmentsNode->children as $child) {
+            if (!$child instanceof PrintableNode || $child->getState() !== 'UpdateAssignment') {
+                continue;
+            }
+
+            $placeholder = $this->findFirstChildNode($child, 'Placeholder');
+            if (!$placeholder instanceof PrintableNode) {
+                throw new \RuntimeException('UpdateAssignment must contain a placeholder.');
+            }
+
+            $assignments[] = new UpdateAssignment(
+                column: $this->firstTokenValue($child),
+                placeholder: $this->normalizePlaceholder($placeholder),
+            );
+        }
+
+        $whereNode = $this->findFirstChildNode($update, 'WhereClause');
+        [$where, $operators] = $whereNode instanceof PrintableNode ? $this->normalizeWhereClause($whereNode) : [[], []];
+        $returningNode = $this->findFirstChildNode($update, 'ReturningClause');
+
+        return new UpdateQuery(
+            table: $tableName,
+            assignments: $assignments,
+            where: $where,
+            whereOperators: $operators,
             returning: $returningNode instanceof PrintableNode ? $this->normalizeReturningClause($returningNode) : [],
         );
     }

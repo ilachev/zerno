@@ -10,6 +10,7 @@ use SqlGen\Ast\SelectColumnReference;
 use SqlGen\Ast\SelectComparison;
 use SqlGen\Ast\SelectPlaceholder;
 use SqlGen\Ast\SelectQuery;
+use SqlGen\Ast\UpdateQuery;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\ResolvedSqlParameter;
 use SqlGen\Model\SqlStatement;
@@ -106,11 +107,21 @@ final class StatementParameterResolver
             return $mappings;
         }
 
-        if (!$query instanceof DeleteQuery) {
+        if (!$query instanceof DeleteQuery && !$query instanceof UpdateQuery) {
             throw new \RuntimeException("Unsupported SQL query type for parameter resolution in {$statement->name}");
         }
 
         $comparisons = [];
+
+        if ($query instanceof UpdateQuery) {
+            foreach ($query->assignments as $assignment) {
+                $comparisons[] = new ResolvedParameterMapping(
+                    qualifier: strtolower($query->table),
+                    column: $assignment->column,
+                    parameterName: $assignment->placeholder->name,
+                );
+            }
+        }
 
         foreach ($query->where as $comparisonNode) {
             $comparison = $this->comparisonToParameterMapping($comparisonNode, strtolower($query->table));

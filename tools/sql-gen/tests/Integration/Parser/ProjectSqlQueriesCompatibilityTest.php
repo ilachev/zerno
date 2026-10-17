@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use SqlGen\Ast\DeleteQuery;
 use SqlGen\Ast\InsertQuery;
 use SqlGen\Ast\SelectQuery;
+use SqlGen\Ast\UpdateQuery;
 use SqlGen\Parser\PhplrtSqlParser;
 use SqlGen\Parser\SqlFileParser;
 
@@ -37,6 +38,11 @@ final class ProjectSqlQueriesCompatibilityTest extends TestCase
 
                 if (str_starts_with($normalizedSql, 'INSERT')) {
                     self::assertInstanceOf(InsertQuery::class, $parsed, $statement->name);
+                    continue;
+                }
+
+                if (str_starts_with($normalizedSql, 'UPDATE')) {
+                    self::assertInstanceOf(UpdateQuery::class, $parsed, $statement->name);
                     continue;
                 }
 

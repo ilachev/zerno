@@ -11,6 +11,7 @@ use SqlGen\Ast\SelectProjectionColumn;
 use SqlGen\Ast\SelectProjectionFunction;
 use SqlGen\Ast\SelectProjectionWildcard;
 use SqlGen\Ast\SelectQuery;
+use SqlGen\Ast\UpdateQuery;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\RowField;
 use SqlGen\Model\SqlResultKind;
@@ -89,7 +90,7 @@ final class StatementRowResolver
             return $this->resolveProjections($query->projections, $statement->name, $tableMap, $parametersByName);
         }
 
-        if (!$query instanceof InsertQuery) {
+        if (!$query instanceof InsertQuery && !$query instanceof UpdateQuery) {
             throw new \RuntimeException("SQL statement {$statement->name} does not expose row projections.");
         }
 

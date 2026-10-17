@@ -24,6 +24,8 @@ use SqlGen\Ast\SelectProjectionWildcard;
 use SqlGen\Ast\SelectQuery;
 use SqlGen\Ast\SelectTableReference;
 use SqlGen\Ast\SqlQuery;
+use SqlGen\Ast\UpdateAssignment;
+use SqlGen\Ast\UpdateQuery;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\ResolvedSqlParameter;
 use SqlGen\Model\SqlStatement;
@@ -103,6 +105,10 @@ final readonly class PostgreSqlStatementCompiler
             return $this->renderInsertQuery($query, $parameterIndexByName, $statementName);
         }
 
+        if ($query instanceof UpdateQuery) {
+            return $this->renderUpdateQuery($query, $parameterIndexByName, $statementName);
+        }
+
         if (!$query instanceof DeleteQuery) {
             throw new \RuntimeException('Unsupported SQL query type in PostgreSQL statement renderer.');
         }
@@ -164,6 +170,31 @@ final readonly class PostgreSqlStatementCompiler
                 ),
                 $query->conflict->assignments,
             ));
+        }
+
+        if ($query->returning !== []) {
+            $sql .= ' RETURNING ' . implode(', ', array_map(
+                fn(SelectProjection $projection): string => $this->renderProjection($projection, $parameterIndexByName, $statementName),
+                $query->returning,
+            ));
+        }
+
+        return $sql;
+    }
+
+    /**
+     * @param array<string, int> $parameterIndexByName
+     */
+    private function renderUpdateQuery(UpdateQuery $query, array $parameterIndexByName, string $statementName): string
+    {
+        $sql = 'UPDATE ' . $query->table . ' SET ' . implode(', ', array_map(
+            fn(UpdateAssignment $assignment): string => $assignment->column . ' = '
+                . $this->renderPlaceholder($assignment->placeholder, $parameterIndexByName, $statementName),
+            $query->assignments,
+        ));
+
+        if ($query->where !== []) {
+            $sql .= ' WHERE ' . $this->renderComparisons($query->where, $query->whereOperators, $parameterIndexByName, $statementName);
         }
 
         if ($query->returning !== []) {

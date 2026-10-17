@@ -9,6 +9,7 @@ use SqlGen\Ast\InsertQuery;
 use SqlGen\Ast\SelectColumnReference;
 use SqlGen\Ast\SelectJoin;
 use SqlGen\Ast\SelectQuery;
+use SqlGen\Ast\UpdateQuery;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\SqlStatement;
 use SqlGen\Parser\PhplrtSqlParser;
@@ -46,7 +47,7 @@ final class StatementTableMapResolver
             }
         }
 
-        if ($query instanceof InsertQuery) {
+        if ($query instanceof InsertQuery || $query instanceof UpdateQuery) {
             $primaryTable = $this->resolveVisibleTable($query->table, null, $schema, $statement->name);
             $visibleTables[] = $primaryTable;
         }
