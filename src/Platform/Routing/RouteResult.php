@@ -10,11 +10,13 @@ final readonly class RouteResult
 
     /**
      * @param array<string, string>|RouteParameters $params
+     * @param list<string> $allowedMethods
      */
     public function __construct(
         private RouteStatus $status,
         private ?string $handler = null,
         array|RouteParameters $params = [],
+        private array $allowedMethods = [],
     ) {
         $this->routeParameters = $params instanceof RouteParameters
             ? $params
@@ -62,5 +64,11 @@ final readonly class RouteResult
     public function getStatusCode(): int
     {
         return $this->status->getStatusCode();
+    }
+
+    /** @return list<string> */
+    public function getAllowedMethods(): array
+    {
+        return $this->allowedMethods;
     }
 }

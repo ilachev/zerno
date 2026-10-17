@@ -26,6 +26,7 @@ function projectCommand(string $command, array $arguments = []): void
                 verify:full            All root, SQL-generator, protobuf-generator and PostgreSQL checks
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
+                http:check             Check real PHP-FPM/RoadRunner HTTP behavior; forwards runtime options
                 lint | fixcs           Check or fix PHP style
                 phpstan                Run root static analysis
                 test                   Run root unit tests; forwards PHPUnit arguments
@@ -45,7 +46,10 @@ function projectCommand(string $command, array $arguments = []): void
                 services:start         Start Docker services and migrate the API database
                 services:stop | services:status
                 run                    Start services and the API RoadRunner runtime
-                perf:test [scenario]   Run a k6 scenario
+                perf:prepare           Create an isolated PostgreSQL baseline fixture; uses TEST_DB_*
+                perf:baseline          Run the JSON or SELECT k6 baseline; uses BASE_URL and CASE
+                perf:cleanup <schema>  Remove a baseline fixture created by perf:prepare
+                perf:test [scenario]   Run a legacy k6 scenario
                 perf:test:all          Run all k6 scenarios
                 build [version]        Create a runtime-only tar.gz and OpenAPI sidecar in dist/
 
@@ -78,6 +82,10 @@ function projectCommand(string $command, array $arguments = []): void
             projectRun([PHP_BINARY, $root . '/tools/check-docs.php', ...$arguments], $root);
 
             return;
+        case 'http:check':
+            projectRun([PHP_BINARY, $root . '/tools/check-http.php', ...$arguments], $root);
+
+            return;
         case 'lint':
         case 'fixcs':
             projectDirectory($root . '/var');
@@ -90,7 +98,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',
@@ -193,6 +201,16 @@ function projectCommand(string $command, array $arguments = []): void
         case 'run':
             projectCommand('services:start');
             projectRun(['rr', 'serve', '-c', '.rr.yaml', ...$arguments], $root);
+
+            return;
+        case 'perf:prepare':
+        case 'perf:cleanup':
+            projectRun([PHP_BINARY, $root . '/load-tests/baseline/database.php', $command === 'perf:prepare' ? 'prepare' : 'cleanup', ...$arguments], $root);
+
+            return;
+        case 'perf:baseline':
+            projectRequireExecutable('k6');
+            projectRun(['k6', 'run', '--no-usage-report', $root . '/load-tests/baseline/scenario.js', ...$arguments], $root);
 
             return;
         case 'perf:test':

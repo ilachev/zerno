@@ -39,6 +39,26 @@ tasks:
     cmds:
       - "{{.PHP}} tools/project.php docs:check {{.CLI_ARGS}}"
 
+  http:check:
+    desc: Check real PHP-FPM and RoadRunner HTTP behavior
+    cmds:
+      - "{{.PHP}} tools/project.php http:check {{.CLI_ARGS}}"
+
+  perf:prepare:
+    desc: Create isolated PostgreSQL baseline data
+    cmds:
+      - "{{.PHP}} tools/project.php perf:prepare {{.CLI_ARGS}}"
+
+  perf:baseline:
+    desc: Run the small JSON or SELECT baseline
+    cmds:
+      - "{{.PHP}} tools/project.php perf:baseline {{.CLI_ARGS}}"
+
+  perf:cleanup:
+    desc: Remove isolated baseline data
+    cmds:
+      - "{{.PHP}} tools/project.php perf:cleanup {{.CLI_ARGS}}"
+
   lint:
     desc: Check PHP style
     cmds:

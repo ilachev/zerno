@@ -30,10 +30,15 @@ final readonly class RoutingMiddleware implements Middleware
         $routeResult = $this->router->dispatch($request);
 
         if (!$routeResult->isFound()) {
-            return $this->jsonResponse->error(
-                Error::NOT_FOUND,
-                $routeResult->getStatusCode(),
+            $status = $routeResult->getStatusCode();
+            $response = $this->jsonResponse->error(
+                $status === 405 ? Error::METHOD_NOT_ALLOWED : Error::NOT_FOUND,
+                $status,
             );
+
+            return $status === 405
+                ? $response->withHeader('Allow', implode(', ', $routeResult->getAllowedMethods()))
+                : $response;
         }
 
         return $handler->handle(

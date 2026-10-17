@@ -15,7 +15,7 @@
 - **Автономная поставка.** Сторонние PHP-исходники, зависимости генераторов и закреплённые инструменты качества включены в репозиторий. Для запуска, разработки, генерации, проверок и сборки нет шага установки пакетов. Composer, npm и Task не требуются.
 - **Явная композиция.** Минимальное HTTP/PDO-приложение подключает необходимую основу; сессии, статистика, protobuf API и runtime integrations выбираются конфигурацией.
 - **БД входит в основу.** SQL остаётся исходником запросов; PDO, параметры, транзакции, миграции и типизированная генерация доступны из коробки.
-- **Производительность через измерения.** Цель — небольшие накладные расходы PHP. Сравнительный baseline FPM/RoadRunner ещё предстоит получить; измерения и критерии описаны в [roadmap](docs/project/roadmap.md).
+- **Производительность через измерения.** Цель — небольшие накладные расходы PHP. Начальный [FPM/RoadRunner baseline](docs/history/2026-10-17-core-http-baseline.md) ограничен JSON и indexed SELECT; выбор основного runtime остаётся открытым. Дальнейшие сценарии и критерии описаны в [roadmap](docs/project/roadmap.md).
 
 Автономность означает отсутствие установки зависимостей проекта, а включённый сторонний код остаётся сторонним. PHP, расширения, СУБД и выбранный сервер являются требованиями платформы. Состав distributions, notices и происхождение файлов описаны в [архитектуре поставки](docs/design/autonomous-core.md).
 
@@ -81,6 +81,8 @@ php tools/project.php build local
 ```
 
 `verify` проверяет bundled integrity, документацию, стиль, PHPStan, синхронизацию SQL и root unit tests без внешних сервисов. `verify:full` добавляет gates обоих генераторов и PostgreSQL SQL/integration checks. Для инструментов качества нужны расширения PHP, включая DOM/XML, XMLWriter, mbstring и tokenizer; упаковка использует Phar и zlib.
+
+Реальные FPM/RR проверяются отдельно: `php tools/project.php http:check`. Команды `perf:prepare`, `perf:baseline` и `perf:cleanup` воспроизводят малый JSON/SELECT baseline на установленной платформе. Требования и полный порядок запуска — в [HTTP и baseline guide](docs/development/http-and-baseline.md).
 
 `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` и `TEST_DB_PASSWORD` задают тестовую БД независимо от application `DB_*`. Defaults runner: `localhost:5432/app_test`, пользователь `app`, пароль `password`. БД создаётся заранее; каждый integration run создаёт и удаляет собственную случайную схему.
 

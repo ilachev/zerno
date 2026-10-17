@@ -18,6 +18,8 @@ PHP-библиотеки, генераторы и инструменты кач�
 | Генерация protobuf SDK/endpoints | Установленный `protoc` |
 | Генерация OpenAPI | `protoc` и `protoc-gen-openapiv2` |
 | Compose-сервисы / load tests | Docker Compose / `k6` соответственно |
+| Явная HTTP wire-проверка | PHP-FPM и/или `rr`; собственный PHP FastCGI/HTTP клиент, без БД и Caddy |
+| Малый JSON/SELECT baseline | PHP-FPM, `rr`, Caddy, k6 и отдельная PostgreSQL test database |
 
 Базовые требования runtime зафиксированы в [`third_party/runtime/manifest.json`](../../third_party/runtime/manifest.json). PHP-библиотека RoadRunner не поставляет executable `rr`; его версия учитывается отдельно. CI сам подготавливает PHP и PostgreSQL как платформу, без установки PHP-пакетов проекта.
 
@@ -93,12 +95,16 @@ docker compose exec db-postgres createdb -U app app_test
 |---|---|
 | `php tools/project.php verify` | Third-party integrity → documentation inventory/links → стиль → PHPStan → соответствие SQL-артефактов → root unit tests |
 | `php tools/project.php docs:check` | Инвентарь собственных документов, пути источников и локальные Markdown-ссылки без сети |
+| `php tools/project.php http:check` | 24 wire cases для каждого выбранного настоящего FPM/RR; запускается отдельно от default gates |
+| `php tools/project.php perf:prepare`, `perf:baseline`, `perf:cleanup <schema>` | Изолированная fixture PostgreSQL, явный k6 JSON/SELECT запуск и удаление только своей схемы |
 | `php tools/project.php verify:integration` | PostgreSQL SQL validation → root integration tests |
 | `php tools/project.php verify:full` | `verify` → style/PHPStan/tests SQL generator → style/PHPStan/tests protobuf generator → `verify:integration` |
 | `php tools/project.php test:full` | Только root unit + integration tests |
 | `php tools/project.php build VERSION` | Third-party integrity и упаковка runtime `.tar.gz` + OpenAPI sidecar; не полный quality gate |
 
 `verify` не требует PostgreSQL, Redis, `rr` или protobuf compiler. `verify:full` требует PostgreSQL, но не запускает `proto:gen:all`, FPM/RR серверы или load tests. Команды генерации protobuf отдельно требуют native compilers из таблицы выше.
+
+Настройка, команды и ограничения реальных HTTP/performance запусков находятся в [HTTP и baseline guide](http-and-baseline.md). PHP fixtures `tools/http-fixtures` и `load-tests/baseline` входят в root style/PHPStan checks; в runtime-архив и обычную композицию приложения они не включаются.
 
 Выборочные команды:
 
@@ -136,6 +142,6 @@ TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app
 
 Текущие [CI](../../.github/workflows/ci.yml) и [release workflow](../../.github/workflows/release.yml) подготавливают PHP 8.5 и PostgreSQL 16, запускают `verify:full`, затем `build`. CI работает на push/PR в `master`, release — при создании GitHub release. Эти workflows не регенерируют protobuf SDK/endpoints/OpenAPI и не запускают FPM/RR HTTP-совместимость или performance scenarios.
 
-Ручные проверки реальных PHP-FPM/RoadRunner, автономной распакованной поставки и работы без сети описаны как выполненные эксперименты в [истории автономного ядра](../history/2026-10-17-autonomy-audit.md). Они использовали временные конфигурации/порты и не являются постоянными wire fixtures CI. По ним нельзя утверждать наличие непрерывной проверки всех HTTP edge cases, настоящего RR KV или сравнительной производительности.
+Прежние ручные проверки автономной распакованной поставки и работы без сети сохранены в [истории автономного ядра](../history/2026-10-17-autonomy-audit.md). Новый `http:check` имеет постоянные fixtures и явно запускает настоящие FPM/RR, но ещё не включён в CI. [Начальный baseline](../history/2026-10-17-core-http-baseline.md) фиксирует только два коротких JSON/SELECT сценария. Ни один из этих наборов не является проверкой всех HTTP edge cases, настоящего RR KV или длительной устойчивости памяти.
 
 При изменениях storage/repository/migrations используйте PostgreSQL gate; для middleware учитывайте обе композиции. Изменение `.proto` требует соответствующей регенерации и проверки generated artifacts. Не объединяйте runtime и generator bootstraps ради доступа к библиотеке: их версии и процессы намеренно разделены.

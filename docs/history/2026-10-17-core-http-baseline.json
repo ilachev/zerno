@@ -1,0 +1,939 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "kind": "history",
+  "status": "historical",
+  "source": {
+    "base_commit": "612d009148a77147a8e488619691225aae171343",
+    "measured_tree": "base commit plus HTTP routing and baseline changes in the accompanying commit",
+    "sha256": {
+      "bootstrap/Autoloader.php": "1de0b50b951c4bd64ae4b7e865f7379129813a03350e251d03c3e919b3bdeb7c",
+      "bootstrap.php": "b52d6fc338f9628e061ef1edfd4542b327c5eb1d9c9a078f483cbe4245109767",
+      "config/cache.php": "1d8d4cb206fc5ba025099cdfec2b08ff7a8bb282f56d45c169f8a97eb3bf704a",
+      "config/client.php": "b12fd962b3c6f7d18b174724862d1bc35dbc4d50d41659fd572f4853da489e3a",
+      "config/container.php": "6b7fc182a25128dc54cc06ca23b52f7b3ef82ce86963f76bf2ac29020b03cafd",
+      "config/core-roadrunner.php": "1bbdf33de9d459d7b33218b1493885be73212b136fbe4655fefc14194b80b60f",
+      "config/core.php": "dcff0bd0c7090d5c16677945f73f98c985998c30451c043e22425399740fddf0",
+      "config/geolocation.php": "cecbf06b1ab4739118467fc004a5c4d6e061593be5306e8c431a6c611204c43a",
+      "config/http.php": "1ad057240ecdf485d9d72b0a17d087feeb5b11b87d45722d92016150214a0b4f",
+      "config/routes.php": "4938545e9bedf166d43860b02caa932da4ba2fa711d93c6799face68900cffd8",
+      "config/session.php": "f29af9fc9c06f993b807d6a56cf232b80af9ceff70d8e0fd28b2f3f18ae0f688",
+      "config/storage.php": "146879bc18879df740aa0bffbbc5a8bb0e84b76778b5bcd4796086a83d5ba234",
+      "load-tests/baseline/Caddyfile": "54f29b707ff7d943224618bb254d78b33324ad1874b91f938ed2139be70d68f3",
+      "load-tests/baseline/Handler.php": "9029600aba9a6d7ac1de2a4543ad7f9255c84525de7dc54399cc3e80f12aa3ff",
+      "load-tests/baseline/config.php": "24831cde5c370152ea8fe0ffd445c28ec64e61d3d8b49a1c31416d375c2044ae",
+      "load-tests/baseline/database.php": "6c7ba9f7603d856b6ad232fdb8b30eee2d9d7e306a5fcf4816ed0016f7f779f9",
+      "load-tests/baseline/php-fpm.conf": "35d3bca4f7c828aab137d1ebe29e08b0fb9e5086cd6d8879c6858a87fc6079f2",
+      "load-tests/baseline/roadrunner.php": "02978e05182c90fccf0fce4a16ec76d8c977504fce9edef6a29a5ed0e9852801",
+      "load-tests/baseline/rr.yaml": "a88188ab152b7cd76dd9ddc92d412049d5a91d068d739d41aee80316906d9d3b",
+      "load-tests/baseline/scenario.js": "f81f73e35639b188612756184c1af6898798f34de5b253772c16b967fe4026ae",
+      "public/http.php": "502a8721244235a17e74aea2136610ca7f9215686c246bffefccb83c0fae2225",
+      "public/index.php": "8e0b9d9e284403369aa1918397eaea1ead0d170f59597feec4d17eb9938a517b",
+      "src/Capabilities/ApiStats/ApiStatsModule.php": "bbb3df20bbe109817185a23bffd8e14479937b55d605cf539172e9d0fcd83a25",
+      "src/Capabilities/ApiStats/Domain/ApiCallRecorder.php": "cfbb3679973f1b7cedb1e42661645b690ab52bf9922cb2bdb1ad486d8dd2046f",
+      "src/Capabilities/ApiStats/Domain/ApiStat.php": "0b169567d36b6eddd8c12af79892719deeeba5627b3a44f3c7401bc752e41e1c",
+      "src/Capabilities/ApiStats/Domain/ApiStatRepository.php": "8ea482b5470742e86776fc785b329807a140917c1a8bb1e963f2c7662d685fc3",
+      "src/Capabilities/ApiStats/Infrastructure/Persistence/SqlApiStatRepository.php": "f811437332bbd2048cd0d126ce57823f03d56ce978501bb1b98ad19e2d6268cf",
+      "src/Capabilities/ApiStats/Transport/Http/ApiStatsMiddleware.php": "bb53e1306e88901aad9d4a33088f1ed916052e16773a26b6750ac31ade84f967",
+      "src/Capabilities/Capability.php": "70a9ebf157a19ed783c7d2c446e76a692d863d77df85e20b0d5c5d0196914e08",
+      "src/Capabilities/Session/Application/ClientConfig.php": "04c7a0b8147b23bc196af2c87cd7a87862d618f0c1219e1f2c5f42075d01cef9",
+      "src/Capabilities/Session/Application/ClientDetector.php": "a08ed2d4bfe577e16f6e5c60c2d1efa529d0eca85b6309a7ee8a81a933f26943",
+      "src/Capabilities/Session/Application/ClientIdentity.php": "d37493aeb7fdf5fe7fe74c8672cf0ef15b51439056ff3e2cb64a89e93a4acf6a",
+      "src/Capabilities/Session/Application/ClientSimilarity.php": "03f7231bc66b412d0ea9ac2dcfec7814e8753068dd4ddfa5def964e980d616a1",
+      "src/Capabilities/Session/Application/GeoLocationConfig.php": "e3c5302e204dd169321990d73e79f3c1b862b3c62e6b559162a8d0bc3b7e261e",
+      "src/Capabilities/Session/Application/GeoLocationData.php": "5e309b9cb6ace6df6532247fe65a66dd326a33368f3da914f3f28143bd91069c",
+      "src/Capabilities/Session/Application/GeoLocationService.php": "88eb81a018544bd7d24c247d8cf69efd038aa24788c1838f0267a75993ea4e94",
+      "src/Capabilities/Session/Application/SessionClientPayload.php": "8b0043d7e9825158fba736ba74d3ac805131326372a0c09249d3f38bb4f4935c",
+      "src/Capabilities/Session/Application/SessionPayloadFactory.php": "4f4a780c2b53e9370d4596584321d275e26fab4e3ef7400b5d1787aed6207e57",
+      "src/Capabilities/Session/Domain/Session.php": "14903f643a401ecdc80f088591c2e97f1399c24cfba7a8d54f593629745466a8",
+      "src/Capabilities/Session/Domain/SessionConfig.php": "9ea162532038c0ae7a36ad8315ad1ee6b22d75a4f3ef62da4224153a120e38ec",
+      "src/Capabilities/Session/Domain/SessionPayload.php": "efd2ddd9735eeea3fa72bfdf8e19a79c7d2d201b99289b3ef7acfc44373a359c",
+      "src/Capabilities/Session/Domain/SessionRepository.php": "31f5342924df772153488c667dad05b6cd99eb9475d82114651811865eb197c3",
+      "src/Capabilities/Session/Domain/SessionService.php": "f05829f4060fb989ccb109142703131ad99177dcd1c623a0f4ffeb952ef0f2a4",
+      "src/Capabilities/Session/Infrastructure/DefaultSessionPayloadFactory.php": "02250f25270ed3e7cedace429315ca837a0293a17a107c72437b9b2d58ba8023",
+      "src/Capabilities/Session/Infrastructure/FingerprintClientDetector.php": "c377702f0571d0da91051b7d887cb252931577b4443b42be754003977aec861a",
+      "src/Capabilities/Session/Infrastructure/GeoLocation/IP2LocationGeoLocationService.php": "90c0165764afafb93eb8a6e9d9b7af8a9bead8fa850156a4152af58dfa85aec9",
+      "src/Capabilities/Session/Infrastructure/GeoLocation/IP2LocationRecord.php": "97cf4a6025aa972edc3e1c63dd2b2da73d10491ca9352ec7c722113b8561753e",
+      "src/Capabilities/Session/Infrastructure/GeoLocation/UpdateGeoIPCommand.php": "321853ba0ffce7bfe2aa69d60dc184055bbfd52f4162d109269cb923547b9146",
+      "src/Capabilities/Session/Infrastructure/Persistence/SqlSessionRepository.php": "ea4897a50abc85ba444258a82bc1e88657722be414dc8b26696019a6a2b23ced",
+      "src/Capabilities/Session/SessionModule.php": "e60d995700f3bab18d2d2c2e2c8f2b520cf80187c74b6d1f63d68b785829c9a7",
+      "src/Capabilities/Session/Transport/Http/SessionMiddleware.php": "8f2772cebc62ee0148ef1517cc81bdae78c6b2f268d26dd2c6acc539adf1c2ad",
+      "src/Capabilities/Session/Transport/Http/SessionResponseHeaders.php": "0a6b289eef6b962d19cb55b92b4fcd63b70e108215e6dc50f7cd2f6b79b9d0af",
+      "src/Migrations/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/Platform/Cache/CacheConfig.php": "a661f71cec1227a4af70f4265c31b19b598099dbd2786fb8adcd93e95332b649",
+      "src/Platform/Cache/CacheKey.php": "1e9b39f780a2952a76bab9b033c8abab7f887f0f1506d5c50b90bc1106f683c5",
+      "src/Platform/Cache/CacheScope.php": "b9833d0c29f83426e061e8deda5237164bc1222bf210fecf2f9d44c49162d8ed",
+      "src/Platform/Cache/CacheService.php": "b220c3535c814ccecbd6fe0411eedf7f817ed72e6448846615f049e754fe2582",
+      "src/Platform/Cache/FallbackStorage.php": "241f2d600fd4f64330202d0038f8bdff8e348c9dca9ed053e013a3e9655df9b0",
+      "src/Platform/Cache/RoadRunnerCacheService.php": "f18af3e442313a522a77df07593d93c45a6937298ec496a8b6227ae71fcea862",
+      "src/Platform/Cache/ScopedCache.php": "5a00526c6547187220865322fb8ba0e17522cba52b7f8f9e7414bb7281175b89",
+      "src/Platform/Cache/ScopedCacheFactory.php": "1fcfd7b4ae56cbe54f29ed8f67f4c3a16ad857c019988d275fd283409cf25fbd",
+      "src/Platform/Cache/ScopedCacheView.php": "e1c3724eaa9d8dea37e542153c12153738fc8a86500db3f7e24da1f3a00072c9",
+      "src/Platform/Config/ProjectPath.php": "8f19114b964fa41b3fe1122d4bc24300ebc7956f9acfb124d437c98e10ab763f",
+      "src/Platform/Console/CacheClearCommand.php": "09b864b0b9abd7fef3cdcf8bfacedf527247dd18699d3e9ae90f9d828ca0f8d4",
+      "src/Platform/Console/MigrateCommand.php": "335f57da7b9377faf68c01aecf6f3cde3ab85dea2f378a8ad33f0c4b0c5b344d",
+      "src/Platform/DI/AutowireArgument.php": "77072784b32aad5da9444901d63581ca2b3ee336fe180a81f118fb63e5a95660",
+      "src/Platform/DI/AutowirePlan.php": "50f7ebeb56a506359ec0174fdbafccdf9e4a0c304ab9f9331255695e63936e4c",
+      "src/Platform/DI/Container.php": "171be2c1963823b50f7dd559449c1f653f0dd5cf5a2babd079143bbe394169da",
+      "src/Platform/DI/ContainerException.php": "65a497daa49d380f35761012f02ff99291bda46ad8f1ec5ba325c4638430630c",
+      "src/Platform/DI/ContainerHandlerFactory.php": "109e5f2563f5a1c56e2112f75e8dd3ed0831b14713f085c897efcca2d6ecbaa1",
+      "src/Platform/DI/DIContainer.php": "daf627489882e7d4a4eec5b9c9c8bbd5572f5a67e60cd80ce7b401de918e0a79",
+      "src/Platform/DI/DefaultValueArgument.php": "d3150fa884c81a69e6307a73d2272aa451ec63dde0abdcb7a75182f746049687",
+      "src/Platform/DI/ServiceProvider.php": "a63ce25e74bdb5a3c2f6247869102171bf50f52af279f222babe6f3126ab49d7",
+      "src/Platform/DI/ServiceProviders/CacheServiceProvider.php": "53aee9626ad6560c9c59e9ad6598823b8891b72675618ec3d0e6382a80b8272e",
+      "src/Platform/DI/ServiceProviders/CoreServiceProvider.php": "cabfc0f1a3a041bd92a8f7add4874be82e003b818f510129a9a69334eeacb8f3",
+      "src/Platform/DI/ServiceProviders/HttpClientServiceProvider.php": "38b53afc952535c0f08890eb9598c41896d9be7ec4190b8df4c362996b6175c2",
+      "src/Platform/DI/ServiceProviders/HydratorServiceProvider.php": "d07a57ca7db2301d980cc77593e416f6ea0bc5b8100f3f93dd390abe807a1577",
+      "src/Platform/DI/ServiceProviders/MigrationServiceProvider.php": "3a1a9e667e960c686ac7066c52d5c5d521b6f5418b75c8fc64624cbc01275b5a",
+      "src/Platform/DI/ServiceProviders/PlatformSupportServiceProvider.php": "156d8cd8befdf91e4d325de9422a68bacb609845e48e02a31b30ca80cd703de6",
+      "src/Platform/DI/ServiceProviders/RoadRunnerServiceProvider.php": "1ffa83c98148566cd387db6aaf3005983c4564ea4dcfeebfc8e76387b5d9d24d",
+      "src/Platform/DI/ServiceProviders/RoutingServiceProvider.php": "9405310b16a76bdd38cb5c939c62998528d0f46eccd80b013ecf839aef573f85",
+      "src/Platform/DI/ServiceProviders/StorageServiceProvider.php": "44b575bad9bef5cd1723027e11294bb2b1ae1ccfea958f4bcee62849bda52f96",
+      "src/Platform/DI/ServiceReferenceArgument.php": "a3fc4024def5190f1385cba9ad3d85798e82fffbbe876dd5cad9dc5d288ec099",
+      "src/Platform/DataMapping/DataTransferObjectMapper.php": "71d9aa900fb0c223286c211342d1af85b8814c51f99151f6cd5f0c2992338da4",
+      "src/Platform/DataMapping/ResponseDataContainer.php": "45aacb85ec88f1888846641345415488104629950209b762dd5c2a20f4d82357",
+      "src/Platform/Error/Error.php": "7121f2f72090be096190c0c7cd4f6b67f6deeddb32da2abff6cf759d2dcf0eb7",
+      "src/Platform/Http/Client/CurlTransport.php": "faecf4dca1abd8bc8c3585b35d34a1c5851064e00ea7122202e771a2d955f2b2",
+      "src/Platform/Http/Client/Exception/CurlTransportException.php": "1b6cb711a1d43104074c0e28eb2986a64012b378ff422968366b95ecde51885f",
+      "src/Platform/Http/Client/Exception/HttpClientException.php": "b529c6459fe7dbbf67f3a664e8a554407bd4febd8f49882adfdc5ebd195a97ef",
+      "src/Platform/Http/Client/Exception/HttpTimeoutException.php": "400d7d3dbc7d6b786a85f8572df05c4e20eaf4c8893229ff98077363ea99f8b8",
+      "src/Platform/Http/Client/Exception/HttpTransportException.php": "aeaff4c7824757c9483329c4962e369dec7d5078f8d2357b748964b29b915c47",
+      "src/Platform/Http/Client/HttpClient.php": "ced4b64c79a5a869b584c83d9f9fa45ff068017433e2e3bb1230a14333980d28",
+      "src/Platform/Http/Client/HttpMethod.php": "8d778b6dc6a90ad793bf9cfbbd7a37d3f2bdd721dd7d7d8e6ea351169658a23d",
+      "src/Platform/Http/Client/HttpRequest.php": "d65cb452e8e7adcc03a90578fa27383ad3193cb81862c28f7362373664e6bebc",
+      "src/Platform/Http/Client/HttpRequestOptions.php": "5b996a26e5de3a54be227f22f698e1aa4e5e3e38521d41b6f56e62a5f85eca1e",
+      "src/Platform/Http/Client/HttpResponse.php": "5a77d07252f711a4e42fbb59f2fc0dc6c1bf68ccc1afc7dd6b034f7499ee617b",
+      "src/Platform/Http/Client/HttpTransport.php": "7e637086e9112b8a0744ff2b2bd4b260505cd16e8126f5c74b7ba4140760daba",
+      "src/Platform/Http/Client/ResilientHttpClient.php": "41cffdc0650afed70097d1114f24239f7617508e4c733c106861b5f9a0dae2db",
+      "src/Platform/Http/Client/RetryPolicy.php": "dfd8ee50ebb6ca8a80b38502dc7d6d21d486ff0c91209f8b2ca77843eebbd024",
+      "src/Platform/Http/Endpoint/Api/V1/HealthService/CheckEndpoint.php": "27ff3e156ff64639397b64354419a628b87a134a59c19c2dab67f94910434c61",
+      "src/Platform/Http/Endpoint/Api/V1/SystemService/DescribeEndpoint.php": "e1e07ee2dc50527716bde3ffdb1adbd401fd89e6c87cabfbd2ffdcd1bd607628",
+      "src/Platform/Http/Endpoint/EndpointImplementationResolver.php": "a826e799c10a350199c3af5304c17a56fea1cf0d6e504eba9d1be285c70a666b",
+      "src/Platform/Http/Endpoint/GeneratedEndpointImplementationMapProvider.php": "401e46b9a137a51dde9ddec5d98c2d2e8f57ebeb676215c6d8812c9297d77f7c",
+      "src/Platform/Http/GeneratedOperationManifestProvider.php": "16338e26aa7a11dad5fc26ca2765c43960d1aa3d8585010edd43b33357b90578",
+      "src/Platform/Http/Handler/AbstractJsonHandler.php": "607ae7ae3588defe9568ee206101ad0225b09e119318eff768d03cbf58e8793c",
+      "src/Platform/Http/Handler/AbstractProtobufRpcHandler.php": "4a4b1d60baebd2a3fb73bbd23ebf0848b4e4735f1d74e903fb61526bc5c18ba7",
+      "src/Platform/Http/Handler/HandlerFactoryInterface.php": "4895f89093b398f13522643262a3a3d49338a5aaf202df14320799dc2beff6d9",
+      "src/Platform/Http/Handler/HandlerInterface.php": "6c30ec3438aefbbf0989c6008c74188d52230e6f674645ab8101f97302371220",
+      "src/Platform/Http/Handler/HealthHandler.php": "8d1102e6d617751692ef6fafe9cf34a0fd5cefa78d31183cecd3739439a759ea",
+      "src/Platform/Http/HttpRuntimeConfig.php": "6063c87e14b87d61de663ade3acac65af00fa647e6ef6f3ec5f490edde2660b0",
+      "src/Platform/Http/JsonResponse.php": "2c91eff1a777d3606307438f9c70977ab23fdeb5e0e520e58c88e1bf2ae0f38c",
+      "src/Platform/Http/Middleware/ErrorHandlerMiddleware.php": "55cedf8ae5a9f5b24cb63655beb03092818116007bb90fe30bbb1056d353494f",
+      "src/Platform/Http/Middleware/HttpLoggingMiddleware.php": "bd4012e66749b67d1d61bfeea1b4ebcf0c0a5b7fa12580881b1db38f441ddf95",
+      "src/Platform/Http/Middleware/Pipeline.php": "3ca1baa60720e2c2368505992a3538eca4b721064ba33aec97b93584e8a9c6dd",
+      "src/Platform/Http/Middleware/RequestContextMiddleware.php": "fae81284289657585e4b5534eb7c4c2b9bf111ddbfb82c8e7bddbbf7ffc769fa",
+      "src/Platform/Http/Middleware/RoutingMiddleware.php": "ba65d6a9de9a9b2b1cd6f31107237fe1c3856f763d4b2ff4df9ea213d61f066e",
+      "src/Platform/Http/Middleware.php": "3acfaa4a33086c5c95f5d65e9e0f79e4f7551511c0edb29693b4fc8c0617181e",
+      "src/Platform/Http/Operation/HttpOperationBinding.php": "525a029c20dd0b49f5f16d9ed3b15d00791dab4399125e8218f1da0b1d29b578",
+      "src/Platform/Http/Operation/OperationDefinition.php": "609ae1b52eeb4660f436a3400d2fac877817fc7f58c7b8c1a804326501cc9a2e",
+      "src/Platform/Http/Operation/OperationRegistry.php": "941797e60b1f64131c207ae3d910859ec636dd6d704e5d2ede4e2f9830f8cda9",
+      "src/Platform/Http/RequestContextAttributes.php": "47146830124a171a89714b8dfaedde5efbd1928de841020e0b2e3400783be44e",
+      "src/Platform/Http/RequestHandler.php": "fb48201b00c55ce18de150d103de54b272ffb551aaa7bdcc3b8b812092f97f1a",
+      "src/Platform/Http/RouteHandlerResolver.php": "e48d6097ef014748dc146871ad4d60aa5d5a98e83fa2fbf896749d39290dae36",
+      "src/Platform/Hydration/DefaultJsonFieldAdapter.php": "954027a0515ca54fd3073569ba640435a392a8cd0ad63695dc564f03668b4738",
+      "src/Platform/Hydration/Hydrator.php": "83671c3dd4f9eb88b5d8e37721073f65bf5ea95d85676078d2f391408b185474",
+      "src/Platform/Hydration/HydratorException.php": "583ad7a09c05eca4f2ede706420d30df2720baed4b1c021f66b30af56e4b4065",
+      "src/Platform/Hydration/JsonFieldAdapter.php": "ab534b3bad74384be085087818d3fd7503c07cb9a1a9dd791836b21f5fa10c72",
+      "src/Platform/Hydration/LRUReflectionCache.php": "fa077f3ad9045f7d73dc25f7bab0a519a22864e487ecea613445d7ad08f85b06",
+      "src/Platform/Hydration/LimitedReflectionCache.php": "3ec57d6219c93e64b669ad6f7595561289387c9df852a913f541afe5bcf81fe8",
+      "src/Platform/Hydration/ProtobufHydration.php": "3b765f19a3a389405f09cc6baa269c948177e8f1c410d6a27b48039136d1d43a",
+      "src/Platform/Hydration/ReflectionCache.php": "f8ec5c16b0a5b5c91755497081acfae076ace6fe72f642bc388b42e847aeab6f",
+      "src/Platform/Hydration/ReflectionHydrator.php": "35746d4a5f2ea1ad2fbb5d42246960d0dce491a5c58480e66b55b50a28864c59",
+      "src/Platform/Hydration/SetterProtobufHydration.php": "72e3445501c8ece8a2407f761a972713ed40cb5ccad236aaf87eb8da80b0e490",
+      "src/Platform/Logging/Logger.php": "39fb9965a38c05fc76b47179cce7d5aab2f309a24adb6a09d782146644fdd25a",
+      "src/Platform/Logging/ReadableOutputLogger.php": "d8e41ce58cc400c6cf9b734a44f336b901db187371d993b8ecdb026da94c8f53",
+      "src/Platform/Logging/RoadRunnerLogger.php": "ccf8d80872e44e20469c858230ab1aa149c13032a365b0552d6f40c69e992c45",
+      "src/Platform/Persistence/Entity.php": "ac82967114518bd15e5db8f3652d3e0e9edf2528c2110af196b7d36397438af3",
+      "src/Platform/Routing/DefaultRouteCollector.php": "60d48235b98a948b3cf53460ae4b677a5d01b8f48abe64b7f8247c8383bc594b",
+      "src/Platform/Routing/Generator/GeneratedOperationRouteProvider.php": "38de96828b7526d64df934c6149f523a722f6ec82ce5907b62bf71f48a51d88f",
+      "src/Platform/Routing/Generator/RouteProvider.php": "fce76e9104d982fc3d321d88d640216e0efedd60aa323df75f6e94a21a1d9a7f",
+      "src/Platform/Routing/Generator/RoutesWriter.php": "459d475817f75cc205b4fe679a4cf3ca7df85091a63ff80204338e115da09443",
+      "src/Platform/Routing/RouteCollectorInterface.php": "1ed94914f5af902959b8ba73520114349ccf95a4bf9aa30efb1253c8d7a36e37",
+      "src/Platform/Routing/RouteDefinition.php": "d5054d2efbf809edb8000b8ff4b7e9e0224c560cb87cb76f07663addfd7f30c1",
+      "src/Platform/Routing/RouteDefinitionInterface.php": "423b0ca46e169ac854eedb73b52d9590dc7f9b322af99cdb7dde8bd344aca987",
+      "src/Platform/Routing/RouteEntry.php": "c82f2227143297a991b45a9a3e7a482fe83bb3e2dea9ce2b82a3d8ed626c0230",
+      "src/Platform/Routing/RouteException.php": "f63ac3ce5c46023c9d9c5b5c4ffa3c600d5704f1aada420935cefc3f5bbb5c3e",
+      "src/Platform/Routing/RouteMapEntry.php": "1ba9062ab7d490f0581060e5c4a20093d95704b9976e7bbe89cd6842936e32e4",
+      "src/Platform/Routing/RouteParameters.php": "0487b5b0e5e571ddd75df3b7dc810836d460419e5c8efafaf1f41b1645622c26",
+      "src/Platform/Routing/RouteResult.php": "58b9dc7d0140fa1657336593ba19eb161b861c767d0b0baa719d1e617e85d207",
+      "src/Platform/Routing/RouteStatus.php": "159cb6fab8b9044ba90814d7cfea2f4c96293b2a98a38e74a4a6ce8c56134343",
+      "src/Platform/Routing/Router.php": "39911d86928530d402e8d268a434977db6b1a8c9846f7eb82aad2762a3b5bdc4",
+      "src/Platform/Routing/RouterInterface.php": "25a0fd07b97bb125b154647f14904981a25c00dc6f287a580675f37601b649d4",
+      "src/Platform/Routing/StaticRouteProvider.php": "07c0a3e50af37969bf0fc7093d5c967d407d1a13a5962032ce062112031bede1",
+      "src/Platform/Runtime/App.php": "f7ad5325ec686503bc1e922c7c8b3b622e947332b83c0c62180e19798b6a0282",
+      "src/Platform/Runtime/Deadline.php": "9c81334c0ada1cbf9f394976bde16c61600f965c7ebf8cec01234f4b4849e757",
+      "src/Platform/Runtime/RandomRequestIdGenerator.php": "c13ae413ad60cba04614177c8b3a969ba7fb720c177cdb98dc1315f249aaf17a",
+      "src/Platform/Runtime/RequestContext.php": "83d9b19643ef9177e2b05ba6709eb9ec932c8be7da0eaea8adbba5c13864462a",
+      "src/Platform/Runtime/RequestContextFactory.php": "eb095303327ae9d11ebfe340a2393c3575c678d44bd90553473fbebfdc6b84b0",
+      "src/Platform/Runtime/RequestIdGenerator.php": "50d4b73b12d6e9470149929e4b779b919bdbff3d400be46673d53b139595ed00",
+      "src/Platform/Runtime/RoadRunnerRuntime.php": "578135890db4854737ded55e589989dc8ec1b0dd68a478f237525dd8a9a32178",
+      "src/Platform/Runtime/SapiRequestFactory.php": "4a4e34cfd54bd1e687d278fbd28cb3bb485593935291224a5d26c44398d066ea",
+      "src/Platform/Runtime/SapiResponseEmitter.php": "942cf99f2957b825fbb00a8a4b2cc4689a018899adb228486e5ac416a89fead8",
+      "src/Platform/Storage/AbstractStorage.php": "bd315c08e36e90d96c12ea72eb8dc4a04826a4f1ea289b618d09f90f09425dc6",
+      "src/Platform/Storage/Migration/AbstractMigration.php": "fbb68bc67e6621ee4d5b9635e824ba7c7a9d286f5285cef2afb285e1b2c87691",
+      "src/Platform/Storage/Migration/Migration.php": "b237ecf2d3020e6ad762052de58c976ff0bd9f4ebb3641fa098711512e88a43b",
+      "src/Platform/Storage/Migration/MigrationLoader.php": "40e433f6a7cd391a5f5fa01456c799f366a53b2fdeb83716bc9aa1434a14cdce",
+      "src/Platform/Storage/Migration/MigrationRepository.php": "4aa444bfc51391f8d804dc1e4a3e6a6a4f218843c0d8fe3679bdad7868f0c49a",
+      "src/Platform/Storage/Migration/MigrationService.php": "224096ddc39600279e5b2cbd3a078e9c3abd7c5fb6be4b3c73bb73556895cbaa",
+      "src/Platform/Storage/Migration/PostgreSQL/Migration20240430001_CreateSessions.php": "e1b914606708bfd179a7189a69207a41dd547641c06ce9bd5b26a630dabf7d2f",
+      "src/Platform/Storage/Migration/PostgreSQL/Migration20240430002_CreateApiStats.php": "7eea15ad9f7159b01c974607cfda79101868c1bad06d62f365fcad0e9456b131",
+      "src/Platform/Storage/Migration/PostgreSQL/Migration20240502001_CreateUsers.php": "965c929482170e40feaebffe0e3eff5baaa76a4269e89136f65043db17b45e0a",
+      "src/Platform/Storage/Migration/SQLite/Migration20240317001_CreateSessions.php": "1d29341690500a4ea06fc245bc6ff05eee4ca3279331b036786886de6a05ead9",
+      "src/Platform/Storage/Migration/SQLite/Migration20240502001_CreateUsers.php": "91cf8e610cc86caa627f18b56c15b7b226bde77ee9274c4dc0a670cfeffec4b8",
+      "src/Platform/Storage/Migration/SQLite/Migration20250416001_CreateApiStats.php": "f6b097257794b00acc0d6ea997b3d9819a624ff6af987057270afefddfff2f35",
+      "src/Platform/Storage/PostgreSQLStorage.php": "35e1383cfaef879152b086a172df3902bc7d624ffe2b1a63e7f6a9485d53e139",
+      "src/Platform/Storage/PostgreSqlStorageConfig.php": "b0e03b67cb17f1b50b9c46876480413943de03fbce64f0e6152937f092bc63b2",
+      "src/Platform/Storage/Repository/AbstractCachedRepository.php": "942d82765a6a89c955421eb220025e61f3836bc48ffb1efe4b6aea755b1a0799",
+      "src/Platform/Storage/SQLiteStorage.php": "7d912a88f53dcaa9c2493d995f89c5e172675fe2d41e965b098bdcfb6a07dd1e",
+      "src/Platform/Storage/SQLiteStorageConfig.php": "9d18a032a92e38284ff32d3387fe02f2dd28a4001d04c5148a2d601d3d0ecdc7",
+      "src/Platform/Storage/Sql/DatabaseRow.php": "52a54fbae8a7ac7273be9b6dc4731205e067278b549c6bd0775fdb707a72fea0",
+      "src/Platform/Storage/Sql/ExecutableQuery.php": "2cc34f166fec8e734eac92b609127e72c1ab30deb4256010ea1666066aa4e9db",
+      "src/Platform/Storage/Sql/ManyRowsQuery.php": "007328d1502789adf88aa415fcfa8d1a6376e620920dd713df63f2cfa9bd6b34",
+      "src/Platform/Storage/Sql/OneRowQuery.php": "bcd5c3e474713f5fa9d7365bbe7ad66e40a98627b5a26b0b2ca2c2a38266396a",
+      "src/Platform/Storage/Sql/RowReturningQuery.php": "be1a149c8e09540784ce3ab1b669f84d3dde9f22709c4cfbf1df5171d6240731",
+      "src/Platform/Storage/Sql/SqlExecutor.php": "fe39968ce66ac12653c7ffca5c3e262eb816178d64fe964b8391c180a906e43f",
+      "src/Platform/Storage/Storage.php": "94964c1b8ea35af00f31f37c337a3217527781bdefec83f9980308b26486d9a1",
+      "src/Platform/Storage/StorageConfig.php": "236b3ac4f2dce9ddb1b9c0de50dacb2f286eef39778960191c0ed427d1519798",
+      "src/Platform/Storage/StorageException.php": "77a4094e23f09adf9a902c6bd8f5528a7e88a2f15bd953a81043f3d556807e94",
+      "src/Platform/Storage/StorageFactory.php": "54c4765f4af95bac7e61d6263ee72f0d9cc6824904d2aa8a45c2b13a52fc5dfc",
+      "third_party/manifest.json": "9ea882aceddf2ed2f52b8942ab6e8ad6e6e449edb84b6fedc6d47453a9d2717e",
+      "third_party/runtime/manifest.json": "bcce621cbe9a20f8023155ca9130a0344c1c00fcd0cf6db1fe53203559c11477",
+      "tools/project.php": "a81830719fd419796fec482725f5eb2641cae522805800437b011f1ba248a786"
+    }
+  },
+  "environment": {
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.1\nBuildVersion:\t\t25G76",
+    "machine": "arm64",
+    "hardware": "Apple M3 Max\n14\n14\n38654705664",
+    "php": "PHP 8.5.9 (cli) (built: Jul 28 2026 13:06:52) (NTS)\nCopyright (c) The PHP Group\nBuilt by Homebrew\nZend Engine v4.5.9, Copyright (c) Zend Technologies\n    with Zend OPcache v8.5.9, Copyright (c), by Zend Technologies",
+    "fpm": "PHP 8.5.9 (fpm-fcgi) (built: Jul 28 2026 13:06:52) (NTS)\nCopyright (c) The PHP Group\nBuilt by Homebrew\nZend Engine v4.5.9, Copyright (c) Zend Technologies\n    with Zend OPcache v8.5.9, Copyright (c), by Zend Technologies",
+    "rr": "rr version 2025.1.15 (build time: 2026-06-17T14:49:38Z, go1.26.4), OS: darwin, arch: arm64",
+    "caddy": "v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=",
+    "k6": "k6 v2.2.0 (commit/devel, go1.26.5, darwin/arm64)",
+    "php_settings": {
+      "version": "8.5.9",
+      "extensions": [
+        "Core",
+        "date",
+        "lexbor",
+        "openssl",
+        "pcre",
+        "sqlite3",
+        "zlib",
+        "bcmath",
+        "bz2",
+        "calendar",
+        "ctype",
+        "curl",
+        "dba",
+        "uri",
+        "json",
+        "mbstring",
+        "SPL",
+        "FFI",
+        "fileinfo",
+        "filter",
+        "ftp",
+        "gd",
+        "gettext",
+        "gmp",
+        "hash",
+        "iconv",
+        "intl",
+        "session",
+        "ldap",
+        "standard",
+        "libxml",
+        "mysqlnd",
+        "mysqli",
+        "odbc",
+        "Zend OPcache",
+        "pcntl",
+        "PDO",
+        "pdo_dblib",
+        "pdo_mysql",
+        "PDO_ODBC",
+        "pdo_pgsql",
+        "pdo_sqlite",
+        "pgsql",
+        "Phar",
+        "posix",
+        "random",
+        "readline",
+        "Reflection",
+        "exif",
+        "shmop",
+        "SimpleXML",
+        "snmp",
+        "soap",
+        "sockets",
+        "sodium",
+        "sysvmsg",
+        "sysvsem",
+        "sysvshm",
+        "tidy",
+        "tokenizer",
+        "dom",
+        "xml",
+        "xmlreader",
+        "xmlwriter",
+        "xsl",
+        "zip"
+      ],
+      "ini": "/opt/homebrew/etc/php/8.5/php.ini",
+      "opcache.enable": "1",
+      "opcache.enable_cli": "0",
+      "opcache.jit": "disable",
+      "opcache.jit_buffer_size": "64M"
+    },
+    "postgres": "PostgreSQL 16.15 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "docker": "CPUs=14, RAM_bytes=8392658944, OS=linux, arch=aarch64, server=29.4.0",
+    "rr_php_settings": {
+      "opcache.enable": "1",
+      "opcache.enable_cli": "1",
+      "opcache.jit": "disable",
+      "opcache.jit_buffer_size": "64M",
+      "opcache.memory_consumption": "128",
+      "opcache.validate_timestamps": "1",
+      "opcache.revalidate_freq": "2",
+      "opcache.optimization_level": "0x7FFEBFFF",
+      "memory_limit": "128M"
+    },
+    "fpm_php_settings": {
+      "source": "php-fpm -i, collected after the trials; no PHP ini changes during the task. Pool overrides are recorded in load-tests/baseline/php-fpm.conf (opcache.enable=on, display_errors=off).",
+      "settings": {
+        "Loaded Configuration File": "/opt/homebrew/etc/php/8.5/php.ini",
+        "Scan this dir for additional .ini files": "/opt/homebrew/etc/php/8.5/conf.d",
+        "memory_limit": {
+          "local": "128M",
+          "master": "128M"
+        },
+        "opcache.enable": {
+          "local": "On",
+          "master": "On"
+        },
+        "opcache.enable_cli": {
+          "local": "Off",
+          "master": "Off"
+        },
+        "opcache.jit": {
+          "local": "disable",
+          "master": "disable"
+        },
+        "opcache.jit_buffer_size": {
+          "local": "64M",
+          "master": "64M"
+        },
+        "opcache.memory_consumption": {
+          "local": "128",
+          "master": "128"
+        },
+        "opcache.optimization_level": {
+          "local": "0x7FFEBFFF",
+          "master": "0x7FFEBFFF"
+        },
+        "opcache.revalidate_freq": {
+          "local": "2",
+          "master": "2"
+        },
+        "opcache.validate_timestamps": {
+          "local": "On",
+          "master": "On"
+        }
+      }
+    }
+  },
+  "protocol": {
+    "scenario": "load-tests/baseline/scenario.js",
+    "front": "one native Caddy process with FastCGI to FPM and HTTP proxy to RR",
+    "workers": {
+      "fpm": 1,
+      "rr": 1
+    },
+    "base_urls": {
+      "fpm": "http://127.0.0.1:18081",
+      "rr": "http://127.0.0.1:18082"
+    },
+    "trials_per_profile_and_case": 3,
+    "warmup_per_trial": "2s at 4 VUs; excluded from recorded trials",
+    "measurement_per_trial": "5s at 4 VUs; closed loop, one request per iteration, no pause",
+    "order": "Trials 1 and 3: FPM then RR; trial 2: RR then FPM; JSON then SELECT in each trial",
+    "cpu_rss_method": "ps -axo pid=,ppid=,rss=,time= every 250 ms while the k6 command runs; select native parent and recursively its descendants; CPU delta before/after command; peak sum RSS per process group",
+    "resource_units": {
+      "cpu_seconds": "seconds per whole process group during client command, not per request",
+      "peak_sum_rss_kib": "maximum sampled sum of RSS in KiB per group; shared pages may be counted more than once"
+    },
+    "resource_boundaries": "Server group is FPM master+child or RR server+PHP worker; common Caddy reported separately. Both runtimes alive, the inactive one excluded from active profile costs. k6, PostgreSQL/Docker and unrelated host processes are not included in server CPU/RSS. All run on one development host; no host CPU isolation. CPU capture includes client start/exit, not just 5 seconds of traffic.",
+    "quality_gate": "Expected status, Content-Type, exact body and absence of Set-Cookie checked on each request; zero HTTP failures and all checks pass. No latency threshold.",
+    "retained_data": "Each measured k6 summary metric needed for this report, counts/checks and sampled group resources are copied here; per-request raw samples were not collected. Warmup/diagnostic runs are excluded."
+  },
+  "fixture": {
+    "schema": "zerno_baseline_bf69dc1e12208ad17ac0b4c4",
+    "row_count": 10000,
+    "lookup_id": 42,
+    "expected_body": "{\"id\":42,\"value\":\"record-42\"}",
+    "application_selects_per_request": {
+      "json": 0,
+      "select": 1
+    },
+    "sql_count_method": "Declared from the fixture handlers; excludes connection, search_path and prepare work.",
+    "explain": [
+      {
+        "Plan": {
+          "Node Type": "Index Scan",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "baseline_records_pkey",
+          "Relation Name": "baseline_records",
+          "Alias": "baseline_records",
+          "Startup Cost": 0.29,
+          "Total Cost": 8.3,
+          "Plan Rows": 1,
+          "Plan Width": 19,
+          "Actual Startup Time": 0.007,
+          "Actual Total Time": 0.007,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Index Cond": "(id = '42'::bigint)",
+          "Rows Removed by Index Recheck": 0,
+          "Shared Hit Blocks": 3,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning": {
+          "Shared Hit Blocks": 23,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.12,
+        "Triggers": [],
+        "Execution Time": 0.022
+      }
+    ]
+  },
+  "wire_checks": {
+    "fpm": 24,
+    "rr": 24
+  },
+  "runs": [
+    {
+      "profile": "fpm",
+      "case": "json",
+      "trial": 1,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.2958,
+      "requests": 12229,
+      "requests_per_second": 2444.428675513037,
+      "latency_ms": {
+        "p(50)": 1.543,
+        "p(95)": 1.9905999999999995,
+        "p(99)": 2.97172,
+        "avg": 1.597350723689588,
+        "min": 1.105,
+        "med": 1.543,
+        "max": 5.941
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 48916,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 39648,
+          "cpu_seconds": 3.92,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 71552,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 51680,
+          "cpu_seconds": 4.43,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "json",
+      "trial": 1,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.3067,
+      "requests": 22564,
+      "requests_per_second": 4512.063631215386,
+      "latency_ms": {
+        "max": 6.063,
+        "p(50)": 0.851,
+        "p(95)": 1.003849999999999,
+        "p(99)": 1.346,
+        "avg": 0.8544378213082855,
+        "min": 0.489,
+        "med": 0.851
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "passes": 90256,
+        "fails": 0,
+        "rate": 1
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 39632,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 101184,
+          "cpu_seconds": 8.06,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53152,
+          "cpu_seconds": 6.0,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "fpm",
+      "case": "select",
+      "trial": 1,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.4126,
+      "requests": 298,
+      "requests_per_second": 58.978508073326516,
+      "latency_ms": {
+        "max": 157.293,
+        "p(50)": 66.41499999999999,
+        "p(95)": 91.172,
+        "p(99)": 108.55480999999997,
+        "avg": 67.33416778523485,
+        "min": 35.87,
+        "med": 66.41499999999999
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 1192,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 1.04,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 101184,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53152,
+          "cpu_seconds": 0.18,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "select",
+      "trial": 1,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.1789,
+      "requests": 7767,
+      "requests_per_second": 1552.3915664384415,
+      "latency_ms": {
+        "avg": 2.532336165829806,
+        "min": 1.2,
+        "med": 2.425,
+        "max": 25.305,
+        "p(50)": 2.425,
+        "p(95)": 3.474,
+        "p(99)": 5.521879999999998
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "fails": 0,
+        "rate": 1,
+        "passes": 31068
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111568,
+          "cpu_seconds": 3.3,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53168,
+          "cpu_seconds": 2.23,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "json",
+      "trial": 2,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.3729,
+      "requests": 21898,
+      "requests_per_second": 4378.84158463754,
+      "latency_ms": {
+        "min": 0.494,
+        "med": 0.875,
+        "max": 16.166,
+        "p(50)": 0.875,
+        "p(95)": 1.012,
+        "p(99)": 1.162,
+        "avg": 0.8810962188327676
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 87592,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111584,
+          "cpu_seconds": 8.09,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53648,
+          "cpu_seconds": 5.98,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "fpm",
+      "case": "json",
+      "trial": 2,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.2795,
+      "requests": 13523,
+      "requests_per_second": 2703.8288680068445,
+      "latency_ms": {
+        "med": 1.419,
+        "max": 16.295,
+        "p(50)": 1.419,
+        "p(95)": 1.674,
+        "p(99)": 1.90478,
+        "avg": 1.4474716409080859,
+        "min": 1.042
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "fails": 0,
+        "rate": 1,
+        "passes": 54092
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 3.92,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111584,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53696,
+          "cpu_seconds": 4.57,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "select",
+      "trial": 2,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.2557,
+      "requests": 7522,
+      "requests_per_second": 1503.5426799638847,
+      "latency_ms": {
+        "p(95)": 3.3179499999999997,
+        "p(99)": 3.901,
+        "avg": 2.625102233448545,
+        "min": 1.2,
+        "med": 2.712,
+        "max": 8.894,
+        "p(50)": 2.712
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 30088,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111824,
+          "cpu_seconds": 2.88,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53696,
+          "cpu_seconds": 1.97,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "fpm",
+      "case": "select",
+      "trial": 2,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.366,
+      "requests": 215,
+      "requests_per_second": 42.09680463714904,
+      "latency_ms": {
+        "avg": 94.0177441860465,
+        "min": 17.93,
+        "med": 93.091,
+        "max": 182.599,
+        "p(50)": 93.091,
+        "p(95)": 141.83759999999998,
+        "p(99)": 164.01457999999997
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 860,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.95,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111824,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53696,
+          "cpu_seconds": 0.17,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "fpm",
+      "case": "json",
+      "trial": 3,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.3164,
+      "requests": 13692,
+      "requests_per_second": 2737.6548103606196,
+      "latency_ms": {
+        "max": 12.621,
+        "p(50)": 1.408,
+        "p(95)": 1.636,
+        "p(99)": 1.8351799999999998,
+        "avg": 1.4297857873210655,
+        "min": 1.057,
+        "med": 1.408
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 54768,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 3.93,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 111824,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53744,
+          "cpu_seconds": 4.61,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "json",
+      "trial": 3,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.2972,
+      "requests": 22768,
+      "requests_per_second": 4552.97988413978,
+      "latency_ms": {
+        "p(50)": 0.851,
+        "p(95)": 0.95,
+        "p(99)": 1.1283299999999998,
+        "avg": 0.8484798840477834,
+        "min": 0.441,
+        "med": 0.851,
+        "max": 11.537
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 91072,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 112960,
+          "cpu_seconds": 8.07,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53744,
+          "cpu_seconds": 5.96,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "fpm",
+      "case": "select",
+      "trial": 3,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.3299,
+      "requests": 223,
+      "requests_per_second": 43.98869786353009,
+      "latency_ms": {
+        "min": 31.028,
+        "med": 84.832,
+        "max": 205.844,
+        "p(50)": 84.832,
+        "p(95)": 143.41359999999997,
+        "p(99)": 173.81421999999998,
+        "avg": 90.2867533632287
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 892,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.98,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 112960,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53744,
+          "cpu_seconds": 0.18,
+          "process_count": 1
+        }
+      }
+    },
+    {
+      "profile": "rr",
+      "case": "select",
+      "trial": 3,
+      "vus": 4,
+      "duration_setting": "5s",
+      "wall_seconds_including_client_start_and_exit": 5.2507,
+      "requests": 7933,
+      "requests_per_second": 1586.1555592123086,
+      "latency_ms": {
+        "max": 17.929,
+        "p(50)": 2.685,
+        "p(95)": 3.2783999999999995,
+        "p(99)": 3.8487199999999997,
+        "avg": 2.487904323711076,
+        "min": 1.198,
+        "med": 2.685
+      },
+      "http_failure_rate": 0,
+      "checks": {
+        "rate": 1,
+        "passes": 31732,
+        "fails": 0
+      },
+      "resources": {
+        "fpm": {
+          "peak_sum_rss_kib": 55616,
+          "cpu_seconds": 0.0,
+          "process_count": 2
+        },
+        "rr": {
+          "peak_sum_rss_kib": 112960,
+          "cpu_seconds": 3.04,
+          "process_count": 2
+        },
+        "caddy": {
+          "peak_sum_rss_kib": 53744,
+          "cpu_seconds": 2.07,
+          "process_count": 1
+        }
+      }
+    }
+  ]
+}

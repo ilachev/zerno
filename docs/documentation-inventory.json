@@ -431,6 +431,41 @@
         "src/Platform/Http/Client/HttpRequestOptions.php",
         "tools/sql-gen/src/Parser/grammar/sql_subset.pp2"
       ]
+    },
+    {
+      "id": "http-and-baseline-guide",
+      "path": "docs/development/http-and-baseline.md",
+      "kind": "operations",
+      "status": "current",
+      "summary": "Явные wire checks настоящих FPM/RR и воспроизведение малого JSON/SELECT baseline без installer.",
+      "read_when": [
+        "Проверка HTTP adapters",
+        "Измерение runtime и подготовка изолированной fixture"
+      ],
+      "source_paths": [
+        "tools/check-http.php",
+        "tools/http-fixtures",
+        "load-tests/baseline",
+        "tools/project.php"
+      ]
+    },
+    {
+      "id": "initial-core-http-baseline",
+      "path": "docs/history/2026-10-17-core-http-baseline.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Условия и результаты начальных JSON/SELECT замеров FPM/RR, HTTP-регрессии и границы выводов.",
+      "read_when": [
+        "Сравнение с начальным baseline",
+        "Проверка свидетельств HTTP-итерации"
+      ],
+      "source_paths": [
+        "load-tests/baseline",
+        "tools/check-http.php",
+        "src/Platform/Routing",
+        "tests/Unit/Platform/Routing",
+        "docs/history/2026-10-17-core-http-baseline.json"
+      ]
     }
   ],
   "artifacts": [
@@ -474,6 +509,22 @@
       ],
       "source_paths": [
         "docs/history/2026-10-17-autonomy-audit.md"
+      ]
+    },
+    {
+      "id": "initial-core-http-baseline-data",
+      "path": "docs/history/2026-10-17-core-http-baseline.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Окружение, fingerprints измеренных исходников, fixture EXPLAIN и данные двенадцати коротких запусков k6.",
+      "read_when": [
+        "Проверка чисел начального baseline",
+        "Сопоставление условий повторного измерения"
+      ],
+      "source_paths": [
+        "load-tests/baseline",
+        "src/Platform/Routing/Router.php",
+        "tools/project.php"
       ]
     }
   ],

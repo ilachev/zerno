@@ -31,6 +31,7 @@
 | Задача | Документы | Начать проверку исходников с |
 |---|---|---|
 | Runtime, HTTP, маршруты, DI | [Обзор](architecture/overview.md), [жизненный цикл](architecture/request-lifecycle.md) | `config/core.php`, `config/container.php`, `src/Platform/Runtime`, `src/Platform/Routing`, `src/Platform/DI` |
+| Реальные FPM/RR и производительность | [HTTP и baseline](development/http-and-baseline.md), [начальный отчёт](history/2026-10-17-core-http-baseline.md) | `tools/check-http.php`, `tools/http-fixtures`, `load-tests/baseline` |
 | Граница core / optional / приложение | [Карта блоков](reusable-blocks.md), [видение](project/vision.md) | Providers выбранной композиции |
 | SQL и миграции | [SQL-дизайн](design/sql-gen-product.md), [SQL tool](../tools/sql-gen/README.md), [проверки](development/infrastructure-and-testing.md) | `src/Platform/Storage`, `sql`, `codegen/Sql`, `tools/sql-gen` |
 | Protobuf API и генерация | [Текущий контур](architecture/protobuf-and-codegen.md), [правила генератора](design/protoc-php-gen-guidelines.md), [tool README](../tools/protoc-php-gen/README.md) | `protos/proto/app/v1`, `codegen/Protobuf`, `tools/protoc-php-gen` |
@@ -62,4 +63,4 @@ php tools/project.php verify
 
 `verify` не требует внешних сервисов. При изменении БД выполнить реальные PostgreSQL checks через `verify:integration`; при изменении генератора — его `tools:sql:check` или `tools:proto:check`. Полный набор — `verify:full`. Подготовка окружения и `TEST_DB_*` описаны в [инфраструктуре](development/infrastructure-and-testing.md).
 
-Не делать вывод о безопасности, производительности или готовности к эксплуатации по наличию блока или успешному unit test. Известные ограничения и проверяемые результаты читать в документе соответствующей области. Полной системы credentials/permissions/CSRF/audit и сравнительного FPM/RR baseline пока нет.
+Не делать вывод о безопасности, производительности или готовности к эксплуатации по наличию блока или успешному unit test. Известные ограничения и проверяемые результаты читать в документе соответствующей области. Полной системы credentials/permissions/CSRF/audit пока нет. Начальный FPM/RR baseline охватывает только JSON и indexed SELECT; он не выбирает основной runtime и не проверяет длительную устойчивость worker.

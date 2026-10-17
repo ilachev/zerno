@@ -78,4 +78,6 @@ SQL-генератор в [`tools/sql-gen`](../../tools/sql-gen) использ�
 
 `verify` проверяет integrity/documentation/style/PHPStan/SQL consistency/root unit tests без внешней БД. `verify:full` добавляет gates обоих генераторов и PostgreSQL SQL/integration profile. Точный состав и CI boundaries описаны в [справочнике проверок](../development/infrastructure-and-testing.md#автоматические-проверки).
 
-Реализованы SAPI и RR adapters, core PDO composition и автономная поставка. Сравнительный benchmark FPM/RR, постоянный wire-contract suite для реальных серверов, автоматический reset request state всех сервисов и общее принудительное прерывание по deadline не реализованы. Ручные smoke-прогоны не заменяют эти гарантии. CMS, административный интерфейс и законченная user/auth product-модель не входят в текущую реализацию ядра.
+Реализованы SAPI и RR adapters, core PDO composition и автономная поставка. Добавлены явно запускаемые [HTTP wire fixtures и JSON/SELECT baseline](../development/http-and-baseline.md); результаты начального сравнения сохранены в [датированном отчёте](../history/2026-10-17-core-http-baseline.md). Этот ограниченный набор не входит в CI и не проверяет весь HTTP или длительную устойчивость памяти. Выбор основного runtime остаётся открытым.
+
+Автоматический reset request state всех сервисов и общее принудительное прерывание по deadline не реализованы. CMS, административный интерфейс и законченная user/auth product-модель не входят в текущую реализацию ядра.

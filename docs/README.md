@@ -33,6 +33,7 @@
 ## Работа с репозиторием
 
 - [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
+- [HTTP и малый baseline](development/http-and-baseline.md) — реальные FPM/RR wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
 - [Правила документации](development/documentation.md) — статусы, источники истины, инвентаризация, ссылки и порядок обновления.
 - [Bundled distributions](../third_party/README.md) — карта включённых сторонних исходников и инструментов.
 
@@ -47,8 +48,8 @@
 
 ## Исторические материалы
 
+- [Начальный HTTP/PDO baseline от 2026-10-17](history/2026-10-17-core-http-baseline.md) — ограниченное сравнение FPM/RR, условия, результаты и [данные запусков](history/2026-10-17-core-http-baseline.json).
 - [Ревизия трёх целей от 2026-10-17](history/2026-10-17-development-principles-review.md) — замечания к документации, ограничения исходного кода и основания обновлённого плана.
-
 - [Аудит и этапы автономной поставки от 2026-10-17](history/2026-10-17-autonomy-audit.md) — сохранённый снимок до реорганизации документации.
 - [Исходный аудит установленных зависимостей](history/dependency-inventory-2026-10-17.json) — прежний Composer-граф, размеры и hashes; **не текущая поставка**.
 
