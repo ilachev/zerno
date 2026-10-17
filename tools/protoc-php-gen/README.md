@@ -1,94 +1,71 @@
 # Proto PHP Endpoint Generator
 
-`protoc-php-gen` is the internal protoc plugin used by this repository to generate and validate PHP endpoint artifacts from protobuf `service/rpc` definitions.
+Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-The current production-grade scope is intentionally narrow: the main project path supports `endpoints`, `endpoint_validation`, and `operation_manifest`.
+`protoc-php-gen` — локальный `protoc` plugin ProtoPHPStack для дополнительного protobuf API-профиля. Обычный HTTP-профиль с явными [PHP routes](../../config/routes.php) его не использует.
 
-## Current role
+## Текущие модули
 
-The supported project path is endpoint-oriented:
+| Флаг | Модуль | Результат |
+| --- | --- | --- |
+| `generate_endpoints=true` | `endpoints` | Endpoint interfaces и HTTP handlers |
+| `generate_endpoint_validation=true` | `endpoint_validation` | Проверка файла, FQCN и объявления `implements` ручной реализации |
+| `generate_operation_manifest=true` | `operation_manifest` | PHP operation registry classes с RPC и HTTP method/path |
 
-- parse protobuf descriptors;
-- generate endpoint interfaces;
-- generate HTTP handlers for the runtime adapter;
-- validate handwritten endpoint implementations against generated expectations;
-- generate operation registry classes for each protobuf RPC.
+Все модули по умолчанию выключены. Полную совместимость сигнатур и поведение реализации проверяют PHP, PHPStan и project tests, а не token-based validator.
 
-It is not the canonical path for domain-to-proto mapper generation.
+Plugin не генерирует message SDK, OpenAPI, ORM или domain mappers. Полное Google HTTP transcoding и streaming RPC не входят в текущий runtime contract.
 
-## Product direction
-
-This tool should be treated as a modular PHP code generation platform around protobuf descriptors, not as a one-off script and not as a grab bag of unrelated generators.
-
-Today, `endpoints`, `endpoint_validation`, and `operation_manifest` are stable and supported.
-
-Future generators are allowed only if they:
-
-- solve a reusable backend problem;
-- have an explicit generation flag;
-- keep a separate output contract;
-- have dedicated tests;
-- do not leak business or persistence policy into the codegen layer.
-
-## Technical roadmap
-
-The internal stabilization baseline is already in place:
-
-1. modular plugin core (`PluginOptions`, `CodeGeneratorModule`, `GeneratorRegistry`);
-2. typed descriptor model instead of raw array-driven flow;
-3. dedicated type resolver for fully-qualified protobuf types;
-4. runtime profile abstraction for transport generation;
-5. stronger end-to-end coverage for the plugin protocol.
-
-The next stage is not “more generators at any cost”, but a cleaner protobuf-first flow in the main template:
-
-1. generated operation registry classes as the canonical endpoint metadata surface;
-2. less manual runtime glue between generated endpoints and handwritten endpoints;
-3. stricter consistency checks for generated artifacts.
-
-The detailed product-level rationale is documented in:
-
-- `docs/design/protoc-php-gen-product.md`
-
-## Usage
-
-Dependencies are bundled in `third_party/codegen/protobuf/packages` and loaded through this tool's `bootstrap.php`. No package installation is required. `third_party/codegen/protobuf/manifest.json` records the package versions, source refs, licenses and file hashes.
-
-Run the local quality gate from the project root:
+## Запуск из корня проекта
 
 ```bash
+php tools/project.php proto:gen:endpoints
 php tools/project.php tools:proto:check
 ```
 
-The protobuf and SQL generators run in separate PHP processes because their dependency versions are pinned independently. Do not load both generator bootstraps in one process.
-
-Generating protobuf artifacts still requires a local `protoc` executable. OpenAPI generation additionally requires `protoc-gen-openapiv2`; the PHP plugin does not install either executable.
+Полный protobuf pipeline:
 
 ```bash
-protoc -I=./protos/proto \
-  --plugin=protoc-gen-php-endpoint=./tools/protoc-php-gen/bin/protoc-php-gen.php \
-  --php-endpoint_out=namespace=App\\Generated\\Endpoint,output_dir=gen,source_root=src,bootstrap=codegen/protoc-php-gen-bootstrap.php,endpoint_profile_class=ProjectCodegen\\Protobuf\\BaseApiTemplateEndpointProfile,generate_endpoints=true,generate_endpoint_validation=true,generate_operation_manifest=true:. \
-  ./protos/proto/app/v1/*.proto
+php tools/project.php proto:gen:all
 ```
 
-## Parameters used by the main project
+Он отдельно запускает PHP SDK generation, OpenAPI и этот plugin. Для генерации нужен локальный `protoc`, для OpenAPI — `protoc-gen-openapiv2`. Project commands их не скачивают. Quality gate инструмента использует bundled PHP tools и synthetic binary protocol tests.
 
-- `namespace` - Base namespace for generated endpoint classes
-- `output_dir` - Output directory for generated files
-- `source_root` - Root directory for handwritten endpoint implementations
-- `bootstrap` - Optional PHP bootstrap file for loading project-specific profile classes
-- `endpoint_profile_class` - Fully-qualified endpoint profile class used by the project
-- `generate_endpoints` - Enable endpoint generation
-- `generate_endpoint_validation` - Fail generation when handwritten endpoint implementations are missing or declared incorrectly
-- `generate_operation_manifest` - Enable operation registry generation
+Прямой вызов для текущего project profile:
 
-## Output
+```bash
+protoc -I=protos/proto \
+  --plugin=protoc-gen-php-endpoint=tools/protoc-php-gen/bin/protoc-php-gen.php \
+  --php-endpoint_out='namespace=App\Generated\Endpoint,output_dir=gen,source_root=src,bootstrap=codegen/protoc-php-gen-bootstrap.php,endpoint_profile_class=ProjectCodegen\Protobuf\BaseApiTemplateEndpointProfile,generate_endpoints=true,generate_endpoint_validation=true,generate_operation_manifest=true:.' \
+  protos/proto/app/v1/*.proto
+```
 
-The main project expects generated files in:
+## Параметры
 
-- `gen/Generated/Endpoint/...`
-- `gen/Generated/OperationManifest/...` - generated operation registry classes
+| Параметр | Контракт |
+| --- | --- |
+| `namespace` | Generated base namespace; default `App\Gen` |
+| `output_dir` | Путь generated output; default `gen` |
+| `source_root` | Корень ручных реализаций; default `src` |
+| `bootstrap` | Необязательный PHP-файл, загружающий внешний profile |
+| `endpoint_profile_class` | Обязательный загружаемый класс `EndpointProfile` с конструктором без обязательных аргументов |
+| `generate_*` | Явное включение соответствующего модуля |
 
-These files are used together with handwritten endpoint implementations in:
+Profile задаёт naming, implementation paths и runtime helper FQCN. Project profile находится в [codegen/Protobuf/BaseApiTemplateEndpointProfile.php](../../codegen/Protobuf/BaseApiTemplateEndpointProfile.php); его историческое имя класса сохранено.
 
-- `src/Platform/Http/Endpoint/...`
+Текущий project output:
+
+- `gen/Generated/Endpoint/...`;
+- `gen/Generated/OperationManifest/...`.
+
+Ручные реализации — `src/Platform/Http/Endpoint/...`. Generated output не редактируют вручную. В protobuf-профиле `RoutingServiceProvider` явно связывает эти outputs с Router и DI.
+
+## Автономная поставка и границы
+
+[bootstrap.php](./bootstrap.php) загружает [bundled distribution](../../third_party/codegen/protobuf/autoload.php). Установка пакетов не нужна. [Manifest](../../third_party/codegen/protobuf/manifest.json) содержит версии, source refs, лицензии и file hashes.
+
+Generator и runtime protobuf distributions закреплены независимо; SQL generator также использует собственную версию Nette. Запускать их отдельными PHP-процессами и не смешивать bootstrap-файлы. Generated endpoint runtime использует приложение и protobuf message runtime, но не Nette или plugin-классы.
+
+Известная особенность upstream `protoc 26.1`: SDK `aggregate_metadata` может менять порядок независимых descriptors при одинаковом содержимом. Это относится к `proto:gen:sdk`, а не к собственным endpoint/registry outputs plugin.
+
+Дальнейшие предложения и ограничения — в [product spec](../../docs/design/protoc-php-gen-product.md), правила изменений — в [guidelines](../../docs/design/protoc-php-gen-guidelines.md). Приоритет задаёт [общий roadmap](../../docs/project/roadmap.md).

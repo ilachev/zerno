@@ -1,134 +1,56 @@
-# Карта reusable-блоков
+# Карта блоков и границ
 
-Этот документ фиксирует главный ориентир проекта: какие блоки реально составляют шаблон, зачем они нужны и как их трактовать при дальнейшей разработке.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-## Как понимать блок
+Этот документ отвечает, где должна жить функциональность. Композиции и точки входа описаны в [обзоре архитектуры](architecture/overview.md); будущие функции — в [roadmap](project/roadmap.md). «Входит в поставку» и «включено в минимальный pipeline» — разные свойства.
 
-Блок стоит оставлять в шаблоне, если он:
+## Критерий включения
 
-- нужен многим современным backend-проектам;
-- может быть использован без привязки к одной бизнес-модели;
-- не навязывает продуктовую политику;
-- понятен как самостоятельный строительный элемент.
+Блок ядра нужен для обычного веб-приложения, имеет небольшой понятный контракт и не навязывает предметную модель. Optional-компонент подключается явно и сохраняет полезность вне одного продукта. Сущности, роли, публикационные процессы и административный интерфейс принадлежат приложению.
 
-Если кусок кода этим критериям не соответствует, ему место либо вне шаблона, либо в отдельном downstream-проекте.
+Сейчас используется единое дерево исходников `src/Platform`; это логические границы, а не обещание физически отдельных дистрибутивов каждого блока.
 
-## Core runtime blocks
+## Основа HTTP/PDO
 
-### `Platform/Runtime`
+| Блок | Реализованная роль | Граница |
+|---|---|---|
+| `Platform/Runtime` | `App` / общий handler, request context, SAPI adapters; отдельный RR loop | Цикл конкретного сервера не должен определять прикладную логику |
+| `Platform/Http` | Request/response contracts, middleware, JSON responses | API/protobuf adapters и исходящий клиент используются по потребности |
+| `Platform/Routing` | Dispatch, route result, явные маршруты; support generated routes | Минимальное ядро использует `StaticRouteProvider`; generated discovery включается API provider |
+| `Platform/DI` | Контейнер, явные factories/bindings, providers | Нет неявного поиска generated endpoints; `has()` проверяет регистрацию без autoload |
+| `Platform/Storage` | PDO adapters, SQL executor, параметры, транзакции, миграции | Доступен из ядра лениво; PostgreSQL — целевой движок, SQL остаётся явным |
+| `Platform/Logging` | Logging contract и реализации | Минимальный output logger и RR logger выбираются композицией |
 
-- Роль: bootstrap приложения и запуск pipeline.
-- Обязательность: обязательный core.
-- Что здесь считается core: `App` как `RequestHandler`, SAPI request/response adapters и явная сборка middleware pipeline. Worker loop — optional `RoadRunnerRuntime`.
-- Что не должно попадать сюда: продуктовые сценарии и feature-specific policy.
+Минимальная композиция не открывает БД для `/health`. Наличие storage provider позволяет обработчику запросить SQL executor; миграции запускаются отдельной CLI-командой. Политика данных и таблицы приложения не принадлежат платформе.
 
-### `Platform/Http`
+## Подключаемые блоки
 
-- Роль: request/response abstractions, handler contracts, middleware interfaces.
-- Обязательность: обязательный core.
-- Что здесь считается core: HTTP request/response, handler и middleware contracts. Protobuf transport adapters подключаются API-композицией.
-- Что не должно попадать сюда: конкретные auth/session/business правила.
+| Блок | Текущая возможность | Ограничение / назначение |
+|---|---|---|
+| `Platform/Runtime/RoadRunnerRuntime` и RR provider | Worker loop и server services | Дополнительный runtime; не обязательный путь для FPM/SAPI |
+| `Platform/Cache` | Scoped cache, tags/invalidation и RR KV integration с fallback | Capability получает `ScopedCacheFactory` / `ScopedCache`; `CacheService` — backend contract. Локальный fallback не обещает общий кеш workers и не является готовым HTTP page cache |
+| `Platform/Http/Client` | Transport separation, request options, deadlines, retry primitives | Точные гарантии и ответственность за idempotency — в [контракте клиента](design/http-client-product.md) |
+| `Platform/Hydration`, `Platform/DataMapping` | Hydration и преобразования DTO | Не включены в минимальную HTTP/PDO-композицию; не заменяют прикладные mapper decisions |
+| `Platform/Console` | Небольшие operational commands | CLI конкретного продукта размещается в приложении |
+| `Capabilities/Session` | Анонимные сессии и восстановление по cookie/bearer token; client/GeoIP enrichment в API | Это lifecycle сессии, а не полный credentials login, permissions или CSRF framework |
+| `Capabilities/ApiStats` | Запись факта API-запроса в storage | Небольшой addon; не полноценная audit trail и не платформа observability |
+| Protobuf adapters и generators | SDK, endpoint contracts/handlers, operation registry, OpenAPI | Необязательный API-контур; обычный HTML-сайт не обязан определять `.proto` |
 
-### `Platform/Routing`
+Сессия восстанавливается только по cookie/bearer token; fingerprint нужен для аналитики. Авторитетная проверка и отзыв читают БД без session cache. Продление использует `UPDATE ... RETURNING` существующей неистёкшей записи. Эти свойства не устанавливают правила входа пользователя и доступа к документам.
 
-- Роль: runtime routing и support для route generation.
-- Обязательность: обязательный core.
-- Что здесь считается core: dispatch, route result, явная таблица маршрутов. Generated protobuf routes подключаются отдельным provider.
-- Что не должно попадать сюда: feature-specific handler logic.
+## Примеры и прикладной код
 
-### `Platform/DI`
+- `src/Platform/Http/Handler/HealthHandler.php` и `config/routes.php` показывают минимальный обычный HTTP flow.
+- `HealthService.Check` и `SystemService.Describe` показывают optional protobuf flow для GET и POST, а не обязательный контракт всех сайтов.
+- [Каталог документов](project/document-catalog-example.md) — проект отдельного сквозного приложения, пока без реализации. Его будущие `Document`, editor roles и publication states должны жить вне `Platform`.
 
-- Роль: wiring runtime и блоков.
-- Обязательность: обязательный core.
-- Что здесь считается core: container, service providers, registration rules.
-- Что не должно попадать сюда: продуктовые зависимости и example policy.
+HTML rendering, формы, CSRF, вход, прикладные permissions, файловая публикация и HTTP page cache запланированы в roadmap. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
 
-## Support blocks
+## Решение перед добавлением блока
 
-### `Platform/Storage`
+1. Какой работающий сценарий требует изменение и почему существующего контракта недостаточно?
+2. Что является общей механикой, а что — политикой приложения?
+3. Должна ли эта механика выполняться при каждом запросе или подключаться явно?
+4. Какие проверки подтвердят корректность, а при оптимизации — измеримый выигрыш?
 
-- Роль: storage abstractions, SQL executor, migrations.
-- Обязательность: обязательный reusable block для backend template.
-- Что здесь считается core: storage adapters, typed SQL execution, migrations.
-- Optional-часть: дополнительные storage profiles и engine-specific tuning.
-- Целевое направление: explicit SQL с typed generation поверх него.
-
-### `Platform/Cache`
-
-- Роль: cache abstraction и runtime backend integration.
-- Обязательность: optional reusable block.
-- Что здесь считается core: единый cache contract, scoped cache views, scope-aware invalidation и fallback-safe runtime behavior.
-- Optional-часть: конкретный backend вроде RoadRunner KV.
-- Канонический consumer path: capability code должен получать `ScopedCacheFactory` и работать через `ScopedCache`, а не склеивать cache keys вручную поверх общего `CacheService`.
-- `CacheService` должен оставаться backend-level abstraction для platform/runtime слоя, а не превращаться в точку, куда capability code напрямую тащит свою key/invalidation policy.
-
-### `Platform/Logging`
-
-- Роль: минимальный logging contract и runtime logger implementations.
-- Обязательность: обязательный support block.
-- Что здесь считается core: простой logging API без framework coupling.
-- Optional-часть: конкретные output formats и runtime integrations.
-
-### `Platform/Console`
-
-- Роль: маленькие operational commands вокруг runtime.
-- Обязательность: optional support block.
-- Что здесь считается core: команды, которые обслуживают reusable runtime pieces.
-- Что не должно попадать сюда: product-only CLI сценарии.
-
-### `Platform/Hydration` и `Platform/DataMapping`
-
-- Роль: преобразование между storage/runtime structures и PHP objects.
-- Обязательность: optional reusable support block, не включённый в минимальную HTTP/PDO-композицию.
-- Что здесь считается support: reflection-based hydration support, DTO mapping.
-- Зона внимания: не раздувать этот слой абстракциями без явной пользы.
-
-## Capability blocks
-
-### `Capabilities/Session`
-
-- Роль: reusable session management block.
-- Обязательность: optional reusable block; минимальная HTTP/PDO-композиция не создаёт сессии.
-- Что здесь считается core: session lifecycle, cookie/bearer restore, fingerprinting, client detection, geolocation hooks.
-- Optional-часть: конкретные payload conventions и enrichments.
-- Авторизация восстанавливается только по cookie/bearer token; fingerprint служит аналитике и не подтверждает личность.
-- Проверка и отзыв сессий читают авторитетную БД без кеширования. Продление выполняет `UPDATE ... RETURNING` существующей неистёкшей сессии и не может восстановить удалённую запись.
-
-### `Capabilities/ApiStats`
-
-- Роль: маленький add-on для записи request log.
-- Обязательность: optional reusable block.
-- Что здесь считается core: middleware, который пишет факт API-вызова в storage.
-- Что не должно происходить: превращение в большую analytics/observability платформу внутри шаблона.
-
-## Minimal example
-
-### `HealthService.Check` и `SystemService.Describe`
-
-- Роль: минимальные нейтральные примеры protobuf-first endpoint flow.
-- Обязательность: часть core surface.
-- Назначение: показать, как `.proto` превращается в generated route, generated handler и endpoint implementation без продуктовой логики, и покрыть и `GET`, и `POST` body flow.
-- Что не должно происходить: превращение health-check в demo-модуль с отдельной архитектурой вокруг него.
-
-## Как применять эту карту
-
-Перед любым изменением нужно ответить на четыре вопроса:
-
-1. Это core runtime block, support block, capability block или минимальный transport example?
-2. Это reusable building block или конкретная product policy?
-3. Это должно быть обязательной частью шаблона или optional add-on?
-4. Улучшает ли изменение reuse-value блока, а не просто увеличивает архитектурный словарь?
-
-## Практический критерий качества
-
-Проект движется в правильную сторону, если новый backend можно собирать так:
-
-- брать `Platform` как runtime base;
-- подключать только нужные `Capabilities`;
-- использовать `HealthCheck` как минимальный эталон endpoint flow;
-- не переписывать смысл блоков под конкретный продукт;
-- для persistence писать явный SQL и получать поверх него typed generated PHP, а не прятать его за ORM-like магией.
-
-## Команды и поставка
-
-Runtime загружается через `bootstrap.php`, тесты — через `tests/bootstrap.php`. Фиксированные runtime-исходники лежат в `third_party/runtime`; генераторы и инструменты качества поставляются отдельно от runtime-релиза. Команды: `php tools/project.php help`, основной gate: `php tools/project.php verify`.
+Не вводить универсальный CMS/workflow/ORM слой ради одного примера. Расширять основу по результатам реального сценария и поддерживать независимость минимального профиля.

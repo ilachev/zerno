@@ -1,10 +1,16 @@
-# Base API Template
+# ProtoPHPStack
 
-[![CI](https://github.com/ilachev/base-api-template/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/base-api-template/actions/workflows/ci.yml)
+Type: `navigation`. Status: `current`. Reviewed: 2026-10-17.
+
+[![CI](https://github.com/ilachev/ProtoPHPStack/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/ProtoPHPStack/actions/workflows/ci.yml)
 
 A small PHP HTTP/PDO core with explicit routes, prepared SQL, transactions and migrations. Optional profiles retain the protobuf API, generated endpoint handlers, OpenAPI, sessions, API statistics and RoadRunner.
 
-Runtime sources, generator dependencies and pinned PHP quality tools are included in the repository. Running, generating, checking and packaging requires no package manager or dependency installation. Task is an optional alias for the PHP command runner. See the [delivery plan](docs/design/autonomous-core.md) and [documentation index](docs/README.md).
+Runtime sources, generator dependencies and pinned PHP quality tools are included in the repository. Running, generating, checking and packaging requires no package manager or dependency installation. Task is an optional alias for the PHP command runner. See the [delivery architecture](docs/design/autonomous-core.md) and [documentation index](docs/README.md).
+
+## Project direction and documentation
+
+Start with [LLM onboarding](docs/llm-onboarding.md) or the [documentation index](docs/README.md). The [vision](docs/project/vision.md) defines product boundaries; the [roadmap](docs/project/roadmap.md) separates the implemented baseline from planned HTML, forms, protected areas, publication and operational work. The first planned application is a [document catalog](docs/project/document-catalog-example.md); it is not implemented yet. Current runtime behavior is documented in the [architecture overview](docs/architecture/overview.md).
 
 ## Platform requirements
 
@@ -20,7 +26,7 @@ Runtime sources, generator dependencies and pinned PHP quality tools are include
 # Available commands; no installation step
 php tools/project.php help
 
-# Local gate: dependency integrity, style, analysis, SQL synchronization and unit tests
+# Local gate: dependency integrity, documentation, style, analysis, SQL synchronization and unit tests
 php tools/project.php verify
 
 # A focused unit test; PHPUnit arguments are forwarded directly
@@ -88,4 +94,4 @@ CI runs `php tools/project.php verify:full` and builds the runtime archive. Rele
 
 ## Conventions
 
-Use strict types, explicit constructors and small reusable components. Keep product policy in application code, and generated files under generator control. The canonical engineering rules are in [CLAUDE.md](CLAUDE.md).
+Use strict types, explicit constructors and small reusable components. Keep product policy in application code, and generated files under generator control. The canonical engineering rules are in [AGENTS.md](AGENTS.md).

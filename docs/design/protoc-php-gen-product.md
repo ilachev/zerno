@@ -1,168 +1,63 @@
-# `protoc-php-gen` как продукт
+# Контракт и развитие `protoc-php-gen`
 
-Этот документ фиксирует `protoc-php-gen` не как случайный внутренний скрипт, а как отдельный codegen-product внутри репозитория.
+Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-## Что это такое
+## Текущая роль
 
-`tools/protoc-php-gen` — это локальный `protoc` plugin для генерации PHP-кода вокруг protobuf descriptors.
+[tools/protoc-php-gen](../../tools/protoc-php-gen/README.md) — локальный `protoc` plugin ProtoPHPStack. Он нужен приложениям, выбирающим protobuf API; минимальный HTTP-профиль с явными PHP-маршрутами работает без него.
 
-Его задача не в том, чтобы тащить protobuf во всю внутреннюю архитектуру проекта. Его задача — строить reusable PHP codegen blocks поверх protobuf surface там, где это реально полезно backend-у.
+Plugin читает binary `CodeGeneratorRequest`, строит typed descriptor model и возвращает `CodeGeneratorResponse`. `TypeResolver` разрешает protobuf-типы в PHP-классы. Сам plugin не генерирует PHP message classes или OpenAPI: это отдельные команды `protoc` и `protoc-gen-openapiv2`.
 
-## Текущий поддерживаемый scope
+## Реализованные модули
 
-Сейчас production-grade поддерживаются три generator module:
+| Модуль | Флаг | Результат |
+| --- | --- | --- |
+| `endpoints` | `generate_endpoints=true` | `*Endpoint` interface и `*HttpHandler` для RPC |
+| `endpoint_validation` | `generate_endpoint_validation=true` | Проверка существования и объявления ручной реализации; файлов не создаёт |
+| `operation_manifest` | `generate_operation_manifest=true` | PHP `*OperationRegistry` с определениями RPC и HTTP method/path |
 
-- `endpoints`
-- `endpoint_validation`
-- `operation_manifest`
+Флаги по умолчанию выключены. Это проверяется в [PluginOptionsTest](../../tools/protoc-php-gen/tests/Unit/Plugin/PluginOptionsTest.php). `endpoint_profile_class` должен указывать загружаемый класс, реализующий `EndpointProfile`; встроенного project profile по умолчанию нет. Необязательный `bootstrap` загружает внешний profile.
 
-Он отвечает за:
+В ProtoPHPStack profile находится в [codegen/Protobuf/BaseApiTemplateEndpointProfile.php](../../codegen/Protobuf/BaseApiTemplateEndpointProfile.php). Сохранённый FQCN не требует переименования вместе с проектом.
 
-- генерацию endpoint interfaces из `service/rpc`;
-- генерацию HTTP handlers поверх runtime adapter;
-- compile-time проверку наличия handwritten endpoint implementations;
-- генерацию operation registry classes как канонической metadata surface по каждому RPC;
-- поддержку protobuf-first endpoint flow в основном шаблоне.
+## Текущий output contract
 
-Это текущий канонический и поддерживаемый путь.
+- Generated interface принимает typed protobuf request и PSR-7 request, возвращает typed protobuf response.
+- Generated handler делегирует decode/response общему runtime adapter и вызывает ручную реализацию.
+- Registry содержит RPC operation ID, request/response classes, handler, endpoint interface/implementation и HTTP bindings.
+- Ручная реализация располагается по соглашению profile в `src/Platform/Http/Endpoint/...`.
+- В protobuf-профиле `RoutingServiceProvider` явно подключает registry к Router и DI. Generic DI и минимальный HTTP-профиль не должны зависеть от discovery этих файлов.
 
-## Что это значит practically
+Namespaces, implementation paths и runtime helper FQCN задаёт `EndpointProfile`. Бизнес-правила, persistence и преобразование domain-моделей остаются за его пределами.
 
-Сегодня `protoc-php-gen` уже не притворяется универсальным mapper framework.
+## Действующие проверки и ограничения
 
-Для основного проекта это означает:
+[EndpointImplementationValidator](../../tools/protoc-php-gen/src/Generator/EndpointImplementationValidator.php) проверяет наличие файла, ожидаемое имя класса и явно объявленный interface через разбор PHP tokens. Это не полная проверка PHP-контракта: методы, совместимость сигнатур, наследование interfaces и произвольные формы PHP-объявлений требуют отдельной проверки.
 
-- `.proto` управляет endpoint surface;
-- `protoc-php-gen` генерирует endpoints и operation registry classes;
-- handwritten endpoint implementation остаётся в runtime-коде;
-- project-specific endpoint profile живёт вне тулзы и подключается через `bootstrap + endpoint_profile_class`;
-- generator не подменяет собой business logic.
+HTTP binding parser извлекает method/path, в том числе `additional_bindings`. Generated runtime сейчас декодирует JSON body целиком. Полное сопоставление path/query/body по Google transcoding rules, streaming RPC и gRPC server не являются реализованными возможностями этого plugin.
 
-## Целевая модель инструмента
+Проверки компонента:
 
-Долгосрочно `protoc-php-gen` должен развиваться как modular codegen platform, а не как один монолитный generator с разнородной ответственностью.
+```bash
+php tools/project.php tools:proto:check
+```
 
-Правильная модель:
+Они включают style, PHPStan, unit tests и binary plugin protocol tests. Согласованность реального project surface дополнительно проверяется основным `verify`. Наличие этих проверок не является заявлением о готовности для произвольного production API.
 
-- один plugin;
-- несколько независимых generator modules;
-- каждый module имеет свою зону ответственности;
-- каждый module включается явно параметром генерации;
-- каждый module имеет отдельные тесты и свои output contracts.
+## Граница поставки
 
-## Как должен выглядеть modular scope
+Зависимости уже включены в [third_party/codegen/protobuf](../../third_party/codegen/protobuf); manifest фиксирует версии, refs, лицензии и hashes. Generator bootstrap не загружает runtime distribution. SQL и protobuf tools используют отдельные процессы; смешивать их bootstrap-файлы или runtime protobuf в одном процессе нельзя.
 
-### Stable now
+`protoc` остаётся внешним платформенным executable. Подробности команд и параметров — в [README инструмента](../../tools/protoc-php-gen/README.md).
 
-- `endpoints`
-- `endpoint_validation`
-- `operation_manifest`
+## Предложения, ещё не контракт
 
-### Допустимые будущие направления
+Ниже — возможные направления, а не утверждённый следующий этап. Приоритет определяется [общим roadmap](../project/roadmap.md).
 
-- `http_adapter_helpers` — общие transport-level adapters или metadata helpers;
-- `client_helpers` — дополнительные PHP helpers вокруг generated SDK, если появится реальная потребность.
+- Более строгая диагностика ручных реализаций и связности generated artifacts.
+- Новые transport/client helpers только при подтверждённом потребителе.
+- Дополнительные модули только с явным флагом, отдельным output contract и тестами.
 
-### Что не должно возвращаться бесконтрольно
+Mapping, ORM и hydrator framework сейчас не входят в scope. Если отдельный mapping module когда-либо потребуется, он должен иметь собственный контракт и не включаться скрыто в endpoint path. Внутренние type/rendering libraries допустимы, если не становятся зависимостью generated runtime.
 
-- неструктурированная mapper generation;
-- ORM-like codegen для внутренних моделей;
-- hydrator framework внутри тулзы;
-- смешение runtime abstractions и codegen responsibilities в одном generator module.
-
-Если когда-нибудь снова появится mapping generator, он может существовать только как отдельный module с отдельным contract, а не как скрытая часть endpoint path.
-
-## Правила добавления нового generator module
-
-Новый generator допустим только если одновременно выполняются все условия:
-
-- у него есть ясная reusable backend value;
-- он не навязывает продуктовую политику;
-- он не дублирует существующий runtime responsibility;
-- он включается явным флагом plugin parameters;
-- у него есть unit и integration tests;
-- у него есть понятный output tree;
-- его артефакты либо реально используются проектом, либо он не входит в main path.
-
-## Граница ответственности
-
-`protoc-php-gen` отвечает за code generation вокруг protobuf descriptors.
-
-`protoc-php-gen` не отвечает за:
-
-- внутреннюю доменную модель приложения;
-- business workflows;
-- persistence policy;
-- runtime orchestration вне endpoint/codegen слоя.
-
-Это важная граница: protobuf-first не означает protobuf-everywhere.
-
-## Как соотносится с шаблоном
-
-Для `base-api-template` сейчас важно следующее:
-
-- `protoc-php-gen` остаётся внутренним инструментом репозитория;
-- основной template использует стабильные `endpoints`, `endpoint_validation` и `operation_manifest` modules;
-- project-specific profile проекта находится в `codegen/Protobuf/BaseApiTemplateEndpointProfile.php`, а не внутри `tools/protoc-php-gen`;
-- расширение тулзы допускается только без разрастания основного project path в набор legacy-веток.
-
-## Текущие архитектурные ограничения
-
-Базовый внутренний каркас уже стабилизирован:
-
-- modular plugin core есть;
-- typed descriptor model есть;
-- type resolver выделен отдельно;
-- runtime profile abstraction есть;
-- binary end-to-end contour есть.
-
-Это не означает, что тулза закончена как продукт. Это означает, что дальнейшее расширение теперь можно делать осознанно, не возвращаясь к старой mixed-responsibility реализации.
-
-## Согласованный технический roadmap
-
-### Завершённая внутренняя стабилизация
-
-- `PluginOptions`, `CodeGeneratorModule`, `GeneratorRegistry`
-- typed descriptors вместо сырого array-flow
-- отдельный `TypeResolver`
-- endpoint runtime profiles
-- binary plugin protocol test contour
-
-Эта часть была нужна, чтобы `endpoints`, `endpoint_validation` и `operation_manifest` стали честными production-grade модулями, а `operation_manifest` начал генерировать полноценные operation registry classes вместо array-based metadata files.
-
-### Следующий этап развития
-
-Следующая волна работы должна идти не в “ещё больше генераторов”, а в доведение protobuf-first flow верхнего уровня:
-
-1. использовать generated operation registry classes как единственный endpoint metadata source of truth;
-2. уменьшать ручную runtime-склейку между generated endpoints и handwritten endpoint implementations;
-3. усиливать compile-time и verify-time проверки согласованности generated artifacts;
-4. добавлять новые generator modules только под реальные reusable backend needs.
-
-## Критерий хорошего развития
-
-Хорошее развитие `protoc-php-gen`:
-
-- усиливает protobuf-first backend flow;
-- уменьшает ручной endpoint boilerplate;
-- остаётся reusable вне одного конкретного API;
-- развивается модулями, а не историческими слоями;
-- не создаёт вторую архитектуру внутри проекта.
-
-## Как использовать type libraries
-
-Внутри `protoc-php-gen` допустимо использовать библиотеки вроде `typhoon/type`, если они реально убирают ручную сборку PHPDoc/type strings в генераторе.
-
-Но их роль должна оставаться узкой:
-
-- internal type rendering;
-- internal type formatting for generated code;
-- улучшение generator DX.
-
-Они не должны:
-
-- становиться runtime dependency основного проекта;
-- становиться обязательной зависимостью generated PHP-кода при исполнении;
-- подменять protobuf descriptors как source of truth.
-
-Если библиотека даёт только косметическую замену одной строки на другую, её не нужно тащить в тулзу.
+Практические правила изменений — в [protoc-php-gen-guidelines.md](./protoc-php-gen-guidelines.md).

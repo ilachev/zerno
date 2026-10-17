@@ -21,10 +21,11 @@ function projectCommand(string $command, array $arguments = []): void
             fwrite(STDOUT, <<<'HELP'
                 Usage: php tools/project.php <command> [arguments...]
 
-                verify                 Integrity, style, static analysis, SQL synchronization and unit tests
+                verify                 Integrity, documentation, style, analysis, SQL synchronization and unit tests
                 verify:integration     PostgreSQL SQL validation and integration tests
                 verify:full            All root, SQL-generator, protobuf-generator and PostgreSQL checks
                 third-party:check      Verify the bundled dependency manifest and file hashes
+                docs:check             Verify the documentation inventory and local Markdown links
                 lint | fixcs           Check or fix PHP style
                 phpstan                Run root static analysis
                 test                   Run root unit tests; forwards PHPUnit arguments
@@ -54,7 +55,7 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'verify':
-            projectSequence(['third-party:check', 'lint', 'phpstan', 'sql:check', 'test']);
+            projectSequence(['third-party:check', 'docs:check', 'lint', 'phpstan', 'sql:check', 'test']);
 
             return;
         case 'verify:integration':
@@ -71,6 +72,10 @@ function projectCommand(string $command, array $arguments = []): void
             return;
         case 'third-party:check':
             projectRun([PHP_BINARY, $root . '/tools/check-third-party.php', ...$arguments], $root);
+
+            return;
+        case 'docs:check':
+            projectRun([PHP_BINARY, $root . '/tools/check-docs.php', ...$arguments], $root);
 
             return;
         case 'lint':

@@ -1,169 +1,78 @@
-# `Platform/Http/Client` как продукт
+# Контракт и развитие `Platform/Http/Client`
 
-## Цель
+Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-`Platform/Http/Client` должен стать маленьким reusable reliability block для outbound HTTP, а не просто удобной обёрткой над `curl`.
+## Текущая роль
 
-Его задача:
+[Platform/Http/Client](../../src/Platform/Http/Client) — дополнительный outbound HTTP-компонент ProtoPHPStack. Он не является обязательной частью минимального HTTP/PDO-профиля.
 
-- давать typed request/response contracts;
-- учитывать partial failures как нормальный сценарий;
-- держать deadline/timeout budget на уровне всего запроса, а не только отдельной попытки;
-- повторять только idempotent запросы и только для transient failure modes;
-- делать retry/backoff/jitter частью generic policy layer, а не куском ad-hoc логики в каждом consumer-е;
-- оставаться transport-agnostic на уровне core contracts.
+`HttpClientServiceProvider` подключает `ResilientHttpClient` и `CurlTransport` в существующем `config/container.php`. `config/core.php` этот provider не регистрирует. Для cURL transport требуется платформенное PHP-расширение `curl`.
 
-## Что считать canonical model
-
-Слой должен мыслиться так:
+Текущая цепочка:
 
 ```text
-HttpClient
-  -> retry / backoff / deadline budget / error classification
-  -> HttpTransport
-  -> concrete transport adapter (currently cURL)
+Consumer -> HttpClient / ResilientHttpClient -> HttpTransport / CurlTransport
 ```
 
-То есть:
+Client управляет attempts, backoff и общим deadline. Transport выполняет одну попытку. Typed consumer wrappers и domain mapping находятся вне этого слоя.
 
-- `HttpClient` отвечает за reliability policy;
-- `HttpTransport` отвечает только за одну попытку отправки;
-- concrete transport не должен сам принимать product-level решения о retries.
+## Действующие контракты и настройки
 
-## Что уже считается supported core
+- `HttpRequest`: method, URI, headers, string body, upstream label и options.
+- `HttpResponse`: status, headers и полный string body.
+- `HttpRequestOptions`: connect timeout, общий timeout budget, redirects, idempotent flag, user agent, optional deadline и retry policy.
+- `RetryPolicy`: число попыток, задержки и retryable statuses.
+- `Platform/Runtime/Deadline`: оставшийся бюджет; `RequestContext` переносит deadline и request ID входящего запроса.
 
-Сейчас canonical runtime surface:
+Текущие defaults из [HttpRequestOptions](../../src/Platform/Http/Client/HttpRequestOptions.php) и [RetryPolicy](../../src/Platform/Http/Client/RetryPolicy.php):
 
-- `HttpRequest`
-- `HttpResponse`
-- `HttpRequestOptions`
-- `RetryPolicy`
-- `Platform/Runtime/Deadline`
-- `Platform/Runtime/RequestContext`
-- `HttpClient`
-- `HttpTransport`
-- `ResilientHttpClient`
-- `CurlTransport`
+| Настройка | Значение |
+| --- | --- |
+| Connect timeout | 3 секунды |
+| Общий timeout | 10 секунд |
+| Redirects | Включены, максимум 3 |
+| `idempotent` | `true` |
+| Attempts | 2, включая первую |
+| Backoff | Base 100 ms, cap 1000 ms, exponential с jitter |
+| Retryable statuses | 429, 500, 502, 503, 504 |
 
-Их роли:
+Это фактические defaults, а не автоматическое определение безопасности запроса. Client не выводит idempotency из HTTP method. Для запроса, который нельзя безопасно повторять, вызывающий код обязан передать `idempotent: false`; это относится и к POST с options по умолчанию.
 
-- `HttpRequest` — typed outbound request contract;
-- `HttpResponse` — typed response contract без привязки к consumer logic;
-- `HttpRequestOptions` — request-scoped policy knobs;
-- `RetryPolicy` — retry/backoff policy;
-- `Platform/Runtime/Deadline` — общий timeout budget primitive для inbound и outbound path;
-- `Platform/Runtime/RequestContext` — request-scoped runtime context с `requestId` и inherited deadline;
-- `ResilientHttpClient` — orchestration layer;
-- `CurlTransport` — low-level HTTP transport adapter.
+## Текущая retry и timeout семантика
 
-## Текущий supported scope
+[ResilientHttpClient](../../src/Platform/Http/Client/ResilientHttpClient.php) повторяет выбранные statuses и любой `HttpTransportException`, если включён `idempotent` и остались attempts. Сейчас он не различает временные DNS/connect failures и постоянные TLS/configuration errors.
 
-На текущем этапе поддерживается:
+Один deadline ограничивает attempts и backoff. Если передан внешний deadline, client берёт меньший бюджет из его остатка и `timeoutSeconds`. `CurlTransport` ограничивает request и connect timeout оставшимся временем.
 
-- обычный request/response flow с полным body в памяти;
-- cURL transport;
-- request-level timeout budget;
-- inherited request budget через `Platform/Runtime/RequestContext` / `Platform/Runtime/Deadline`;
-- connect timeout;
-- idempotent retries на transport failures;
-- retries на retryable upstream statuses (`429`, `500`, `502`, `503`, `504`);
-- exponential backoff with jitter;
-- redirects;
-- structured retry logging.
+Наследование inbound deadline выполняется явно через [RequestContextAttributes::inheritDeadline](../../src/Platform/Http/RequestContextAttributes.php). Простое создание outbound `HttpRequest` внутри handler само по себе context не подхватывает. Уже заданный options deadline helper сохраняет.
 
-## Что пока осознанно не поддерживается
+При исчерпании attempts retryable HTTP response возвращается вызывающему коду; конечная transport exception выбрасывается. HTTP status 4xx/5xx сам по себе не превращается в exception. Consumer проверяет status/`isSuccess()`.
 
-Пока не надо добавлять без сильного кейса:
+Перед повтором client пишет warning с URI, method, upstream, attempt и status/error. Автоматическое логирование каждого финального успеха/ошибки и metrics hooks не реализованы.
 
-- streaming response bodies;
-- connection pooling abstraction как отдельный словарь;
-- circuit breaker как первый-class слой;
-- client-side rate limiting;
-- hedged requests;
-- HTTP/2/HTTP/3-specific policy surface;
-- generic PSR-18 wrapper как архитектурный центр.
+## cURL transport и границы
 
-## Правила развития
+[CurlTransport](../../src/Platform/Http/Client/CurlTransport.php) выполняет синхронный запрос, использует configured redirects и возвращает headers последнего response block. Request и response bodies полностью находятся в памяти.
 
-### 1. Reliability logic не должна протекать в consumer code
+Реализованы отдельная timeout exception и общая cURL transport exception. Подробной taxonomy DNS/TLS/connect/read сейчас нет.
 
-Capability code должно описывать:
+В текущий контракт не входят streaming API, bounded concurrency, circuit breaker, rate limiting, hedged requests или специальная HTTP/2/HTTP/3 policy. Возможности самой libcurl не равны отдельным гарантиям этого PHP-компонента.
 
-- URI;
-- method;
-- request body;
-- timeout/retry intent;
-- upstream name.
+## Потребитель и подтверждённые проверки
 
-Но не должно руками реализовывать:
+[UpdateGeoIPCommand](../../src/Capabilities/Session/Infrastructure/GeoLocation/UpdateGeoIPCommand.php) использует client для загрузки GeoIP archive: задаёт GET, timeout, retry policy и upstream label, затем сохраняет полный body. Наличие этого потребителя не доказывает streaming или проверку внешней сети при каждом quality gate.
 
-- retry loops;
-- backoff sleeps;
-- timeout budgeting;
-- ad-hoc transport classification.
+[ResilientHttpClientTest](../../tests/Unit/Platform/Http/Client/ResilientHttpClientTest.php) проверяет retries transport/status, отключение повторов и inherited deadline с тестовым transport. Эти unit tests не заменяют проверку реальных TLS, DNS, redirects и libcurl в целевой среде.
 
-Если downstream код уже находится внутри HTTP request path, inherited deadline должен подхватываться через `RequestContextAttributes::inheritDeadline(...)`, а не через прямую работу со строковыми request attributes.
+## Правила изменения и предложения
 
-### 2. `HttpTransport` не должен становиться policy layer
+Consumer задаёт URI, method, body и намерение retry/timeout; общие retry loops и budget accounting остаются в client. `HttpTransport` сохраняет контракт одной попытки.
 
-Concrete transport adapter не должен:
+Приоритет развития задаёт [общий roadmap](../project/roadmap.md). Возможные направления, ещё не реализованный API:
 
-- принимать решение, retry нужен или нет;
-- скрыто запускать несколько попыток;
-- содержать product-specific error handling.
+- безопаснее выражать idempotency и проверять options;
+- различать transport failure classes;
+- добавлять typed upstream wrappers и codecs по реальным потребителям;
+- вводить metrics и concurrency только под измеренный workload.
 
-### 3. Non-idempotent requests по умолчанию не должны retry-иться
-
-Если запрос небезопасен для повторной отправки, это должно быть явно выражено в `HttpRequestOptions`.
-
-### 4. Логирование должно быть diagnostic-friendly
-
-Retry/failure logs должны содержать:
-
-- `uri`
-- `method`
-- `upstream`
-- `attempt`
-- `status_code` или `error`
-
-### 5. Consumer wrappers должны жить вне platform core
-
-Клиенты уровня:
-
-- `Ip2LocationDownloadClient`
-- `TelegramBotClient`
-- `WebhookClient`
-
-должны жить в capability/infrastructure слоях, а не внутри `Platform/Http/Client`.
-
-## Первый реальный consumer
-
-Первым consumer-ом уже считается:
-
-- `UpdateGeoIPCommand`
-
-Это важно, потому что outbound client теперь проверяется не только в unit tests, но и на реальном capability use case.
-
-## Следующий roadmap
-
-Следующие сильные шаги:
-
-1. richer error taxonomy:
-   - DNS/TLS/connect/read timeout distinctions
-2. typed upstream wrappers поверх generic client
-3. request/response body codecs:
-   - JSON helpers
-   - binary download helpers
-4. metrics hooks:
-   - attempt count
-   - final status/failure class
-   - latency budget usage
-5. deadline propagation в будущий gRPC path через тот же `Platform/Runtime/Deadline`
-6. bounded concurrency / per-upstream policy, только если появится реальный workload
-
-## Чего не надо делать дальше
-
-- не превращать этот слой в framework over PSR standards;
-- не тащить тяжёлый external HTTP client как архитектурный центр;
-- не смешивать transport layer с domain mapping;
-- не строить generic “SDK factory” словарь раньше времени.
+gRPC deadline propagation, PSR-18 adapter и generic SDK factory не являются обещанными следующими этапами.

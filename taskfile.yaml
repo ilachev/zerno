@@ -15,7 +15,7 @@ tasks:
       - "{{.PHP}} tools/project.php help {{.CLI_ARGS}}"
 
   verify:
-    desc: Run integrity, style, analysis, SQL and unit checks
+    desc: Run integrity, documentation, style, analysis, SQL and unit checks
     cmds:
       - "{{.PHP}} tools/project.php verify {{.CLI_ARGS}}"
 
@@ -33,6 +33,11 @@ tasks:
     desc: Verify bundled dependency hashes
     cmds:
       - "{{.PHP}} tools/project.php third-party:check {{.CLI_ARGS}}"
+
+  docs:check:
+    desc: Verify documentation inventory and local Markdown links
+    cmds:
+      - "{{.PHP}} tools/project.php docs:check {{.CLI_ARGS}}"
 
   lint:
     desc: Check PHP style

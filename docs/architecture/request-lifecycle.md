@@ -1,179 +1,102 @@
-# Поток запроса
+# Поток HTTP-запроса
 
-Этот документ описывает фактический runtime flow HTTP-запроса.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-Ниже описана существующая API-композиция `config/container.php`. Минимальная композиция `config/core.php` задаёт явные маршруты из `config/routes.php` и цепочку `RequestContext → ErrorHandler → Routing → RouteHandlerResolver`, с доступной по обращению БД. Её обычная PHP-точка входа — `public/http.php`; RR-вариант — `config/core-roadrunner.php` и `.rr.core.yaml`. Подробности запуска находятся в [плане автономного ядра](../design/autonomous-core.md#минимальная-httppdo-композиция).
+Документ описывает две существующие композиции приложения. Общая карта компонентов находится в [обзоре архитектуры](overview.md), команды запуска и проверки — в [инфраструктуре и тестировании](../development/infrastructure-and-testing.md).
 
-## Краткая схема
+## Композиция и точка входа
+
+| Композиция | Конфигурация | Маршруты | Pipeline до конечного обработчика |
+|---|---|---|---|
+| Минимальное HTTP/PDO-ядро | [`config/core.php`](../../config/core.php) | Явные [`config/routes.php`](../../config/routes.php) | RequestContext → ErrorHandler → Routing → RouteHandlerResolver |
+| То же ядро в RoadRunner | [`config/core-roadrunner.php`](../../config/core-roadrunner.php) | Те же явные маршруты | Тот же pipeline; добавлена регистрация RR worker и logger |
+| Существующее protobuf API | [`config/container.php`](../../config/container.php) | Generated operation manifests | RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → RouteHandlerResolver |
+
+Минимальное ядро обрабатывает `GET /health` и явно зарегистрированный `HEAD /health`; тело ответа обработчика — `{"status":"ok"}`. Оно не подключает capability middleware, protobuf endpoints, GeoIP и RR KV. `Storage` и миграции зарегистрированы, но `/health` не открывает соединение с БД.
+
+Обе точки входа загружают [`bootstrap.php`](../../bootstrap.php) и выбирают конфигурацию через `APP_CONFIG`; абсолютный путь удобнее для независимости от рабочего каталога:
+
+- [`public/http.php`](../../public/http.php): обычный PHP SAPI, включая PHP-FPM; по умолчанию `config/core.php`.
+- [`public/index.php`](../../public/index.php): RoadRunner; по умолчанию `config/container.php`. Для минимального ядра [`.rr.core.yaml`](../../.rr.core.yaml) задаёт `config/core-roadrunner.php`.
+
+Выбор транспорта не меняет контракт приложения: [`App`](../../src/Platform/Runtime/App.php) реализует `RequestHandler`. Его конструктор загружает переданный конфигурационный файл, создаёт `DIContainer`, выполняет регистрацию и получает настроенный `RequestHandler`. `handle()` вызывает его; `handleRequest()` оставлен как совместимый вызов того же метода. Конструктор `App` не запускает серверный цикл.
+
+## Преобразование запроса и отправка ответа
+
+Обычный PHP-путь:
 
 ```text
-Client
-  -> RoadRunner HTTP
-  -> RoadRunnerRuntime / PSR7Worker
-  -> App::handle()
-  -> Pipeline
-  -> Middleware chain
-  -> Router
-  -> Handler
-  -> Mapper / JsonResponse
-  -> Response
+PHP SAPI → SapiRequestFactory::fromGlobals()
+         → App::handle(PSR-7 request)
+         → SapiResponseEmitter::emit(response, request method)
 ```
 
-## 1. Вход в приложение
+[`SapiRequestFactory`](../../src/Platform/Runtime/SapiRequestFactory.php) переносит server params, заголовки, query, cookies, `php://input` и вложенные uploads в объекты Nyholm PSR-7. `parsedBody` заполняется из `$_POST` только для POST form-urlencoded/multipart; JSON остаётся в body stream. Scheme и authority берутся из SAPI, без автоматического доверия `Forwarded`/`X-Forwarded-*`. Некорректные host/request-target отклоняются; `public/http.php` преобразует `InvalidArgumentException` при создании запроса в общий `400 Bad Request`.
 
-RoadRunner запускает PHP worker через:
+[`SapiResponseEmitter`](../../src/Platform/Runtime/SapiResponseEmitter.php) проверяет `headers_sent()`, сохраняет отдельные значения заголовков и явный status, читает body блоками по 8192 байта. Seekable stream перематывается перед отправкой. Для HEAD, 1xx, 204 и 304 тело не читается и не выводится. Удаляется `Content-Length` для 1xx и 204. Ошибки построения `App` и отправки ответа находятся вне middleware error handler.
 
-```yaml
-server:
-  command: "php public/index.php"
+RoadRunner-путь:
+
+```text
+RoadRunner HTTP → PSR7Worker::waitRequest()
+               → App::handle(PSR-7 request)
+               → PSR7Worker::respond(response)
+               → следующий waitRequest()
 ```
 
-Файл `public/index.php` создаёт `App`, получает `PSR7Worker` из его контейнера и передаёт worker и приложение в `RoadRunnerRuntime`. Цикл обслуживания запросов запускается через `RoadRunnerRuntime::run()`.
+[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Преобразование HTTP и отправка тела делегированы включённой библиотеке `PSR7Worker`; SAPI emitter в этом пути не участвует.
 
-По умолчанию используется `config/container.php`. Переменная окружения `APP_CONFIG` позволяет выбрать другой файл конфигурации; для минимального RR-приложения используется `config/core-roadrunner.php`.
+## Общие middleware
 
-## 2. Инициализация `App`
+[`Pipeline`](../../src/Platform/Http/Middleware/Pipeline.php) вызывает middleware в порядке массива конфигурации. Каждый следующий слой получает переданную ему копию PSR-7 request; response возвращается через вызвавшие слои в обратном порядке. Изменение attributes во внутреннем слое не меняет request, сохранённый внешним слоем.
 
-`src/Platform/Runtime/App.php` делает следующее:
+[`RequestContextMiddleware`](../../src/Platform/Http/Middleware/RequestContextMiddleware.php) выполняется первым в обеих композициях:
 
-1. загружает `config/container.php`;
-2. создаёт `DIContainer`;
-3. выполняет конфигурацию контейнера, которая регистрирует service providers, capabilities и фабрику `RequestHandler`;
-4. получает готовый `RequestHandler` из контейнера.
+- сохраняет непустой `X-Request-ID` клиента или генерирует новый;
+- создаёт новый `Deadline` по [`config/http.php`](../../config/http.php), сейчас 15 секунд;
+- записывает `requestContext` и `requestId` в attributes через `RequestContextAttributes`;
+- для `RoadRunnerLogger` обновляет его mutable `requestId`;
+- добавляет к возвращённому response `X-Request-ID`, `X-Response-Time`, `Server-Timing`.
 
-`App` реализует `RequestHandler`: метод `handle()` передаёт запрос настроенному обработчику. Существующий `handleRequest()` сохранён и вызывает `handle()`. Создание `App` не разрешает worker и не запускает цикл RoadRunner.
+Deadline — бюджет для явно подключённого downstream-кода, а не принудительное прерывание запроса. [`RequestContextAttributes::inheritDeadline()`](../../src/Platform/Http/RequestContextAttributes.php) переносит его в options исходящего HTTP-вызова, если у options ещё нет своего deadline. Общий входящий deadline из клиентских заголовков не наследуется.
 
-В текущей композиции фабрика `RequestHandler` в `config/container.php` создаёт `Pipeline` из platform middleware и capability middleware. Выбор и порядок middleware принадлежат конфигурации приложения.
+[`ErrorHandlerMiddleware`](../../src/Platform/Http/Middleware/ErrorHandlerMiddleware.php) оборачивает следующие слои: логирует `Throwable` и возвращает JSON `500` с общей ошибкой. Он не оборачивает предшествующий код `RequestContextMiddleware`, создание приложения, преобразование входящего запроса или transport emission.
 
-Кеш при старте worker-а больше не очищается глобально.
+## Routing и конечный handler
 
-Deployment-aware invalidation теперь идёт через `namespace_seed` в cache config, а runtime invalidation внутри приложения должна опираться на namespace/scope rotation, а не на полный wipe shared backend-а.
+[`Router`](../../src/Platform/Routing/Router.php) строит таблицы маршрутов при создании. `RoutingMiddleware` вызывает dispatch по method и URI path. При отсутствии подходящего маршрута он сразу возвращает JSON error со status из `RouteResult` — 404 либо 405. На этом внутренние middleware и handler не вызываются.
 
-## 3. Получение запроса
+Для найденного маршрута [`RoutingMiddleware`](../../src/Platform/Http/Middleware/RoutingMiddleware.php) передаёт дальше attributes `RouteResult::class`, `routeParams`, `handler`. [`RouteHandlerResolver`](../../src/Platform/Http/RouteHandlerResolver.php) передаёт class name в `HandlerFactoryInterface`; `ContainerHandlerFactory` получает экземпляр из DI и вызывает `handle()`.
 
-Внутри `src/Platform/Runtime/RoadRunnerRuntime.php` метод `run()` выполняет цикл:
+В минимальной композиции `StaticRouteProvider` получает записи непосредственно из `config/routes.php`. Автоматический fallback HEAD → GET не используется: HEAD зарегистрирован отдельной записью.
 
-- `PSR7Worker::waitRequest()` получает запрос;
-- `App::handle($request)` возвращает ответ;
-- `PSR7Worker::respond($response)` отправляет ответ.
+В API-композиции [`RoutingServiceProvider`](../../src/Platform/DI/ServiceProviders/RoutingServiceProvider.php) загружает manifests из `gen/Generated/OperationManifest`, явно связывает endpoint interfaces с реализациями и строит маршруты через `GeneratedOperationRouteProvider`. DI сам не ищет реализации endpoints.
 
-При `null` из `waitRequest()` цикл завершается. `RoadRunnerRuntime` принимает общий `RequestHandler`; знание о DI, capabilities и составе pipeline остаётся за приложением.
+Например, `/api/v1/health` выбирает generated `CheckHttpHandler`, который создаёт protobuf request, вызывает handwritten [`CheckEndpoint`](../../src/Platform/Http/Endpoint/Api/V1/HealthService/CheckEndpoint.php) и сериализует protobuf response в JSON. Общий [`AbstractProtobufRpcHandler`](../../src/Platform/Http/Handler/AbstractProtobufRpcHandler.php) читает raw body как protobuf JSON; это отдельный путь от SAPI `parsedBody`.
 
-Текущий RoadRunner adapter использует long-running модель, поэтому любой singleton-like объект живёт дольше одного запроса. Вызов `App::handle()` сам по себе не требует этого адаптера.
+## Дополнительные слои API-композиции
 
-## 4. Выполнение middleware pipeline
+[`SessionMiddleware`](../../src/Capabilities/Session/Transport/Http/SessionMiddleware.php) стоит до routing, поэтому выполняется и для неизвестного API-маршрута:
 
-Pipeline в проекте рекурсивный. Каждый middleware получает:
+1. Ищет ID в `Authorization: Bearer ...`, затем в cookie из `SessionConfig`.
+2. Проверяет сессию через `SessionService` и непосредственно SQL-backed `SessionRepository`.
+3. При отсутствии действительной сессии создаёт новую анонимную с `sessionTtl` и payload запроса.
+4. Передаёт `session` через request attributes.
+5. После возврата response обрабатывает и удаляет внутренние session-control headers. Destroy истекает cookie; active ID позволяет выбрать проверенную новую сессию.
+6. Для status < 400 вызывает refresh и выставляет cookie. Refresh продлевает TTL при необходимости; отсутствие активной строки приводит к истечению cookie, а не повторной выдаче старого ID.
 
-- текущий `ServerRequestInterface`;
-- следующий `RequestHandler`.
+Fingerprint, IP и User-Agent не восстанавливают session identity. `ClientDetector` зарегистрирован отдельно для аналитики; middleware его не вызывает. Сессии не читаются из RR KV cache.
 
-Порядок выполнения задаётся в `config/container.php`:
+[`ApiStatsMiddleware`](../../src/Capabilities/ApiStats/Transport/Http/ApiStatsMiddleware.php) измеряет выполнение следующих слоёв и после нормального возврата записывает session ID, route, method, status, execution time и timestamp. В текущем порядке он видит исходный request до routing, поэтому `route` записывается как URI path; внутренний `RouteResult` не возвращается наружу. Обычные 404 учитываются, поскольку routing возвращает response. Исключение downstream прерывает запись: внешний `ErrorHandlerMiddleware` обрабатывает его уже после выхода из ApiStats.
 
-1. `RequestContextMiddleware`
-2. `ErrorHandlerMiddleware`
-3. `SessionMiddleware`
-4. `ApiStatsMiddleware`
-5. `RoutingMiddleware`
-6. `HttpLoggingMiddleware`
-7. конечный `RouteHandlerResolver`
+[`HttpLoggingMiddleware`](../../src/Platform/Http/Middleware/HttpLoggingMiddleware.php) расположен после routing. Он логирует query params перед handler и содержимое response после нормального возврата. Это не общий access log: 404/405 и исключения handler не проходят обе записи. Текущая реализация читает `getContents()` response stream без восстановления позиции; считать этот слой прозрачным для произвольных потоков нельзя.
 
-`RequestContextMiddleware` создаёт общий request-scoped context:
+При нормальном возврате API-ответа порядок обратной обработки: HttpLogging → ApiStats → Session → ErrorHandler → RequestContext → transport. Поэтому `X-Response-Time` включает session/statistics post-processing, но не сетевую отправку ответа.
 
-- `requestId`
-- inherited `Deadline`
+## Время жизни состояния
 
-Если клиент уже прислал `X-Request-ID`, runtime сохраняет его. Иначе request ID генерируется внутри `Platform/Runtime/RequestContextFactory`.
+[`DIContainer`](../../src/Platform/DI/DIContainer.php) кеширует разрешённые объекты и планы autowiring на время жизни контейнера. Отдельного DI request scope и автоматического reset всех сервисов нет. Request context, session и routing attributes передаются в конкретном request; хранить их в собственных долгоживущих сервисах без явного управления временем жизни нельзя.
 
-Этот context живёт в request attributes и должен считаться канонической точкой привязки для downstream timeout-budget propagation.
+При SAPI точка входа создаёт `App` на один PHP-запрос. При RoadRunner один `App`, его PDO-соединение после разрешения и кеши живут через многие вызовы `handle()`. Регистрация provider сама по себе не означает, что все его сервисы уже созданы; API pipeline, в отличие от минимального, разрешает session/statistics зависимости и БД при построении.
 
-## 5. `SessionMiddleware`
-
-Это ключевой этап, потому что он формирует session context поверх уже существующего request context.
-
-Основные действия:
-
-- ищет session ID в `Authorization: Bearer ...` или cookie;
-- валидирует существующую сессию;
-- если сессии нет, формирует `SessionPayload`;
-- без действительного bearer token или cookie создаёт новую анонимную сессию с настроенным `sessionTtl`;
-- добавляет объект `session` в request attributes;
-- после успешного ответа refresh-ит TTL и выставляет `Set-Cookie`.
-
-В результате downstream код может считать, что:
-
-- `requestContext` уже присутствует в request;
-- `session` уже присутствует в request.
-
-Fingerprint, IP и User-Agent не подтверждают владение сессией и не используются для восстановления session identity. `ClientDetector` доступен отдельно для аналитики похожих клиентов.
-
-## 6. `ApiStatsMiddleware`
-
-Измеряет время выполнения запроса и сохраняет запись в `api_stats`.
-
-Что он использует:
-
-- `session` из request attributes;
-- route information после dispatch;
-- HTTP method, status code, execution time.
-
-Это cross-cutting concern, но он зависит от фактической модели сессий.
-
-## 7. `RoutingMiddleware`
-
-Вызывает router и определяет:
-
-- найден ли маршрут;
-- какой handler должен выполнить запрос;
-- какие route params надо записать в request.
-
-Если маршрут не найден, middleware сразу возвращает JSON error response.
-
-Если маршрут найден, в request attributes кладутся:
-
-- `routeParams`
-- `handler`
-
-## 8. `RouteHandlerResolver`
-
-Финальный request handler в pipeline.
-
-Его задача:
-
-- взять имя handler из request attributes;
-- разрешить handler через DI;
-- вызвать `handle($request)`.
-
-DI больше не ищет endpoint implementations автоматически. В API-композиции `RoutingServiceProvider` явно регистрирует bindings из generated operation manifests. Минимальная композиция регистрирует собственные handler factories и маршруты без этого provider.
-
-Таким образом, middleware не знает, как именно создаётся handler, а runtime resolution централизован.
-
-## 9. Handler и endpoint implementation
-
-На примере `HealthService.Check` flow выглядит так:
-
-1. router выбирает сгенерированный `CheckHttpHandler`;
-2. handler декодирует protobuf request через `AbstractProtobufRpcHandler`;
-3. handler вызывает handwritten endpoint implementation `App\Platform\Http\Endpoint\Api\V1\HealthService\CheckEndpoint`;
-4. endpoint implementation создаёт protobuf response model;
-5. handler отдаёт JSON через `JsonResponse`.
-
-Именно здесь reusable transport adapter должен заканчиваться, а прикладная логика начинаться в endpoint implementation.
-
-## 10. Возврат ответа
-
-Response возвращается обратно через цепочку middleware.
-
-На обратном пути возможны побочные эффекты:
-
-- `SessionMiddleware` refresh-ит сессию и выставляет cookie;
-- `ApiStatsMiddleware` сохраняет метрику;
-- `HttpLoggingMiddleware` пишет лог;
-- `ErrorHandlerMiddleware` перехватывает исключения и нормализует ошибку.
-
-## Что должна помнить LLM
-
-- Сессия создаётся до routing и handler.
-- Route selection происходит не по контроллерам, а по сгенерированному route config.
-- Default runtime не должен зависеть от demo-flow кода.
-- Long-running runtime требует осторожности с кешами, статикой и состоянием сервисов.
+Старт `App` не выполняет глобальную очистку cache. API cache использует deployment `namespace_seed` и namespace/scope invalidation; fallback при недоступном KV локален конкретному PHP-процессу. Эти механизмы не задают request scope и не распространяют локальные значения между workers.

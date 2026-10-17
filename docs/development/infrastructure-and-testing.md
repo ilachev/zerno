@@ -1,219 +1,141 @@
 # Инфраструктура и тестирование
 
-## Runtime stack
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-Минимальный HTTP/PDO runtime запускается через PHP-FPM или обычный SAPI без сессий и API-интеграций. Дополнительная API-композиция использует RoadRunner и protobuf. PHP-зависимости и инструменты качества включены в репозиторий, менеджер пакетов и установка Task не требуются.
+Архитектурные границы описаны в [обзоре](../architecture/overview.md), точный порядок middleware — в [потоке запроса](../architecture/request-lifecycle.md). Источник команд — [`tools/project.php`](../../tools/project.php), а не прежние Composer/Task инструкции.
 
-Платформа и включённые инструменты:
+## Поставка и требования платформы
 
-- PHP 8.5+
-- RoadRunner HTTP worker
-- PostgreSQL
-- Redis через RoadRunner KV
-- PHPUnit
-- PHPStan
-- PHP-CS-Fixer
+PHP-библиотеки, генераторы и инструменты качества включены в репозиторий. Для запуска, сборки и проверок нет шага установки пакетов; Composer, npm и Task не требуются. Наличие оригинальных `composer.json` внутри зафиксированных upstream sources не означает их использование для загрузки или установки.
 
-## Конфигурация среды
+| Контур | Что требуется вне включённого PHP-кода |
+|---|---|
+| Минимальное HTTP/PDO-ядро | PHP 8.5+, PDO; обычный SAPI/PHP-FPM либо отдельный `rr` executable |
+| Работа с основной БД | PostgreSQL и `pdo_pgsql`; соединение нужно только при разрешении `Storage` |
+| API GeoIP/исходящий HTTP | Расширения соответствующих возможностей; IP2Location объявляет `bcmath`/`curl`, HTTP transport использует curl |
+| API cache через RR KV | `rr` с RPC/KV и настроенный Redis backend; при сбое есть локальный fallback |
+| Проверки качества | PHP CLI с расширениями включённых PHAR; provenance находится в `third_party/tools/*/provenance.json` |
+| Генерация protobuf SDK/endpoints | Установленный `protoc` |
+| Генерация OpenAPI | `protoc` и `protoc-gen-openapiv2` |
+| Compose-сервисы / load tests | Docker Compose / `k6` соответственно |
 
-### RoadRunner
+Базовые требования runtime зафиксированы в [`third_party/runtime/manifest.json`](../../third_party/runtime/manifest.json). PHP-библиотека RoadRunner не поставляет executable `rr`; его версия учитывается отдельно. CI сам подготавливает PHP и PostgreSQL как платформу, без установки PHP-пакетов проекта.
 
-Файл `.rr.yaml` определяет:
+[`bootstrap.php`](../../bootstrap.php) проверяет PHP/PDO и регистрирует локальный [`Autoloader`](../../bootstrap/Autoloader.php) по включённой runtime map. [`tests/bootstrap.php`](../../tests/bootstrap.php) добавляет dev bootstrap с типами PHPUnit и namespace `Tests`. Каждый генератор использует собственные bootstrap и dependency graph в отдельном PHP-процессе: версии библиотек разных контуров нельзя объединять одним общим autoload.
 
-- запуск worker через `php public/index.php`;
-- HTTP listener на `:8080`;
-- RPC listener на `127.0.0.1:6001`;
-- metrics/status endpoints;
-- KV storage (`local-memory`, `redis`).
+## Композиции HTTP
 
-### Storage adapters
+| Запуск | Конфигурация по умолчанию | Особенности |
+|---|---|---|
+| [`public/http.php`](../../public/http.php) | [`config/core.php`](../../config/core.php) | SAPI/FPM, явные GET/HEAD `/health`, без API capabilities |
+| [`public/index.php`](../../public/index.php) с [`.rr.core.yaml`](../../.rr.core.yaml) | RR config задаёт [`config/core-roadrunner.php`](../../config/core-roadrunner.php) | То же ядро, один worker, HTTP `127.0.0.1:8080`, без RPC/KV |
+| `public/index.php` с [`.rr.yaml`](../../.rr.yaml) | [`config/container.php`](../../config/container.php) | Прежнее protobuf API, session/statistics/GeoIP/cache; HTTP `0.0.0.0:8080`, три workers |
 
-Основная конфигурация лежит в `config/storage.php`.
-
-Runtime использует `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` и `DB_SCHEMA` (по умолчанию `public`). Имя схемы интерпретируется как один PostgreSQL identifier, а не как список `search_path`.
-
-По умолчанию используется:
-
-- `pgsql` как основной runtime adapter
-- `sqlite` как лёгкий adapter для отдельных изолированных сценариев и тестов
-
-Базовый quality gate шаблона не должен требовать поднятые внешние сервисы, но сам backend по умолчанию ориентирован на PostgreSQL.
-
-### Redis
-
-Используется как backend для RoadRunner KV.
-
-Конфиг:
-
-- `.rr.yaml`
-- `config/cache.php`
-
-Для deployment-aware cache invalidation используется `namespace_seed` в `config/cache.php` или `CACHE_NAMESPACE_SEED` из окружения.
-Это позволяет менять namespace кеша между релизами без глобального `clear()` shared backend-а на старте воркеров.
-
-## Docker services
-
-`docker-compose.yml` поднимает:
-
-- `db-postgres` для основного PostgreSQL runtime profile
-- `redis`
-
-Стандартный lifecycle:
+Оба entrypoints принимают `APP_CONFIG`; рекомендуется абсолютный путь. Для локальной проверки SAPI:
 
 ```bash
-php tools/project.php services:start
-php tools/project.php services:stop
+php -S 127.0.0.1:8080 -t public public/http.php
 ```
 
-`services:start` также ждёт готовности БД и запускает миграции.
+Для FPM веб-сервер направляет запросы в `public/http.php`, сохраняет исходный request URI и публикует только каталог `public`. Scheme/host не берутся автоматически из proxy headers; политика доверия reverse proxy не настроена общим ядром.
 
-## Схема БД
+`.rr.yaml` дополнительно задаёт RPC `127.0.0.1:6001`, status `127.0.0.1:2114`, metrics `127.0.0.1:2112`, KV `local-memory` и `redis`. Это конфигурация API-приложения с development logging, а не обязательные сервисы ядра.
 
-### `sessions`
+API cache выбирает RR KV storage `redis` через [`config/cache.php`](../../config/cache.php). `CACHE_NAMESPACE_SEED` читается этой конфигурацией из `$_SERVER`; seed меняет namespace релиза без глобального wipe на старте. In-memory fallback ограничен по размеру, но не является общим кешем workers. Под PHPUnit используется testing fallback, поэтому integration gate не проверяет настоящий RPC/KV/Redis.
 
-Назначение:
+## База данных и миграции
 
-- хранение анонимных и пользовательских сессий;
-- session payload в JSON-compatible field;
-- индексы под поиск по `user_id`, `expires_at`, `payload->>'ip'`, `payload->>'fingerprint'`.
+PostgreSQL — контрольный движок для разработки, integration tests и production-поведения SQL. [`config/storage.php`](../../config/storage.php) по умолчанию выбирает `STORAGE_ENGINE=pgsql` и использует `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SCHEMA` (по умолчанию `public`). `DB_SCHEMA` экранируется как один identifier; это не произвольный список `search_path`.
 
-### `api_stats`
+Существующий `SQLiteStorage` остаётся опциональным адаптером (`STORAGE_ENGINE=sqlite`, `SQLITE_DATABASE`). Он не заменяет PostgreSQL в integration gate и не подтверждает совместимость PostgreSQL SQL, JSONB, индексов или транзакций.
 
-Назначение:
+В минимальном ядре регистрация `StorageServiceProvider` не открывает PDO. Соединение создаётся конструктором storage при первом разрешении `Storage`/`SqlExecutor`. HTTP `/health` проходит без БД. В API-композиции построение session/statistics middleware уже разрешает SQL-зависимости, поэтому ей БД нужна при создании `App`.
 
-- запись вызовов API с привязкой к session;
-- хранение route, method, status code, execution time, request timestamp.
-
-### `users`
-
-Сейчас это минимальная таблица для будущих auth/user сценариев.
-
-## Миграции
-
-Запуск:
+Миграции запускаются явно, без автоматического выполнения на HTTP-запросе:
 
 ```bash
+php tools/project.php migrate migrate config/core.php
+php tools/project.php migrate rollback config/core.php
 php tools/project.php migrate
 ```
 
-CLI wrapper:
+[`bin/migrate.php`](../../bin/migrate.php) принимает действие первым аргументом и конфигурацию вторым. Последняя команда использует API `config/container.php`. `rollback` текущей реализации откатывает все загруженные выполненные миграции, а не только последнюю.
 
-- `bin/migrate.php`
+- `config/core.php` задаёт путь `src/Migrations`; сейчас прикладных PHP-миграций там нет. Разрешение migration service создаёт служебную таблицу `migrations`; таблицы API не создаются.
+- API provider использует путь выбранного adapter из `config/storage.php`: `src/Platform/Storage/Migration/PostgreSQL` либо `SQLite`.
+- API PostgreSQL migrations создают `sessions` (JSONB payload и индексы), `api_stats` (ссылка на session, route/status/timing) и `users` (минимальная user/password схема). Эти таблицы принадлежат API-приложению, а не обязательной схеме ядра.
 
-Реализация миграций:
+Исходники миграций и их исполнение находятся в [`Storage/Migration`](../../src/Platform/Storage/Migration). [`sql/schema.sql`](../../sql/schema.sql) отдельно описывает схему для SQL tooling; HTTP entrypoints не применяют этот файл.
 
-- `src/Platform/Storage/Migration/*`
+## Локальные сервисы
 
-## Тесты
+[`docker-compose.yml`](../../docker-compose.yml) содержит PostgreSQL 16 (`db-postgres`, порт 5432, runtime БД `app`) и Redis 7 (порт 6379). Эти образы и Docker являются платформой, а не включёнными PHP-зависимостями.
 
-### Unit tests
+```bash
+php tools/project.php services:start
+php tools/project.php services:status
+php tools/project.php services:stop
+```
 
-Покрывают:
-
-- domain services;
-- middleware;
-- router;
-- DI container;
-- hydrator;
-- repositories;
-- route generation.
-
-Bootstrap:
-
-- `tests/bootstrap.php`
-
-Свойства:
-
-- не требуют внешнюю БД;
-- не требуют RoadRunner KV;
-- используются в default `php tools/project.php test` и `php tools/project.php verify`.
-
-### Integration tests
-
-Проверяют:
-
-- реальное приложение через `App::handleRequest()`;
-- PostgreSQL-backed flow;
-- session creation/validation/fingerprinting;
-- geolocation integration;
-- api stats recording.
-
-Bootstrap:
-
-- `tests/Integration/bootstrap.php`
-
-Свойства:
-
-- требуют PostgreSQL profile;
-- запускаются отдельным профилем через `php tools/project.php test:integration`.
-
-Для тестов используются отдельные `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`. Значения обычных `DB_*` не используются. `php tools/project.php test:integration` и `php tools/project.php sql:check:pg` по умолчанию подключаются к `localhost:5432/app_test`, пользователь `app`, пароль `password`.
-
-Создайте тестовую БД один раз (локальный Docker Compose сам создаёт только runtime БД `app`):
+`services:start` выполняет `docker compose up -d`, ждёт `pg_isready` и запускает миграции API с конфигурацией по умолчанию. Для тестов отдельно создаётся БД `app_test`:
 
 ```bash
 docker compose exec db-postgres createdb -U app app_test
-php tools/project.php test:integration
 ```
 
-Для отдельного PostgreSQL instance:
+`php tools/project.php run` сначала вызывает `services:start`, затем `rr serve -c .rr.yaml`. Для запуска минимального ядра эти API-миграции не нужны; используйте SAPI/FPM либо `rr serve -c .rr.core.yaml` непосредственно.
+
+## Автоматические проверки
+
+Все команды выполняются из [`tools/project.php`](../../tools/project.php), который запускает включённые PHAR и инструменты отдельными процессами с нужным рабочим каталогом.
+
+| Команда | Фактический состав |
+|---|---|
+| `php tools/project.php verify` | Third-party integrity → documentation inventory/links → стиль → PHPStan → соответствие SQL-артефактов → root unit tests |
+| `php tools/project.php docs:check` | Инвентарь собственных документов, пути источников и локальные Markdown-ссылки без сети |
+| `php tools/project.php verify:integration` | PostgreSQL SQL validation → root integration tests |
+| `php tools/project.php verify:full` | `verify` → style/PHPStan/tests SQL generator → style/PHPStan/tests protobuf generator → `verify:integration` |
+| `php tools/project.php test:full` | Только root unit + integration tests |
+| `php tools/project.php build VERSION` | Third-party integrity и упаковка runtime `.tar.gz` + OpenAPI sidecar; не полный quality gate |
+
+`verify` не требует PostgreSQL, Redis, `rr` или protobuf compiler. `verify:full` требует PostgreSQL, но не запускает `proto:gen:all`, FPM/RR серверы или load tests. Команды генерации protobuf отдельно требуют native compilers из таблицы выше.
+
+Выборочные команды:
+
+```bash
+php tools/project.php test tests/Unit/Platform/Runtime/CoreApplicationTest.php
+php tools/project.php test --filter=testStorageIsAvailableWithoutOpeningItForHttpRequests
+php tools/project.php test:integration --filter=CoreApplicationTest
+php tools/project.php sql:check
+php tools/project.php sql:check:pg
+php tools/project.php tools:sql:check
+php tools/project.php tools:proto:check
+```
+
+### Unit profile
+
+[`phpunit.xml`](../../phpunit.xml) включает `tests/Unit` с bootstrap `tests/bootstrap.php`. Проверяются domain services, DI, routing, hydration, HTTP client, middleware, runtime adapters, loaders и SQL contracts без внешней БД/RR KV. Тесты SAPI проверяют factory/emitter, в том числе через отдельный PHP CLI-процесс; `RoadRunnerRuntimeTest` использует внешний worker double. Это не прогон всех запросов через реальные FPM и RR listeners.
+
+### PostgreSQL integration profile
+
+[`phpunit.integration.xml`](../../phpunit.integration.xml) включает `tests/Integration`. [`bootstrap`](../../tests/Integration/bootstrap.php) создаёт отдельную схему, настраивает БД, строит API `App`, применяет API-миграции и передаёт shared app через `TestAppFactory`.
+
+Проверяются прямые `App::handle()`/`handleRequest()` вызовы, сессии и их отзыв между SQL connections, отсутствие восстановления identity по fingerprint, GeoIP, статистика, изоляция схем. Отдельный `CoreApplicationTest` строит core с собственной схемой: проверяет отсутствие API-таблиц, PDO parameters, commit/rollback и `SqlExecutor`. HTTP-сервер и реальный RR KV этим профилем не запускаются.
+
+Runner использует отдельные `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`. Обычные `DB_*` не выбирают тестовую БД. Значения runner по умолчанию: `localhost:5432/app_test`, user `app`, password `password`.
 
 ```bash
 TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:integration
 ```
 
-При прямом запуске `php tools/phpunit.php -c phpunit.integration.xml` `TEST_DB_NAME` необходимо задать явно. Пользователю БД нужны права создавать и удалять свои схемы. Каждый запуск получает отдельную схему, поэтому разные test runs могут использовать одну тестовую БД параллельно.
+При прямом `php tools/phpunit.php -c phpunit.integration.xml` задайте `TEST_DB_NAME` явно. Пользователю БД нужны права создавать и удалять собственные схемы. [`PostgreSqlTestDatabase`](../../tests/Integration/PostgreSqlTestDatabase.php) создаёт случайную `phpunit_<24 hex>`; приложение получает только эту схему через `DB_SCHEMA`. Shutdown cleanup удаляет только успешно созданную данным объектом схему, включая ошибку после её создания в bootstrap. Убийство процесса без shutdown может оставить схему для ручной уборки.
 
-## Как устроены integration tests
+Параллельные запуски получают разные схемы. `sql:check:pg` отдельно создаёт `sql_gen_check_<random>`. Regression tests сохраняют sentinel-таблицу в `public` и проверяют соседние схемы. Внутри одного suite app/schema общие, поэтому отдельные тесты подготавливают нужные им таблицы сами; общей транзакции/reset перед каждым тестом нет.
 
-Bootstrap в `tests/Integration/bootstrap.php`:
+## CI и границы свидетельств
 
-- проверяет отдельную тестовую конфигурацию до обращения к БД;
-- создаёт новую уникальную схему `phpunit_<random>`;
-- подключает runtime только к этой схеме через `DB_SCHEMA`;
-- создаёт единый `App`;
-- прогоняет миграции и сохраняет shared app в `TestAppFactory`;
-- удаляет только созданную им схему при завершении процесса, включая ошибку bootstrap.
+Текущие [CI](../../.github/workflows/ci.yml) и [release workflow](../../.github/workflows/release.yml) подготавливают PHP 8.5 и PostgreSQL 16, запускают `verify:full`, затем `build`. CI работает на push/PR в `master`, release — при создании GitHub release. Эти workflows не регенерируют protobuf SDK/endpoints/OpenAPI и не запускают FPM/RR HTTP-совместимость или performance scenarios.
 
-Bootstrap не удаляет таблицы `public` и не выбирает существующую схему для очистки. `sql:check:pg` независимо создаёт и удаляет собственную схему `sql_gen_check_<random>` в той же тестовой БД. Regression tests проверяют сохранность sentinel-таблицы в `public` и изоляцию соседних test runs.
+Ручные проверки реальных PHP-FPM/RoadRunner, автономной распакованной поставки и работы без сети описаны как выполненные эксперименты в [истории автономного ядра](../history/2026-10-17-autonomy-audit.md). Они использовали временные конфигурации/порты и не являются постоянными wire fixtures CI. По ним нельзя утверждать наличие непрерывной проверки всех HTTP edge cases, настоящего RR KV или сравнительной производительности.
 
-Следствие:
-
-- интеграционные тесты не мокают runtime;
-- tests ближе к реальному application flow;
-- состояние базы подготавливается централизованно.
-
-## Команды проверки качества
-
-```bash
-php tools/project.php lint
-php tools/project.php phpstan
-php tools/project.php test
-php tools/project.php sql:check
-php tools/project.php sql:check:pg
-php tools/project.php test:integration
-php tools/project.php test:full
-php tools/project.php verify
-php tools/project.php verify:integration
-php tools/project.php verify:full
-```
-
-`php tools/project.php verify` — основной локальный gate. Он запускает:
-
-1. integrity hashes включённых зависимостей и инструментов
-2. lint
-3. phpstan
-4. sql artifact consistency check
-5. unit tests
-
-`php tools/project.php verify:integration` запускает PostgreSQL-backed SQL validation и integration profile.
-
-`php tools/project.php verify:full` объединяет оба контура и дополнительно запускает quality gates `sql-gen` и `protoc-php-gen`.
-
-## Что должна помнить LLM при изменениях
-
-- Изменения в storage/repository/migrations нужно проверять через `php tools/project.php test:integration` или `php tools/project.php verify:full`.
-- Изменения в `.proto` почти всегда требуют регенерации артефактов.
-- Изменения в middleware могут затронуть integration tests, даже если unit tests зелёные.
-- Из-за RoadRunner нельзя бездумно использовать растущие static caches и состояние в singleton-like сервисах.
-- Любая реструктуризация должна сохранять быстрый автономный `php tools/project.php verify`.
+При изменениях storage/repository/migrations используйте PostgreSQL gate; для middleware учитывайте обе композиции. Изменение `.proto` требует соответствующей регенерации и проверки generated artifacts. Не объединяйте runtime и generator bootstraps ради доступа к библиотеке: их версии и процессы намеренно разделены.

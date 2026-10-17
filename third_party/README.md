@@ -1,5 +1,7 @@
 # Included third-party code and tools
 
+Type: `operations`. Status: `current`. Reviewed: 2026-10-17.
+
 This directory contains fixed, offline distributions. No dependency resolution or installation runs during application startup, generation, verification or packaging.
 
 - `runtime/`: the application libraries, their original notices and a local autoload map.
@@ -14,3 +16,5 @@ Original upstream package metadata, including dependency declarations, is retain
 The runtime adaptation in `runtime/patches/roadrunner-worker-version.patch` replaces a query to an installed-package registry with the pinned RoadRunner compatibility metapackage version. That value describes PHP package compatibility; it does not identify the installed RoadRunner executable.
 
 PHP, its extensions, PostgreSQL and optional server/compiler executables remain platform requirements. Their versions are independent of these PHP library inventories.
+
+Delivery architecture: [autonomous core](../docs/design/autonomous-core.md). Repository documentation: [index](../docs/README.md).

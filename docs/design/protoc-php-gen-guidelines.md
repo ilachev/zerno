@@ -1,105 +1,51 @@
-# Рекомендации по `protoc-php-gen`
+# Правила работы с `protoc-php-gen`
 
-Этот документ фиксирует правила работы с внутренним генератором `tools/protoc-php-gen`.
+Тип: `instructions`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-Продуктовая модель и целевой scope инструмента отдельно описаны в [protoc-php-gen-product.md](./protoc-php-gen-product.md).
+## Когда применять
 
-## Зачем существует генератор
+Эти правила относятся к protobuf API ProtoPHPStack. Обычные HTTP endpoints минимального профиля задаются в [config/routes.php](../../config/routes.php) и не требуют protobuf, generated registries или этого plugin.
 
-В основном project path `protoc-php-gen` сейчас нужен не для общего mapper framework, а для двух связанных endpoint-задач:
+Перед изменением определить выбранный профиль: [config/core.php](../../config/core.php) или [config/container.php](../../config/container.php). Текущий контракт plugin описан в [protoc-php-gen-product.md](./protoc-php-gen-product.md); приоритет новых возможностей задаёт [общий roadmap](../project/roadmap.md).
 
-- взять protobuf `service/rpc`;
-- сгенерировать endpoint contracts;
-- сгенерировать operation registry classes для каждого RPC;
-- сократить ручной HTTP boilerplate в runtime.
+## Источники и владельцы
 
-Это endpoint-oriented codegen path, а не универсальный генератор для внутренних моделей проекта.
+| Задача | Менять вручную |
+| --- | --- |
+| Message/RPC/HTTP binding protobuf API | `protos/proto/app/v1/*.proto` |
+| Логика RPC | `src/Platform/Http/Endpoint/...` и соответствующие application/domain services |
+| Project naming и runtime contracts | `codegen/Protobuf/BaseApiTemplateEndpointProfile.php` |
+| Общий механизм генерации | `tools/protoc-php-gen/src` |
+| Явные маршруты минимального HTTP-профиля | `config/routes.php` |
 
-## Что считается правильной областью ответственности
+Не исправлять вручную `protos/gen`, `gen/Generated/Endpoint`, `gen/Generated/OperationManifest` или `docs/api.swagger.json`. Причину изменения искать в исходнике и генерировать заново. Сохранённые имена `BaseApiTemplate...` — имена существующих классов; не переименовывать их попутно.
 
-В генераторе допустимо:
+## Изменение protobuf API
 
-- читать protobuf descriptors;
-- генерировать endpoint interfaces;
-- генерировать HTTP handlers поверх общего runtime adapter;
-- валидировать handwritten endpoint implementations на этапе generation;
-- генерировать operation registry classes как явную metadata surface;
-- держать явный generated contract между endpoint-кодом и handwritten endpoint implementations.
+1. Изменить `.proto`.
+2. Добавить или обновить ручную endpoint implementation по соглашению profile. Валидатор требует существующий файл и объявление generated interface.
+3. Из корня выполнить `php tools/project.php proto:gen:all`.
+4. Проверить diff SDK, handlers, registries и OpenAPI; убедиться, что удалённые RPC не оставили используемый ручной код.
+5. Выполнить `php tools/project.php verify` и `php tools/project.php tools:proto:check`. Для затронутых DB-сценариев — также `php tools/project.php verify:integration`.
 
-В генераторе недопустимо:
+Установщик зависимостей не нужен: исходники включены в `third_party`. Для генерации нужны локальные `protoc` и `protoc-gen-openapiv2`; проверки компонента не должны их скачивать. Не подключать SQL/protobuf generator bootstrap и runtime distribution в один PHP-процесс.
 
-- маппить внутренние domain-модели проекта;
-- тащить внутрь бизнес-логику;
-- превращаться в ORM-like или hydrator-like framework;
-- плодить отдельную ветку generated runtime, которую основной проект не использует.
+## Граница механизма
 
-## Практические правила
+Генератор отвечает за descriptors, interfaces, HTTP adapters, registries и ограниченную проверку объявлений реализаций. Project conventions должны поступать через внешний `EndpointProfile` и bootstrap.
 
-### 1. Protobuf управляет endpoint surface
+Бизнес-логика, persistence policy и domain mapping остаются в ручном коде. Новую transport-семантику нельзя считать поддержанной только потому, что parser прочитал соответствующее поле: нужны runtime implementation и тесты.
 
-Если меняется публичный API, источник истины только один:
+Текущая проверка `endpoint_validation` не анализирует сигнатуры методов полностью. PHPStan, загрузка классов PHP и project consistency tests остаются обязательными линиями проверки.
 
-- `.proto` в `protos/proto/app/v1`
+## Правила расширения
 
-После этого надо:
+Новый module допускается при реальной задаче, отдельном явном флаге, определённом output contract и тестах. Не включать новые модули по умолчанию и не смешивать их с существующим endpoint path.
 
-1. перегенерировать артефакты;
-2. добавить handwritten endpoint implementation;
-3. прогнать `php tools/project.php verify`.
+Внутренние type/rendering helpers допустимы, если они не протекают в generated runtime. `.proto` остаётся источником transport-контракта выбранного protobuf API; для обычного HTTP-профиля источником остаются его PHP-маршруты и handlers.
 
-### 2. Generated code и handwritten code должны быть разделены
+## Проверка воспроизводимости
 
-Generated endpoint code:
+Записывать используемые версии платформенных generators и сравнивать артефакты с исходниками. У локального `protoc 26.1` замечена перестановка независимых descriptors в `aggregate_metadata`; это ограничение upstream SDK-генерации, а не повод менять API или принимать любой generated diff без разбора.
 
-- `gen/Generated/Endpoint/...`
-- `gen/Generated/OperationManifest/...`
-
-Handwritten runtime implementation:
-
-- `src/Platform/Http/Endpoint/...`
-
-Project-specific profile integration:
-
-- `codegen/protoc-php-gen-bootstrap.php`
-- `codegen/Protobuf/BaseApiTemplateEndpointProfile.php`
-
-Генератор не должен подменять собой application logic.
-
-### 3. Никаких project-specific special cases
-
-Если для нового RPC нужна особая логика, она должна жить в handwritten endpoint implementation, а не в `protoc-php-gen`.
-
-Генератор должен оставаться одинаково полезным для любого backend surface.
-
-### 4. Генератор должен быть воспроизводимым
-
-Любой разработчик или LLM должны понимать:
-
-- из каких `.proto` идёт генерация;
-- какая команда запускает pipeline;
-- какие generated-файлы считаются каноническими.
-
-## Что не считается частью канонического пути
-
-Следующие идеи не являются поддерживаемым направлением проекта:
-
-- attribute-based mapper generation;
-- generated hydrator runtime;
-- protobuf-driven mapping между внутренними PHP-моделями и domain-структурами.
-
-Если такой код ещё когда-нибудь снова появится в тулзе, он не должен попадать в main project path без отдельного generator module, отдельного contract и отдельной поддержки.
-
-## Критерий хорошего изменения
-
-Хорошее изменение вокруг `protoc-php-gen`:
-
-- усиливает protobuf-first endpoint flow;
-- уменьшает ручной endpoint boilerplate;
-- не тащит protobuf глубже, чем это нужно endpoint-слою;
-- не создаёт вторую архитектуру внутри генератора.
-
-Отдельное правило для type helper libraries:
-
-- они допустимы только как внутренний helper layer генератора;
-- они не должны протекать в runtime-код проекта;
-- их стоит использовать только там, где они реально убирают ручной type/docblock rendering.
+При изменении самого plugin проверять binary protocol, enabled-module combinations, type resolution и project consistency. Будущие идеи хранить как предложения в component spec, а общий порядок работ — в [roadmap](../project/roadmap.md).

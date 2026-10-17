@@ -1,39 +1,52 @@
-# Документация проекта
+# Документация ProtoPHPStack
 
-Документация специально сведена к короткому набору канонических файлов, чтобы человек и LLM не тратили время на чтение пересекающихся описаний одной и той же идеи.
+Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-17.
 
-## Канонический набор
+Проект развивается в автономное PHP HTTP/PDO-ядро для разработчиков сайтов. Здесь отдельно описаны текущая реализация, принятые направления и история перехода. Наличие функции в roadmap не означает её наличие в коде.
 
-1. [LLM Onboarding](./llm-onboarding.md) — главный обзор проекта: цель, структура, инварианты, зоны риска.
-2. [Карта reusable-блоков](./reusable-blocks.md) — что именно является reusable core шаблона, а что является optional или example.
-3. [Поток запроса](./architecture/request-lifecycle.md) — как запрос проходит через runtime и middleware.
-4. [Protobuf и генерация кода](./architecture/protobuf-and-codegen.md) — как устроен transport-contract слой и codegen.
-5. [Инфраструктура и тестирование](./development/infrastructure-and-testing.md) — PostgreSQL, Redis, миграции, quality gates и test profiles.
-6. [Рекомендации по `protoc-php-gen`](./design/protoc-php-gen-guidelines.md) — правила для endpoint-oriented protobuf codegen.
-7. [`protoc-php-gen` как продукт](./design/protoc-php-gen-product.md) — текущий supported scope и целевая modular model генератора.
-8. [`sql-gen` как продукт](./design/sql-gen-product.md) — целевая `sqlc-like` модель для typed SQL generation.
-9. [`Platform/Http/Client` как продукт](./design/http-client-product.md) — целевая модель outbound HTTP client с reliability policy.
-10. [Автономное веб-ядро](./design/autonomous-core.md) — аудит текущих зависимостей, границы самостоятельной поставки и план перехода; границы поставки, история аудита и проверенные этапы перехода.
+## Точки входа
 
-## Как читать
+- [README проекта](../README.md) — требования платформы, запуск и основные команды.
+- [AGENTS.md](../AGENTS.md) — единые правила работы агентов.
+- [LLM onboarding](llm-onboarding.md) — минимальный контекст и порядок чтения по задаче.
+- [Машинный инвентарь](documentation-inventory.json) — пути, типы, статусы, назначение и связанные исходники всех собственных документов.
 
-- Если нужен общий контекст, начинать с `llm-onboarding.md`.
-- Если нужно понять, какие части проекта реально составляют шаблон, читать `reusable-blocks.md`.
-- Если нужно понять runtime, читать `architecture/request-lifecycle.md`.
-- Если меняется API surface, читать `architecture/protobuf-and-codegen.md`.
-- Если меняется persistence direction и SQL toolchain, читать `design/sql-gen-product.md`.
-- Если меняется outbound HTTP policy или внешние интеграции, читать `design/http-client-product.md`.
-- Если меняется storage, cache, миграции или тестовый контур, читать `development/infrastructure-and-testing.md`.
+## Направление продукта и план
 
-## Базовые правила
+| Документ | Для чего читать |
+|---|---|
+| [Видение и границы ядра](project/vision.md) | Цель, пользователи, автономность, обязательная БД, границы core / optional / application |
+| [Roadmap](project/roadmap.md) | Шесть направлений, порядок работ, результаты и критерии готовности; запланированные функции |
+| [Приложение: каталог документов](project/document-catalog-example.md) | Проект первого сквозного сценария; отдельное приложение, ещё не реализовано |
 
-- Источник истины для core API template — `protos/proto/app/v1`.
-- Сгенерированные артефакты нельзя редактировать вручную.
-- `Platform` должен оставаться маленьким runtime core.
-- `Capabilities` должны оставаться простыми reusable-блоками.
-- Нейтральный `HealthCheck` остаётся минимальным живым примером protobuf-first endpoint flow.
-- Для persistence целевым направлением считается explicit SQL с typed generation поверх него, а не усложнение ORM-like abstractions.
+## Текущая архитектура
 
-## Запуск проверок
+| Документ | Владеет описанием |
+|---|---|
+| [Обзор архитектуры](architecture/overview.md) | Профили, точки входа, DI, данные и границы модулей |
+| [Жизненный цикл запроса](architecture/request-lifecycle.md) | Порядок middleware, обработка запроса, session/API особенности и ограничения |
+| [Карта блоков](reusable-blocks.md) | Назначение блоков и правило выбора между ядром, optional-компонентом и приложением |
+| [Автономная поставка](design/autonomous-core.md) | Bootstrap, vendored distributions, изоляция инструментов, manifests и сборка |
+| [Protobuf и codegen](architecture/protobuf-and-codegen.md) | Текущий необязательный API-контур и его источники/generated output |
 
-`php tools/project.php verify` запускает автономный gate без внешних сервисов; `php tools/project.php verify:full` добавляет оба генератора и PostgreSQL. Установка пакетов не нужна. Полный список команд: `php tools/project.php help`; Task — необязательная обёртка.
+## Работа с репозиторием
+
+- [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
+- [Правила документации](development/documentation.md) — статусы, источники истины, инвентаризация, ссылки и порядок обновления.
+- [Bundled distributions](../third_party/README.md) — карта включённых сторонних исходников и инструментов.
+
+## Компоненты: текущий контракт и дальнейшее развитие
+
+Эти документы уточняют область компонента; приоритеты всего проекта задаёт [roadmap](project/roadmap.md).
+
+- SQL: [дизайн и ограничения](design/sql-gen-product.md), [инструкция инструмента](../tools/sql-gen/README.md).
+- Protobuf: [дизайн](design/protoc-php-gen-product.md), [правила разработки генератора](design/protoc-php-gen-guidelines.md), [инструкция инструмента](../tools/protoc-php-gen/README.md).
+- Исходящий HTTP: [реализованный контракт и планы](design/http-client-product.md).
+- [OpenAPI JSON](api.swagger.json) — generated reference только для необязательного protobuf API; не спецификация HTML-ядра.
+
+## Исторические материалы
+
+- [Аудит и этапы автономной поставки от 2026-10-17](history/2026-10-17-autonomy-audit.md) — сохранённый снимок до реорганизации документации.
+- [Исходный аудит установленных зависимостей](history/dependency-inventory-2026-10-17.json) — прежний Composer-граф, размеры и hashes; **не текущая поставка**.
+
+Актуальный состав стороннего кода задают [индекс distributions](../third_party/manifest.json) и связанные manifests. Все собственные Markdown-документы перечислены в инвентаре; upstream README внутри bundled packages туда не включаются.
