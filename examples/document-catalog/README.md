@@ -76,4 +76,4 @@ php tools/project.php verify:integration
 
 Для второго запуска настройте отдельные `TEST_DB_*`, как описано в [инфраструктуре](../../docs/development/infrastructure-and-testing.md): они независимы от application `DB_*`. Unit-тесты не требуют сервиса БД. Фактические HTTP-проверки и замеры должны учитывать весь путь через выбранный сервер; наличие PSR-7 stream само по себе не доказывает ограниченную память.
 
-Входа, редакторских прав, CSRF, upload UI, изменения и публикации через HTTP пока нет. Следующий этап и границы приложения определены в [проекте каталога](../../docs/project/document-catalog-example.md).
+Входа, редакторских прав, CSRF, upload UI, изменения и публикации через HTTP пока нет. Их [прикладной дизайн](../../docs/project/document-catalog-example.md) отложен: сейчас пример проверяет развитие общих механизмов ядра по [roadmap](../../docs/project/roadmap.md). Html/FileStore/Errors остаются локальными helpers до реализации нейтральных core-контрактов.

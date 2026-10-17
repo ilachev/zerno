@@ -54,9 +54,9 @@
 
 - `src/Platform/Http/Handler/HealthHandler.php` и `config/routes.php` показывают минимальный обычный HTTP flow.
 - `HealthService.Check` и `SystemService.Describe` показывают optional protobuf flow для GET и POST, а не обязательный контракт всех сайтов.
-- [Каталог документов](../examples/document-catalog/README.md) — отдельное приложение с работающими публичными списком, карточкой и скачиванием. Его `Document`, SQL, PHP-шаблоны и publication states живут вне `Platform`; редактор остаётся в [плане](project/document-catalog-example.md).
+- [Каталог документов](../examples/document-catalog/README.md) — проверочный потребитель с работающими публичными списком, карточкой и скачиванием. Его `Document`, SQL, PHP-шаблоны и publication states живут вне `Platform`; редактор и публикационный workflow [отложены](project/document-catalog-example.md).
 
-HTML rendering и read-only файловая выдача проверяются на каталоге. Общие формы, CSRF, вход, прикладные permissions, редакторская публикация и HTTP page cache остаются в roadmap. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
+HTML rendering и read-only файловая выдача проверяются на каталоге, но Html, FileStore и HTML Errors пока являются локальным кодом примера. Ближайшая работа обобщает HTTP-ошибки, файловый ответ и нужные SQL-контракты. Формы, валидация и опциональные механизмы защиты развиваются как нейтральные блоки; прикладной редактор не становится обязательной следующей задачей. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
 
 ## Решение перед добавлением блока
 
