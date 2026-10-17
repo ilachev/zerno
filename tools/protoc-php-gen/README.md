@@ -52,6 +52,18 @@ The detailed product-level rationale is documented in:
 
 ## Usage
 
+Dependencies are bundled in `third_party/codegen/protobuf/packages` and loaded through this tool's `bootstrap.php`. No package installation is required. `third_party/codegen/protobuf/manifest.json` records the package versions, source refs, licenses and file hashes.
+
+Run the local quality gate from the project root:
+
+```bash
+php tools/project.php tools:proto:check
+```
+
+The protobuf and SQL generators run in separate PHP processes because their dependency versions are pinned independently. Do not load both generator bootstraps in one process.
+
+Generating protobuf artifacts still requires a local `protoc` executable. OpenAPI generation additionally requires `protoc-gen-openapiv2`; the PHP plugin does not install either executable.
+
 ```bash
 protoc -I=./protos/proto \
   --plugin=protoc-gen-php-endpoint=./tools/protoc-php-gen/bin/protoc-php-gen.php \

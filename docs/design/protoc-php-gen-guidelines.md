@@ -45,7 +45,7 @@
 
 1. перегенерировать артефакты;
 2. добавить handwritten endpoint implementation;
-3. прогнать `task verify`.
+3. прогнать `php tools/project.php verify`.
 
 ### 2. Generated code и handwritten code должны быть разделены
 

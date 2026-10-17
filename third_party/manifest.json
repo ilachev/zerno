@@ -1,0 +1,49 @@
+{
+  "format_version": 1,
+  "platform": {
+    "php": ">=8.5",
+    "extensions": [
+      "pdo"
+    ],
+    "postgresql": "pdo_pgsql extension and PostgreSQL server",
+    "quality_extensions": [
+      "ctype",
+      "dom",
+      "json",
+      "libxml",
+      "mbstring",
+      "tokenizer",
+      "xml",
+      "xmlwriter"
+    ],
+    "optional_executables": [
+      "rr",
+      "protoc",
+      "protoc-gen-openapiv2",
+      "docker",
+      "k6"
+    ]
+  },
+  "distributions": [
+    {
+      "name": "runtime",
+      "manifest": "runtime/manifest.json",
+      "sha256": "bcce621cbe9a20f8023155ca9130a0344c1c00fcd0cf6db1fe53203559c11477"
+    },
+    {
+      "name": "codegen/sql",
+      "manifest": "codegen/sql/manifest.json",
+      "sha256": "c4646676d240bfce25e385d691d70ca24d26010e5641352829916244c8b98e25"
+    },
+    {
+      "name": "codegen/protobuf",
+      "manifest": "codegen/protobuf/manifest.json",
+      "sha256": "1129f68befb6d254420b1c3dcad1a2010f5f458b6e0882701a7e67e0464dac8f"
+    },
+    {
+      "name": "tools",
+      "manifest": "tools/manifest.json",
+      "sha256": "6c0343e11a137ed6b82fbbb08b1e112faf8f8813eecdb3d610b37cfd849f0dc2"
+    }
+  ]
+}

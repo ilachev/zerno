@@ -13,9 +13,13 @@ $config = new Config()
     ->setFinder(
         Finder::create()
             ->in(__DIR__ . '/src')
+            ->in(__DIR__ . '/bootstrap')
+            ->in(__DIR__ . '/public')
             ->append([
                 __FILE__,
+                __DIR__ . '/bootstrap.php',
             ])
+            ->append(Finder::create()->files()->depth('== 0')->in(__DIR__ . '/tools'))
             ->append(
                 Finder::create()
                     ->in(__DIR__ . '/bin'),

@@ -6,24 +6,22 @@ on:
 
 jobs:
   build:
-    name: Build Release Package
+    name: Verify and Package Release
     runs-on: ubuntu-latest
-    
-    # Set environment variables for database connection in CI
     env:
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_NAME: app
-      DB_USER: app
-      DB_PASSWORD: password
-    
+      STORAGE_ENGINE: pgsql
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: 5432
+      TEST_DB_NAME: app_test
+      TEST_DB_USER: app
+      TEST_DB_PASSWORD: password
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: app
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: app
+          POSTGRES_DB: app_test
         ports:
           - 5432:5432
         options: >-
@@ -31,115 +29,25 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Setup PHP
+      - name: Setup PHP platform
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, intl, sqlite3, pgsql, pdo_pgsql
+          extensions: bcmath, curl, dom, fileinfo, intl, mbstring, pdo_sqlite, pdo_pgsql, sqlite3, pgsql, xml, xmlwriter, zip
           coverage: none
-          tools: composer:v2
-      
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
-      
-      - name: Install Taskfile
-        uses: arduino/setup-task@v1
-        with:
-          version: '3.x'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Install Protoc Prebuilt Binary
-        run: |
-          echo "Installing protobuf compiler from GitHub releases..."
-          PROTOC_VERSION="24.4"
-          PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
-          
-          # Create temporary directory for download
-          mkdir -p /tmp/protoc
-          
-          # Download and extract protoc
-          curl -sSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}" -o /tmp/protoc.zip
-          unzip -q /tmp/protoc.zip -d /tmp/protoc
-          
-          # Install to system directories
-          sudo cp /tmp/protoc/bin/protoc /usr/local/bin/
-          sudo cp -r /tmp/protoc/include/* /usr/local/include/
-          
-          # Clean up
-          rm -rf /tmp/protoc /tmp/protoc.zip
-          
-          # Verify protoc installation
-          protoc --version
-      
-      - name: Install Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-          
-      - name: Install protoc-gen-openapiv2
-        run: |
-          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.18.0
-          echo "PATH=$PATH:$(go env GOPATH)/bin" >> $GITHUB_ENV
-          # Copy plugin to a location where Docker can access it
-          sudo cp $(go env GOPATH)/bin/protoc-gen-openapiv2 /usr/local/bin/
-      
-      - name: Generate proto artifacts
-        run: |
-          # Create necessary directories
-          mkdir -p protos/gen docs
-          
-          # Process files individually
-          echo "Generating PHP SDK..."
-          
-          # Find and process each .proto file individually
-          for proto_file in protos/proto/app/v1/*.proto protos/proto/google/api/*.proto; do
-            echo "Processing: $proto_file"
-            protoc -I=protos/proto \
-              --php_out=protos/gen \
-              --php_opt=aggregate_metadata \
-              "$proto_file"
-          done
-          
-          echo "Generating OpenAPI docs..."
-          # Process API files for OpenAPI generation
-          for proto_file in protos/proto/app/v1/*.proto; do
-            echo "Processing for OpenAPI: $proto_file"
-            protoc -I=protos/proto \
-              --openapiv2_out=logtostderr=true:docs \
-              --openapiv2_opt=json_names_for_fields=true,allow_merge=true,merge_file_name=api \
-              "$proto_file"
-          done
-          
-          # Fix permissions if needed
-          if [ "$(stat -c %u protos/gen)" != "$(id -u)" ]; then
-            sudo chown -R $(id -u):$(id -g) protos/gen docs
-          fi
-      
-      - name: Prepare release assets
-        run: |
-          # Create release directory
-          mkdir -p release_assets
-          
-          # Package application
-          tar -czf release_assets/api-template-${{ github.event.release.tag_name }}.tar.gz \
-            --exclude='.git*' \
-            --exclude='tests' \
-            --exclude='var' \
-            --exclude='load-tests' \
-            --exclude='taskfile.yaml' \
-            .
-          
-          # Copy OpenAPI docs
-          cp ./docs/api/api.swagger.json release_assets/api-swagger-${{ github.event.release.tag_name }}.json
-      
+          tools: none
+      - name: Verify committed runtime and generated artifacts
+        run: php tools/project.php verify:full
+      - name: Package runtime sources and bundled runtime dependencies
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
+        run: php tools/project.php build "$RELEASE_VERSION"
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            release_assets/api-template-${{ github.event.release.tag_name }}.tar.gz
-            release_assets/api-swagger-${{ github.event.release.tag_name }}.json
+            dist/api-template-${{ github.event.release.tag_name }}.tar.gz
+            dist/api-swagger-${{ github.event.release.tag_name }}.json
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -32,7 +32,7 @@
 Команда:
 
 ```bash
-task proto:gen:sdk
+php tools/project.php proto:gen:sdk
 ```
 
 Результат:
@@ -46,7 +46,7 @@ task proto:gen:sdk
 Команда:
 
 ```bash
-task proto:gen:docs
+php tools/project.php proto:gen:docs
 ```
 
 Результат:
@@ -66,7 +66,7 @@ task proto:gen:docs
 Команда:
 
 ```bash
-task proto:gen:endpoints
+php tools/project.php proto:gen:endpoints
 ```
 
 Результат:
@@ -96,7 +96,7 @@ task proto:gen:endpoints
 Полный цикл:
 
 ```bash
-task proto:gen:all
+php tools/project.php proto:gen:all
 ```
 
 Состав:
@@ -109,7 +109,7 @@ task proto:gen:all
 
 Теперь generation path линейный:
 
-1. `task proto:gen:endpoints` через `protoc-php-gen` генерирует endpoint contracts и operation registry classes в `gen/Generated/...`
+1. `php tools/project.php proto:gen:endpoints` через `protoc-php-gen` генерирует endpoint contracts и operation registry classes в `gen/Generated/...`
 2. runtime использует operation registry classes как канонический endpoint metadata source и по ним строит routes и endpoint resolution
 
 Это важно: `service/rpc + google.api.http` теперь проходят через тот же основной toolchain, что и generated endpoints, а не через отдельную runtime-ветку parsing logic.

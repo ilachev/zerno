@@ -1,0 +1,49 @@
+{
+  "name": "php-cs-fixer",
+  "version": "3.94.2",
+  "license_spdx": "MIT",
+  "recorded_on": "2026-10-17",
+  "artifact": {
+    "file": "php-cs-fixer.phar",
+    "bytes": 3516459,
+    "sha256": "aaafc3a53b877c6741ddccac0a783f0fb73fff5f84fba5870d5dd306ee22dde0",
+    "download_url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/v3.94.2/php-cs-fixer.phar",
+    "upstream_release_url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/tag/v3.94.2",
+    "upstream_published_at": "2026-02-20T16:14:05Z",
+    "upstream_tag": "v3.94.2",
+    "contents": "Unmodified official standalone PHAR, including its bundled dependencies and notices as supplied upstream."
+  },
+  "license": {
+    "file": "LICENSE",
+    "source_url": "https://raw.githubusercontent.com/PHP-CS-Fixer/PHP-CS-Fixer/v3.94.2/LICENSE",
+    "sha256": "2328ecf7ed904804f5e9f9c70762d2e0baf6610d872c611bbddca94baa970549"
+  },
+  "verification": {
+    "published_sha256": "aaafc3a53b877c6741ddccac0a783f0fb73fff5f84fba5870d5dd306ee22dde0",
+    "published_sha256_source": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/releases/288785770",
+    "sha256_matched": true,
+    "phar_internal_signature": {
+      "hash": "6FB2981D6F108AE520C386FA392C3277976C29D97CFA282256B002796C0CE272998B55C95744C38AC2F438D50A75AC346684D2C4137A855F9307A6C5B4B4A606",
+      "hash_type": "SHA-512"
+    },
+    "phar_internal_signature_note": "The internal PHAR hash checks archive integrity; publisher verification is recorded separately.",
+    "openpgp": {
+      "signature_file": "php-cs-fixer.phar.asc",
+      "signature_source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/v3.94.2/php-cs-fixer.phar.asc",
+      "issuer_fingerprint": "BBAB5DF0A0D6672989CF1869E82B2FB314E9906E",
+      "verified_at_acquisition": false,
+      "public_key_source": "https://github.com/keradus.gpg",
+      "verification_result": "Detached signature retained but not cryptographically verified: the official maintainer GitHub key endpoint returned an empty export stating this key could not be exported. Artifact SHA-256 was verified against the official publisher checksum over HTTPS."
+    }
+  },
+  "platform": {
+    "php": ">=7.4",
+    "extensions": [
+      "phar",
+      "json",
+      "tokenizer"
+    ],
+    "package_managers_required": []
+  },
+  "known_behavior": "Without composer.json, upstream emits a non-fatal warning that its optional project minimum-PHP-version detection could not read that file. No placeholder Composer file or output suppression is supplied."
+}

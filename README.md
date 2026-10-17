@@ -2,131 +2,90 @@
 
 [![CI](https://github.com/ilachev/base-api-template/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/base-api-template/actions/workflows/ci.yml)
 
-A pure PHP backend template with Protocol Buffers for endpoint contracts, generated endpoint handlers, protobuf-driven runtime routing, and a small RoadRunner-based runtime core.
+A small PHP HTTP/PDO core with explicit routes, prepared SQL, transactions and migrations. Optional profiles retain the protobuf API, generated endpoint handlers, OpenAPI, sessions, API statistics and RoadRunner.
 
-Current target state for this repository: a production-ready set of reusable backend blocks on pure PHP, without framework coupling. The repository keeps runtime primitives and optional integrations, but it should not feel like a heavy framework.
+Runtime sources, generator dependencies and pinned PHP quality tools are included in the repository. Running, generating, checking and packaging requires no package manager or dependency installation. Task is an optional alias for the PHP command runner. See the [delivery plan](docs/design/autonomous-core.md) and [documentation index](docs/README.md).
 
-The project is moving toward a small autonomous PHP web core with PDO and explicit SQL. Fixed third-party sources may be bundled; running, building and testing without package managers is the target. Composer and Task are still required by the current development workflow. See the [delivery plan](docs/design/autonomous-core.md).
+## Platform requirements
 
-The default runtime stays focused on reusable blocks. The only built-in endpoint example is a neutral health check that demonstrates the protobuf-first endpoint flow.
+- PHP 8.5+ with PDO; use `pdo_pgsql` for PostgreSQL or `pdo_sqlite` for SQLite.
+- The optional GeoIP integration requires `bcmath` and `curl`.
+- Quality tools also use DOM/XML, XMLWriter, mbstring and tokenizer. Release compression uses Phar and zlib.
+- PostgreSQL is required for integration tests and PostgreSQL SQL validation.
+- RoadRunner is required only for its runtime profile; `protoc` for protobuf generation, and `protoc-gen-openapiv2` for OpenAPI regeneration. These are platform executables, not downloaded by project commands.
 
-## Features
-
-- Protocol Buffer based endpoint contracts
-- Generated server-side endpoint handlers from protobuf services
-- Protobuf-driven runtime routing from generated operation registry classes
-- OpenAPI documentation generation
-- Small framework-free runtime core
-- RoadRunner-powered execution model
-- Reusable backend building blocks instead of framework-driven architecture
-- High test coverage and static analysis
-- GitHub Actions CI/CD pipeline
-
-## Documentation
-
-Detailed project documentation for humans and LLM agents starts in [`docs/README.md`](docs/README.md).
-
-## Setup
+## Check and build
 
 ```bash
-# Install dependencies
-composer install
+# Available commands; no installation step
+php tools/project.php help
 
-# Generate proto artifacts
-task proto:gen:all
+# Local gate: dependency integrity, style, analysis, SQL synchronization and unit tests
+php tools/project.php verify
 
-# Run unit tests
-task test
+# A focused unit test; PHPUnit arguments are forwarded directly
+php tools/project.php test tests/Unit/Platform/Runtime/AppTest.php
 
-# Check generated SQL artifacts against SQL sources
-task sql:check
+# Generate or verify typed SQL
+php tools/project.php sql:gen
+php tools/project.php sql:check
 
-# Validate SQL queries against live PostgreSQL
-task sql:check:pg
+# Full checks: both generator quality gates plus PostgreSQL validation and integration
+TEST_DB_HOST=127.0.0.1 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:full
 
-# Run integration tests against PostgreSQL
-task test:integration
-
-# Run the default verification gate (lint, static analysis, unit tests)
-task verify
-
-# Run the full verification gate, including integration tests
-task verify:full
+# Runtime-only archive and OpenAPI sidecar in dist/
+php tools/project.php build local
 ```
 
-## Running the Application
+`TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` and `TEST_DB_PASSWORD` configure isolated integration runs. The runner defaults to `localhost:5432/app_test`, user `app`, password `password`. Create that test database before integration checks; each run creates and removes its own random schema. Application `DB_*` settings are not used to select the test database.
 
-The minimal HTTP/PDO composition uses explicit routes in `config/routes.php`, with GET and HEAD `/health`. It opens no database connection for the health request and enables no sessions, statistics, GeoIP or protobuf discovery. Run one of these servers:
+The release archive includes application sources, committed generated artifacts, configuration, entrypoints, runtime dependencies with their notices, the dependency manifest and documentation. It excludes tests, generator dependencies and quality tools. The OpenAPI sidecar comes from `docs/api.swagger.json`.
+
+## Run the minimal HTTP/PDO application
+
+Explicit routes in `config/routes.php` provide GET and HEAD `/health`. The health request opens no database connection and enables no sessions, statistics, GeoIP or protobuf discovery.
 
 ```bash
-# PHP development server; use public/http.php as the PHP-FPM front controller too
+# Local development; public/http.php is also the PHP-FPM front controller
 php -S 127.0.0.1:8080 -t public public/http.php
 
-# RoadRunner using the same minimal application
+# The same minimal application through RoadRunner
 rr serve -c .rr.core.yaml
 ```
 
-PDO and SQL services are available when requested by a handler factory. Configure PostgreSQL with `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` and optionally `DB_SCHEMA`. Application migrations belong in `src/Migrations` (`App\Migrations` namespace):
+PDO and typed SQL execution are available when requested by a handler factory. Configure PostgreSQL with `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` and optionally `DB_SCHEMA`. Application migrations belong in `src/Migrations`, namespace `App\Migrations`:
 
 ```bash
-php bin/migrate.php migrate config/core.php
-php bin/migrate.php rollback config/core.php
+php tools/project.php migrate migrate config/core.php
+php tools/project.php migrate rollback config/core.php
 ```
 
-The existing protobuf API remains available with its original application composition:
+## Optional protobuf API
 
-The application uses RoadRunner for high performance. To run:
+The existing API composition lives in `config/container.php` and runs through `public/index.php`. Its RoadRunner configuration is `.rr.yaml`; sessions, GeoIP and API statistics remain enabled in this profile.
 
 ```bash
-# Install RoadRunner globally (if not already installed)
-# Visit https://roadrunner.dev/download for installation instructions
+# Existing Docker services and API migrations
+php tools/project.php services:start
 
-# Start optional services and run the application
-task run
+# The Compose configuration creates app; create app_test once for integration checks
+docker compose exec db-postgres createdb -U app app_test
 
-# The API will be available at http://localhost:8080
+# Run the API profile
+rr serve -c .rr.yaml
 
-# To stop all services
-task services:stop
+# Regenerate contracts, endpoints and OpenAPI when the platform compilers are available
+php tools/project.php proto:gen:all
+
+php tools/project.php services:stop
 ```
 
-## Testing Strategy
+Application requests use `bootstrap.php`; tests use `tests/bootstrap.php`. Runtime packages are under `third_party/runtime`, generator packages under `third_party/codegen`, and quality tools under `third_party/tools`. `php tools/project.php third-party:check` verifies the included files against the recorded hashes.
 
-- `task test` runs unit tests only and requires no external services
-- `task verify` is the default local gate: lint, static analysis and unit tests
-- `task sql:check` verifies generated SQL artifacts against `sql/schema.sql` and `sql/queries/*`
-- `task sql:check:pg` validates SQL queries against live PostgreSQL
-- `task test:integration` runs the PostgreSQL integration profile
-- `task verify:full` runs the default gate, PostgreSQL SQL validation and integration verification
+## CI and releases
 
-Use `task services:start` before integration runs or local runtime checks when you need a PostgreSQL instance.
-
-## GitHub Actions
-
-This project uses GitHub Actions for CI/CD:
-
-- **CI Workflow**: Runs on every push and pull request to master
-  - Validates code style
-  - Runs static analysis
-  - Executes all tests
-  - Generates proto artifacts
-
-- **Release Workflow**: Runs when a new release is created
-  - Builds a production package
-  - Attaches the package to the GitHub release
-  - Uploads the OpenAPI documentation
+CI runs `php tools/project.php verify:full` and builds the runtime archive. Release verification runs the same checks and packages committed generated artifacts; regeneration is an explicit development command. No dependency installer or Task setup runs in either workflow.
 
 ## Conventions
 
-### DTO
-All DTOs are final readonly classes with public promoted properties:
-
-```php
-final readonly class Session
-{
-    public function __construct(
-        public string $id,
-        public string $token
-    ) {}
-}
-```
+Use strict types, explicit constructors and small reusable components. Keep product policy in application code, and generated files under generator control. The canonical engineering rules are in [CLAUDE.md](CLAUDE.md).

@@ -13,7 +13,7 @@
 7. [`protoc-php-gen` как продукт](./design/protoc-php-gen-product.md) — текущий supported scope и целевая modular model генератора.
 8. [`sql-gen` как продукт](./design/sql-gen-product.md) — целевая `sqlc-like` модель для typed SQL generation.
 9. [`Platform/Http/Client` как продукт](./design/http-client-product.md) — целевая модель outbound HTTP client с reliability policy.
-10. [Автономное веб-ядро](./design/autonomous-core.md) — аудит текущих зависимостей, границы самостоятельной поставки и план перехода; это целевая модель, ещё не реализованный способ запуска.
+10. [Автономное веб-ядро](./design/autonomous-core.md) — аудит текущих зависимостей, границы самостоятельной поставки и план перехода; границы поставки, история аудита и проверенные этапы перехода.
 
 ## Как читать
 
@@ -33,3 +33,7 @@
 - `Capabilities` должны оставаться простыми reusable-блоками.
 - Нейтральный `HealthCheck` остаётся минимальным живым примером protobuf-first endpoint flow.
 - Для persistence целевым направлением считается explicit SQL с typed generation поверх него, а не усложнение ORM-like abstractions.
+
+## Запуск проверок
+
+`php tools/project.php verify` запускает автономный gate без внешних сервисов; `php tools/project.php verify:full` добавляет оба генератора и PostgreSQL. Установка пакетов не нужна. Полный список команд: `php tools/project.php help`; Task — необязательная обёртка.

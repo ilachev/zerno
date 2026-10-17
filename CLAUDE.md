@@ -9,23 +9,26 @@ NOTE: All communication with users must be in Russian only. Comments in code mus
 IMPORTANT: Never create hacks or workarounds for narrow scenarios. Always focus on proper solutions that address the root cause of issues. Avoid creating ad-hoc scripts, adding conditional code, or other approaches that don't solve the actual problem. Instead, diagnose issues thoroughly by examining logs, traces, and existing code to understand the underlying issue.
 
 ## Commands
-- Install: `task install` or `composer install`
-- Lint: `task lint` (dry-run) or `task fixcs` (fix issues)
-- Static analysis: `task phpstan`
-- Run all tests: `task test`
-- Run single test: `task test "tests/Unit/Path/To/TestFile.php"` or specific method with `--filter=methodName`
-- Verify (lint+tests): `task verify`
-- Performance tests: `task perf:test "scenario-name.js"`
-- Always run `task verify` before committing to ensure code quality
-- Generate proto artifacts: `task proto:gen:all`
-- Start services: `task services:start`
-- Stop services: `task services:stop`
+- Dependencies and tools are bundled; no installation step or package manager is required.
+- Command help: `php tools/project.php help`
+- Lint: `php tools/project.php lint` (dry-run) or `php tools/project.php fixcs` (fix issues)
+- Static analysis: `php tools/project.php phpstan`
+- Run all tests: `php tools/project.php test`
+- Run single test: `php tools/project.php test "tests/Unit/Path/To/TestFile.php"` or specific method with `--filter=methodName`
+- Verify (lint+tests): `php tools/project.php verify`
+- Performance tests: `php tools/project.php perf:test "scenario-name.js"`
+- Always run `php tools/project.php verify` before committing to ensure code quality
+- Generate proto artifacts: `php tools/project.php proto:gen:all`
+- Start services: `php tools/project.php services:start`
+- Stop services: `php tools/project.php services:stop`
 
 ## Development workflow
-- Always run `task verify` after completing a task, not just tests
-- `task verify` runs static analysis, code style checks, and tests in one command
+- Use `php tools/project.php` for build, generation and checks. Task aliases are optional conveniences only.
+- Do not add package download or installation steps to runtime, builds or verification.
+- Always run `php tools/project.php verify` after completing a task, not just tests
+- `php tools/project.php verify` runs static analysis, code style checks, and tests in one command
 - Address any issues found during verification before committing
-- When working with the database, use `task services:start` to start PostgreSQL
+- When working with the database, use `php tools/project.php services:start` to start PostgreSQL
 - After making changes to database-related code, always test with the actual PostgreSQL database
 
 ## Architecture
@@ -82,7 +85,7 @@ IMPORTANT: Never create hacks or workarounds for narrow scenarios. Always focus 
 - If you consider modifying the PHPStan configuration, stop and re-read CLAUDE.md
 
 ## Code Style
-- PHP 8.4, strict typing required (`declare(strict_types=1)`)
+- PHP 8.5, strict typing required (`declare(strict_types=1)`)
 - PSR-4 autoloading: `App\` namespace for src/ and generated proto files
 - @PER-CS2.0 and PhpCsFixer ruleset with custom modifications
 - PHPStan level 10 for static analysis

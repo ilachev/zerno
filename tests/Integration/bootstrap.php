@@ -8,7 +8,7 @@ use App\Platform\Storage\Migration\MigrationService;
 use Tests\Integration\PostgreSqlTestDatabase;
 use Tests\Integration\TestAppFactory;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $database = PostgreSqlTestDatabase::fromEnvironment();

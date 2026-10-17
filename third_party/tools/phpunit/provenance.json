@@ -1,0 +1,62 @@
+{
+  "name": "phpunit",
+  "version": "11.5.55",
+  "license_spdx": "BSD-3-Clause",
+  "recorded_on": "2026-10-17",
+  "artifact": {
+    "file": "phpunit.phar",
+    "bytes": 5708546,
+    "sha256": "9d58674e826904add392d08c5ba3e9173ff36b242683cd8f368a476d2513b3bd",
+    "download_url": "https://phar.phpunit.de/phpunit-11.5.55.phar",
+    "upstream_release_url": "https://github.com/sebastianbergmann/phpunit/releases/tag/11.5.55",
+    "upstream_published_at": "2026-02-18T12:38:03Z",
+    "upstream_tag": "11.5.55",
+    "contents": "Unmodified official standalone PHAR, including its bundled dependencies and notices as supplied upstream."
+  },
+  "license": {
+    "file": "LICENSE",
+    "source_url": "https://raw.githubusercontent.com/sebastianbergmann/phpunit/11.5.55/LICENSE",
+    "sha256": "5aa383bf44a3951bb4a2214c740a96e7795e473e1a0abc8d5812e6a3c1dbfc1e"
+  },
+  "verification": {
+    "published_sha256": "9d58674e826904add392d08c5ba3e9173ff36b242683cd8f368a476d2513b3bd",
+    "published_sha256_source": "https://phar.phpunit.de/",
+    "sha256_matched": true,
+    "phar_internal_signature": {
+      "hash": "7FB16C895B1C5C1B9F7660FEDA185E76BC0D6B7F3E58E448EE8D6C8D1A9B7E9F792718F54EF83103F5C6040CDD62F31FC9E1480016B7606C1F9A95EFBB15ACEE",
+      "hash_type": "SHA-512"
+    },
+    "phar_internal_signature_note": "The internal PHAR hash checks archive integrity; publisher verification is recorded separately.",
+    "openpgp": {
+      "signature_file": "phpunit.phar.asc",
+      "signature_source": "https://phar.phpunit.de/phpunit-11.5.55.phar.asc",
+      "issuer_fingerprint": "D8406D0D82947747293778314AA394086372C20A",
+      "verified_at_acquisition": false,
+      "public_key_source": "https://github.com/sebastianbergmann.gpg",
+      "verification_result": "Detached signature retained but not cryptographically verified: the official maintainer GitHub key endpoint returned an empty export stating this key could not be exported. Artifact SHA-256 was verified against the official publisher checksum over HTTPS."
+    }
+  },
+  "platform": {
+    "php": ">=8.2",
+    "extensions": [
+      "phar",
+      "ctype",
+      "dom",
+      "json",
+      "libxml",
+      "mbstring",
+      "tokenizer",
+      "xml",
+      "xmlwriter"
+    ],
+    "package_managers_required": []
+  },
+  "derived_resources": [
+    {
+      "file": "phpunit.xsd",
+      "source_archive_path": "phpunit.xsd",
+      "sha256": "859cc8b21413660631907782ec785e2881c1d135c7c900df42fa935ebbe01573"
+    }
+  ],
+  "launcher_contract": "The wrapper selects upstream PHAR CLI mode using SCRIPT_NAME and excludes itself from PHPUnit process-isolation includes. PHPUnit PHAR defines __PHPUNIT_PHAR__; PHPUNIT_COMPOSER_INSTALL is not defined. A direct require_once of this artifact from another entrypoint loads PHPUnit types without running its CLI."
+}

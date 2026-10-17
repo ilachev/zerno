@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "description": "Pinned standalone quality tools; no package manager or network access is required to run them.",
+  "recorded_on": "2026-10-17",
+  "tools": {
+    "phpstan": {
+      "version": "2.1.42",
+      "license_spdx": "MIT",
+      "artifact": "phpstan/phpstan.phar",
+      "provenance": "phpstan/provenance.json"
+    },
+    "phpunit": {
+      "version": "11.5.55",
+      "license_spdx": "BSD-3-Clause",
+      "artifact": "phpunit/phpunit.phar",
+      "provenance": "phpunit/provenance.json"
+    },
+    "php-cs-fixer": {
+      "version": "3.94.2",
+      "license_spdx": "MIT",
+      "artifact": "php-cs-fixer/php-cs-fixer.phar",
+      "provenance": "php-cs-fixer/provenance.json"
+    }
+  },
+  "files": {
+    "php-cs-fixer/LICENSE": "2328ecf7ed904804f5e9f9c70762d2e0baf6610d872c611bbddca94baa970549",
+    "php-cs-fixer/php-cs-fixer.phar": "aaafc3a53b877c6741ddccac0a783f0fb73fff5f84fba5870d5dd306ee22dde0",
+    "php-cs-fixer/php-cs-fixer.phar.asc": "d0b08d286df181fef54350530e6acb670176d05581490941f2edf4c0cd3f0678",
+    "php-cs-fixer/provenance.json": "c4c1f8cba1a150a83b6a6640fb37acde70e85de4c58fda8a25cbfeba0384168f",
+    "phpstan/LICENSE": "f9e4f43eb1c32f7c4f5bcdb0860de5ba71712c3c1547eeb0d1e4b3c43313ec81",
+    "phpstan/phpstan.phar": "af6a7c8dfeaa82379c4b31f661917ee55e400d16e827973ae8bd2806e97e128b",
+    "phpstan/phpstan.phar.asc": "6cd5a6de69084c0e0546163ad9b9adb3f59f1655ed3f37be15817a23947f84f2",
+    "phpstan/provenance.json": "301a9094f6cecb993aac19b1a4fc9a04e05095f3c40fa9b01867a1f2d41d8a19",
+    "phpstan/signing-key.asc": "42fd7a227cdce48565b47b0946603c5c8095e2e5dd35d598929b2286378cc501",
+    "phpunit/LICENSE": "5aa383bf44a3951bb4a2214c740a96e7795e473e1a0abc8d5812e6a3c1dbfc1e",
+    "phpunit/phpunit.phar": "9d58674e826904add392d08c5ba3e9173ff36b242683cd8f368a476d2513b3bd",
+    "phpunit/phpunit.phar.asc": "4614af47ac63c19f13b123a00fb9a44dbc1569749d0fe0422dfdef4004d8aa29",
+    "phpunit/phpunit.xsd": "859cc8b21413660631907782ec785e2881c1d135c7c900df42fa935ebbe01573",
+    "phpunit/provenance.json": "bc378958b3ae1e0ccb4d6bdee1051bfcaa0c3beaaae7fa9d508e18ab14d0f368"
+  }
+}

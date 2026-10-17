@@ -2,7 +2,9 @@
 
 ## Runtime stack
 
-Проект использует:
+Минимальный HTTP/PDO runtime запускается через PHP-FPM или обычный SAPI без сессий и API-интеграций. Дополнительная API-композиция использует RoadRunner и protobuf. PHP-зависимости и инструменты качества включены в репозиторий, менеджер пакетов и установка Task не требуются.
+
+Платформа и включённые инструменты:
 
 - PHP 8.5+
 - RoadRunner HTTP worker
@@ -59,8 +61,8 @@ Runtime использует `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PAS
 Стандартный lifecycle:
 
 ```bash
-task services:start
-task services:stop
+php tools/project.php services:start
+php tools/project.php services:stop
 ```
 
 `services:start` также ждёт готовности БД и запускает миграции.
@@ -91,7 +93,7 @@ task services:stop
 Запуск:
 
 ```bash
-task migrate
+php tools/project.php migrate
 ```
 
 CLI wrapper:
@@ -118,13 +120,13 @@ CLI wrapper:
 
 Bootstrap:
 
-- `vendor/autoload.php`
+- `tests/bootstrap.php`
 
 Свойства:
 
 - не требуют внешнюю БД;
 - не требуют RoadRunner KV;
-- используются в default `task test` и `task verify`.
+- используются в default `php tools/project.php test` и `php tools/project.php verify`.
 
 ### Integration tests
 
@@ -143,24 +145,24 @@ Bootstrap:
 Свойства:
 
 - требуют PostgreSQL profile;
-- запускаются отдельным профилем через `task test:integration`.
+- запускаются отдельным профилем через `php tools/project.php test:integration`.
 
-Для тестов используются отдельные `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`. Значения обычных `DB_*` не используются. `task test:integration` и `task sql:check:pg` по умолчанию подключаются к `localhost:5432/app_test`, пользователь `app`, пароль `password`.
+Для тестов используются отдельные `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`. Значения обычных `DB_*` не используются. `php tools/project.php test:integration` и `php tools/project.php sql:check:pg` по умолчанию подключаются к `localhost:5432/app_test`, пользователь `app`, пароль `password`.
 
 Создайте тестовую БД один раз (локальный Docker Compose сам создаёт только runtime БД `app`):
 
 ```bash
 docker compose exec db-postgres createdb -U app app_test
-task test:integration
+php tools/project.php test:integration
 ```
 
 Для отдельного PostgreSQL instance:
 
 ```bash
-TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password task verify:integration
+TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:integration
 ```
 
-При прямом запуске PHPUnit `TEST_DB_NAME` необходимо задать явно. Пользователю БД нужны права создавать и удалять свои схемы. Каждый запуск получает отдельную схему, поэтому разные test runs могут использовать одну тестовую БД параллельно.
+При прямом запуске `php tools/phpunit.php -c phpunit.integration.xml` `TEST_DB_NAME` необходимо задать явно. Пользователю БД нужны права создавать и удалять свои схемы. Каждый запуск получает отдельную схему, поэтому разные test runs могут использовать одну тестовую БД параллельно.
 
 ## Как устроены integration tests
 
@@ -184,33 +186,34 @@ Bootstrap не удаляет таблицы `public` и не выбирает �
 ## Команды проверки качества
 
 ```bash
-task lint
-task phpstan
-task test
-task sql:check
-task sql:check:pg
-task test:integration
-task test:full
-task verify
-task verify:integration
-task verify:full
+php tools/project.php lint
+php tools/project.php phpstan
+php tools/project.php test
+php tools/project.php sql:check
+php tools/project.php sql:check:pg
+php tools/project.php test:integration
+php tools/project.php test:full
+php tools/project.php verify
+php tools/project.php verify:integration
+php tools/project.php verify:full
 ```
 
-`task verify` — основной локальный gate. Он запускает:
+`php tools/project.php verify` — основной локальный gate. Он запускает:
 
-1. lint
-2. phpstan
-3. sql artifact consistency check
-4. unit tests
+1. integrity hashes включённых зависимостей и инструментов
+2. lint
+3. phpstan
+4. sql artifact consistency check
+5. unit tests
 
-`task verify:integration` запускает PostgreSQL-backed SQL validation и integration profile.
+`php tools/project.php verify:integration` запускает PostgreSQL-backed SQL validation и integration profile.
 
-`task verify:full` объединяет оба контура и дополнительно запускает полный quality gate самой `sql-gen` тулзы.
+`php tools/project.php verify:full` объединяет оба контура и дополнительно запускает quality gates `sql-gen` и `protoc-php-gen`.
 
 ## Что должна помнить LLM при изменениях
 
-- Изменения в storage/repository/migrations нужно проверять через `task test:integration` или `task verify:full`.
+- Изменения в storage/repository/migrations нужно проверять через `php tools/project.php test:integration` или `php tools/project.php verify:full`.
 - Изменения в `.proto` почти всегда требуют регенерации артефактов.
 - Изменения в middleware могут затронуть integration tests, даже если unit tests зелёные.
 - Из-за RoadRunner нельзя бездумно использовать растущие static caches и состояние в singleton-like сервисах.
-- Любая реструктуризация должна сохранять быстрый автономный `task verify`.
+- Любая реструктуризация должна сохранять быстрый автономный `php tools/project.php verify`.

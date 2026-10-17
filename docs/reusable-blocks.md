@@ -19,21 +19,21 @@
 
 - Роль: bootstrap приложения и запуск pipeline.
 - Обязательность: обязательный core.
-- Что здесь считается core: создание `App`, сборка middleware pipeline, запуск worker loop.
+- Что здесь считается core: `App` как `RequestHandler`, SAPI request/response adapters и явная сборка middleware pipeline. Worker loop — optional `RoadRunnerRuntime`.
 - Что не должно попадать сюда: продуктовые сценарии и feature-specific policy.
 
 ### `Platform/Http`
 
 - Роль: request/response abstractions, handler contracts, middleware interfaces.
 - Обязательность: обязательный core.
-- Что здесь считается core: универсальная HTTP-модель шаблона и protobuf transport adapters.
+- Что здесь считается core: HTTP request/response, handler и middleware contracts. Protobuf transport adapters подключаются API-композицией.
 - Что не должно попадать сюда: конкретные auth/session/business правила.
 
 ### `Platform/Routing`
 
 - Роль: runtime routing и support для route generation.
 - Обязательность: обязательный core.
-- Что здесь считается core: dispatch, route result, route definition, proto-based route generation support.
+- Что здесь считается core: dispatch, route result, явная таблица маршрутов. Generated protobuf routes подключаются отдельным provider.
 - Что не должно попадать сюда: feature-specific handler logic.
 
 ### `Platform/DI`
@@ -79,8 +79,8 @@
 ### `Platform/Hydration` и `Platform/DataMapping`
 
 - Роль: преобразование между storage/runtime structures и PHP objects.
-- Обязательность: reusable support block.
-- Что здесь считается core: reflection-based hydration support, DTO mapping.
+- Обязательность: optional reusable support block, не включённый в минимальную HTTP/PDO-композицию.
+- Что здесь считается support: reflection-based hydration support, DTO mapping.
 - Зона внимания: не раздувать этот слой абстракциями без явной пользы.
 
 ## Capability blocks
@@ -88,7 +88,7 @@
 ### `Capabilities/Session`
 
 - Роль: reusable session management block.
-- Обязательность: сильный reusable block, нормальный кандидат для многих backend-ов.
+- Обязательность: optional reusable block; минимальная HTTP/PDO-композиция не создаёт сессии.
 - Что здесь считается core: session lifecycle, cookie/bearer restore, fingerprinting, client detection, geolocation hooks.
 - Optional-часть: конкретные payload conventions и enrichments.
 - Авторизация восстанавливается только по cookie/bearer token; fingerprint служит аналитике и не подтверждает личность.
@@ -128,3 +128,7 @@
 - использовать `HealthCheck` как минимальный эталон endpoint flow;
 - не переписывать смысл блоков под конкретный продукт;
 - для persistence писать явный SQL и получать поверх него typed generated PHP, а не прятать его за ORM-like магией.
+
+## Команды и поставка
+
+Runtime загружается через `bootstrap.php`, тесты — через `tests/bootstrap.php`. Фиксированные runtime-исходники лежат в `third_party/runtime`; генераторы и инструменты качества поставляются отдельно от runtime-релиза. Команды: `php tools/project.php help`, основной gate: `php tools/project.php verify`.

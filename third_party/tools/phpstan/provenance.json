@@ -1,0 +1,49 @@
+{
+  "name": "phpstan",
+  "version": "2.1.42",
+  "license_spdx": "MIT",
+  "recorded_on": "2026-10-17",
+  "artifact": {
+    "file": "phpstan.phar",
+    "bytes": 26213076,
+    "sha256": "af6a7c8dfeaa82379c4b31f661917ee55e400d16e827973ae8bd2806e97e128b",
+    "download_url": "https://github.com/phpstan/phpstan/releases/download/2.1.42/phpstan.phar",
+    "upstream_release_url": "https://github.com/phpstan/phpstan/releases/tag/2.1.42",
+    "upstream_published_at": "2026-03-17T15:01:13Z",
+    "upstream_tag": "2.1.42",
+    "contents": "Unmodified official standalone PHAR, including its bundled dependencies and notices as supplied upstream."
+  },
+  "license": {
+    "file": "LICENSE",
+    "source_url": "https://raw.githubusercontent.com/phpstan/phpstan/2.1.42/LICENSE",
+    "sha256": "f9e4f43eb1c32f7c4f5bcdb0860de5ba71712c3c1547eeb0d1e4b3c43313ec81"
+  },
+  "verification": {
+    "published_sha256": "af6a7c8dfeaa82379c4b31f661917ee55e400d16e827973ae8bd2806e97e128b",
+    "published_sha256_source": "https://api.github.com/repos/phpstan/phpstan/releases/298004463",
+    "sha256_matched": true,
+    "phar_internal_signature": {
+      "hash": "6F9D944679E97C75E029B4F24BD6B2ECBFEFF4E9884C159EE6BC2D14C4378C2ED44D3609910CDC0CE406BE7CEEC40568C176407D1ECA81C5893F8C4BF9E16BCC",
+      "hash_type": "SHA-512"
+    },
+    "phar_internal_signature_note": "The internal PHAR hash checks archive integrity; publisher verification is recorded separately.",
+    "openpgp": {
+      "signature_file": "phpstan.phar.asc",
+      "signature_source": "https://github.com/phpstan/phpstan/releases/download/2.1.42/phpstan.phar.asc",
+      "issuer_fingerprint": "CA7C2C7A30C8E8E1274A847651C67305FFC2E5C0",
+      "verified_at_acquisition": true,
+      "public_key_source": "https://github.com/phpstan-bot.gpg",
+      "public_key_file": "signing-key.asc",
+      "verification_result": "GnuPG GOODSIG and VALIDSIG matched the recorded fingerprint using the public key obtained from the upstream release bot GitHub account. The separate SHA-256 also matched the official GitHub release asset digest."
+    }
+  },
+  "platform": {
+    "php": ">=7.4",
+    "extensions": [
+      "phar",
+      "json",
+      "tokenizer"
+    ],
+    "package_managers_required": []
+  }
+}

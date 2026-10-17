@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 use App\Platform\Console\MigrateCommand;
 use App\Platform\DI\Container;

@@ -1,295 +1,195 @@
 version: '3'
 
+# Optional aliases; PHP is the only required command runner.
 vars:
-  PROTO_DIR: protos/proto
-  SDK_GEN_DIR: protos/gen
-  DOCS_GEN_DIR: docs
   PHP: php
-  COMPOSER: composer
 
 tasks:
-  install:
-    desc: Install project dependencies
-    cmd: "{{.COMPOSER}} install"
-    sources:
-      - composer.json
-    generates:
-      - vendor/autoload.php
-
-  var:
-    cmd: mkdir -p var
-    status:
-      - test -d var
-    silent: true
-    internal: true
-
-  fixcs:
-    desc: Fix code style issues
-    deps: [ var, install ]
+  default:
     cmds:
-      - "{{.PHP}} vendor/bin/php-cs-fixer fix --verbose {{.CLI_ARGS}}"
+      - "{{.PHP}} tools/project.php help"
 
-  lint:
-    desc: Check code style (dry-run)
+  help:
+    desc: Show bundled PHP commands
     cmds:
-      - task: fixcs
-        vars:
-          CLI_ARGS: "--dry-run {{.CLI_ARGS}}"
+      - "{{.PHP}} tools/project.php help {{.CLI_ARGS}}"
 
   verify:
-    desc: Run the default verification gate (lint, phpstan, sql check, unit tests)
-    deps: [ var, install ]
+    desc: Run integrity, style, analysis, SQL and unit checks
     cmds:
-      - task: lint
-      - task: phpstan
-      - task: sql:check
-      - task: test
+      - "{{.PHP}} tools/project.php verify {{.CLI_ARGS}}"
 
   verify:integration:
-    desc: Run integration verification against real PostgreSQL
-    deps: [ var, install ]
+    desc: Run PostgreSQL SQL and integration checks
     cmds:
-      - task: sql:check:pg
-      - task: test:integration
+      - "{{.PHP}} tools/project.php verify:integration {{.CLI_ARGS}}"
 
   verify:full:
-    desc: Run all verification steps including integration tests
+    desc: Run every quality gate
     cmds:
-      - task: verify
-      - task: tools:sql:check
-      - task: verify:integration
+      - "{{.PHP}} tools/project.php verify:full {{.CLI_ARGS}}"
+
+  third-party:check:
+    desc: Verify bundled dependency hashes
+    cmds:
+      - "{{.PHP}} tools/project.php third-party:check {{.CLI_ARGS}}"
+
+  lint:
+    desc: Check PHP style
+    cmds:
+      - "{{.PHP}} tools/project.php lint {{.CLI_ARGS}}"
+
+  fixcs:
+    desc: Fix PHP style
+    cmds:
+      - "{{.PHP}} tools/project.php fixcs {{.CLI_ARGS}}"
 
   phpstan:
     desc: Run static analysis
-    deps: [ var, install ]
     cmds:
-      - "{{.PHP}} vendor/bin/phpstan analyse --memory-limit=256M {{.CLI_ARGS}}"
-
-  cache:clear:
-    desc: Clear application cache
-    deps: [ var, install ]
-    cmds:
-      - "{{.PHP}} bin/cache-clear.php"
+      - "{{.PHP}} tools/project.php phpstan {{.CLI_ARGS}}"
 
   test:
-    desc: Run unit tests without external services
+    desc: Run unit tests
     cmds:
-      - "{{.PHP}} vendor/bin/phpunit --colors=never -c phpunit.xml {{.CLI_ARGS}}"
+      - "{{.PHP}} tools/project.php test {{.CLI_ARGS}}"
 
   test:integration:
-    desc: Run integration tests against real PostgreSQL
-    deps: [ var, install ]
-    env:
-      TEST_DB_HOST: '{{default "localhost" .TEST_DB_HOST}}'
-      TEST_DB_PORT: '{{default "5432" .TEST_DB_PORT}}'
-      TEST_DB_NAME: '{{default "app_test" .TEST_DB_NAME}}'
-      TEST_DB_USER: '{{default "app" .TEST_DB_USER}}'
-      TEST_DB_PASSWORD: '{{default "password" .TEST_DB_PASSWORD}}'
+    desc: Run isolated PostgreSQL integration tests
     cmds:
-      - "{{.PHP}} vendor/bin/phpunit --colors=never -c phpunit.integration.xml {{.CLI_ARGS}}"
+      - "{{.PHP}} tools/project.php test:integration {{.CLI_ARGS}}"
 
   test:full:
     desc: Run unit and integration tests
-    deps: [ test, test:integration ]
-
-  proto:gen:sdk:
-    desc: Generate PHP SDK classes from core proto files
     cmds:
-      - rm -rf {{.SDK_GEN_DIR}}/*
-      - >
-        protoc -I={{.PROTO_DIR}}
-        --php_out={{.SDK_GEN_DIR}}
-        --php_opt=aggregate_metadata
-        {{.PROTO_DIR}}/app/v1/*.proto
-        {{.PROTO_DIR}}/google/api/*.proto
-        {{.PROTO_DIR}}/protoc-gen-openapiv2/options/*.proto
-
-  proto:gen:docs:
-    desc: Generate OpenAPI spec for the core template surface
-    cmds:
-      - rm -f {{.DOCS_GEN_DIR}}/api.swagger.json
-      - >
-        protoc -I={{.PROTO_DIR}}
-        --openapiv2_out=logtostderr=true:{{.DOCS_GEN_DIR}}
-        --openapiv2_opt=json_names_for_fields=true,allow_merge=true,merge_file_name=api
-        {{.PROTO_DIR}}/app/v1/*.proto
-
-  proto:gen:endpoints:
-    desc: Generate server-side endpoints and operation manifests from core protobuf services
-    deps: [ tools:proto:setup, install ]
-    cmds:
-      - rm -rf gen/Generated/Endpoint
-      - rm -rf gen/Generated/OperationManifest
-      - >
-        protoc -I={{.PROTO_DIR}}
-        --plugin=protoc-gen-php-endpoint=tools/protoc-php-gen/bin/protoc-php-gen.php
-        --php-endpoint_out=namespace=App\\Generated\\Endpoint,output_dir=gen,source_root=src,bootstrap=codegen/protoc-php-gen-bootstrap.php,endpoint_profile_class=ProjectCodegen\\Protobuf\\BaseApiTemplateEndpointProfile,generate_endpoints=true,generate_endpoint_validation=true,generate_operation_manifest=true:.
-        {{.PROTO_DIR}}/app/v1/*.proto
-
-  proto:gen:all:
-    desc: Generate the default protobuf-first runtime artifacts
-    cmds:
-      - task: proto:gen:sdk
-      - task: proto:gen:docs
-      - task: proto:gen:endpoints
+      - "{{.PHP}} tools/project.php test:full {{.CLI_ARGS}}"
 
   sql:gen:
-    desc: Generate typed PHP query classes from SQL source files
-    deps: [ tools:sql:runtime:setup ]
+    desc: Generate typed SQL classes
     cmds:
-      - mkdir -p sql/queries
-      - rm -rf gen/Generated/Sql
-      - >
-        php tools/sql-gen/bin/sql-gen.php
-        --input-dir=sql/queries
-        --output-dir=gen/Generated/Sql
-        --namespace=App\\Generated\\Sql
-        --schema=sql/schema.sql
-        --bootstrap=codegen/sql-gen-bootstrap.php
-        --profile-class=ProjectCodegen\\Sql\\BaseApiTemplateSqlGenerationProfile
-      - "{{.COMPOSER}} dump-autoload --quiet"
+      - "{{.PHP}} tools/project.php sql:gen {{.CLI_ARGS}}"
 
   sql:check:
-    desc: Validate SQL sources and ensure generated SQL artifacts are synchronized
-    deps: [ tools:sql:runtime:setup ]
+    desc: Check generated SQL synchronization
     cmds:
-      - mkdir -p sql/queries
-      - >
-        php tools/sql-gen/bin/sql-check.php
-        --input-dir=sql/queries
-        --output-dir=gen/Generated/Sql
-        --namespace=App\\Generated\\Sql
-        --schema=sql/schema.sql
-        --bootstrap=codegen/sql-gen-bootstrap.php
-        --profile-class=ProjectCodegen\\Sql\\BaseApiTemplateSqlGenerationProfile
+      - "{{.PHP}} tools/project.php sql:check {{.CLI_ARGS}}"
 
   sql:check:pg:
-    desc: Validate SQL queries against a live PostgreSQL database
-    deps: [ tools:sql:runtime:setup ]
-    env:
-      DB_HOST: '{{default "localhost" .TEST_DB_HOST}}'
-      DB_PORT: '{{default "5432" .TEST_DB_PORT}}'
-      DB_NAME: '{{default "app_test" .TEST_DB_NAME}}'
-      DB_USER: '{{default "app" .TEST_DB_USER}}'
-      DB_PASSWORD: '{{default "password" .TEST_DB_PASSWORD}}'
+    desc: Validate SQL against PostgreSQL
     cmds:
-      - mkdir -p sql/queries
-      - >
-        php tools/sql-gen/bin/sql-check-pg.php
-        --input-dir=sql/queries
-        --schema=sql/schema.sql
+      - "{{.PHP}} tools/project.php sql:check:pg {{.CLI_ARGS}}"
 
-  tools:proto:setup:
-    desc: Setup protoc-php-gen plugin
+  proto:gen:sdk:
+    desc: Generate protobuf PHP SDK
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} install
-      - chmod +x tools/protoc-php-gen/bin/protoc-php-gen.php
-      - echo "Proto code generator setup complete"
+      - "{{.PHP}} tools/project.php proto:gen:sdk {{.CLI_ARGS}}"
 
-  tools:proto:lint:
-    desc: Run PHP-CS-Fixer on the protoc-php-gen library
+  proto:gen:docs:
+    desc: Generate OpenAPI documentation
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} cs
+      - "{{.PHP}} tools/project.php proto:gen:docs {{.CLI_ARGS}}"
 
-  tools:proto:fixcs:
-    desc: Fix code style issues in the protoc-php-gen library
+  proto:gen:endpoints:
+    desc: Generate endpoint handlers and registries
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} cs-fix
+      - "{{.PHP}} tools/project.php proto:gen:endpoints {{.CLI_ARGS}}"
 
-  tools:proto:phpstan:
-    desc: Run PHPStan on the protoc-php-gen library
+  proto:gen:all:
+    desc: Generate every protobuf artifact
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} phpstan
+      - "{{.PHP}} tools/project.php proto:gen:all {{.CLI_ARGS}}"
 
-  tools:proto:test:
-    desc: Run PHP-CS-Fixer on the protoc-php-gen library
+  tools:sql:lint:
+    desc: Check SQL generator style
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} test
+      - "{{.PHP}} tools/project.php tools:sql:lint {{.CLI_ARGS}}"
 
-  tools:proto:check:
-    desc: Run all code quality checks on the protoc-php-gen library
+  tools:sql:fixcs:
+    desc: Fix SQL generator style
     cmds:
-      - cd tools/protoc-php-gen && {{.COMPOSER}} check
+      - "{{.PHP}} tools/project.php tools:sql:fixcs {{.CLI_ARGS}}"
 
-  tools:sql:runtime:setup:
-    desc: Setup sql-gen runtime dependencies
-    sources:
-      - tools/sql-gen/composer.json
-      - tools/sql-gen/composer.lock
-    generates:
-      - tools/sql-gen/vendor/autoload.php
+  tools:sql:phpstan:
+    desc: Analyze SQL generator
     cmds:
-      - cd tools/sql-gen && {{.COMPOSER}} install --no-progress
-      - chmod +x tools/sql-gen/bin/sql-gen.php
-      - chmod +x tools/sql-gen/bin/sql-check-pg.php
-      - echo "SQL generator setup complete"
+      - "{{.PHP}} tools/project.php tools:sql:phpstan {{.CLI_ARGS}}"
 
-  tools:sql:setup:
-    desc: Setup full sql-gen development environment
-    sources:
-      - tools/sql-gen/composer.json
-      - tools/sql-gen/composer.lock
-    generates:
-      - tools/sql-gen/vendor/bin/phpunit
+  tools:sql:test:
+    desc: Test SQL generator
     cmds:
-      - cd tools/sql-gen && {{.COMPOSER}} install --no-progress
-      - chmod +x tools/sql-gen/bin/sql-gen.php
-      - chmod +x tools/sql-gen/bin/sql-check-pg.php
-      - echo "SQL generator development setup complete"
+      - "{{.PHP}} tools/project.php tools:sql:test {{.CLI_ARGS}}"
 
   tools:sql:check:
-    desc: Run all code quality checks on the sql-gen library
-    deps: [ tools:sql:setup ]
+    desc: Run every SQL generator check
     cmds:
-      - cd tools/sql-gen && {{.COMPOSER}} check
+      - "{{.PHP}} tools/project.php tools:sql:check {{.CLI_ARGS}}"
 
-  # Performance tasks
-  perf:test:
-    desc: Run single performance test
-    deps: [ var, install ]
+  tools:proto:lint:
+    desc: Check protobuf generator style
     cmds:
-      - k6 run load-tests/scenarios/{{.CLI_ARGS | default "home.js"}}
+      - "{{.PHP}} tools/project.php tools:proto:lint {{.CLI_ARGS}}"
 
-  perf:test:all:
-    desc: Run all performance tests
-    deps: [ var, install ]
+  tools:proto:fixcs:
+    desc: Fix protobuf generator style
     cmds:
-      - for f in load-tests/scenarios/*.js; do k6 run "$f"; done
+      - "{{.PHP}} tools/project.php tools:proto:fixcs {{.CLI_ARGS}}"
+
+  tools:proto:phpstan:
+    desc: Analyze protobuf generator
+    cmds:
+      - "{{.PHP}} tools/project.php tools:proto:phpstan {{.CLI_ARGS}}"
+
+  tools:proto:test:
+    desc: Test protobuf generator
+    cmds:
+      - "{{.PHP}} tools/project.php tools:proto:test {{.CLI_ARGS}}"
+
+  tools:proto:check:
+    desc: Run every protobuf generator check
+    cmds:
+      - "{{.PHP}} tools/project.php tools:proto:check {{.CLI_ARGS}}"
+
+  migrate:
+    desc: Run migrations
+    cmds:
+      - "{{.PHP}} tools/project.php migrate {{.CLI_ARGS}}"
+
+  cache:clear:
+    desc: Clear optional API cache
+    cmds:
+      - "{{.PHP}} tools/project.php cache:clear {{.CLI_ARGS}}"
 
   services:start:
-    desc: Start all application services
+    desc: Start Docker services and API migrations
     cmds:
-      - docker compose up -d
-      - echo "Waiting for services to be ready..."
-      - for i in $(seq 1 10); do
-          if docker compose exec -T db-postgres pg_isready -U app >/dev/null 2>&1; then
-            echo "Database is ready!";
-            break;
-          fi;
-          echo "Services not ready yet, retrying in 1 second...";
-          sleep 1;
-        done
-      - task: migrate
-        
-  migrate:
-    desc: Run database migrations
-    deps: [ var, install ]
-    cmds:
-      - "{{.PHP}} bin/migrate.php"
+      - "{{.PHP}} tools/project.php services:start {{.CLI_ARGS}}"
 
   services:stop:
-    desc: Stop all application services
+    desc: Stop Docker services
     cmds:
-      - docker compose stop
+      - "{{.PHP}} tools/project.php services:stop {{.CLI_ARGS}}"
 
   services:status:
-    desc: Check the status of all application services
+    desc: Show Docker service status
     cmds:
-      - docker compose ps
-      
+      - "{{.PHP}} tools/project.php services:status {{.CLI_ARGS}}"
+
   run:
-    desc: Start all required services and run the application with RoadRunner
-    deps: [ services:start ]
+    desc: Run the API through RoadRunner
     cmds:
-      - echo "Starting application with RoadRunner on http://localhost:8080..."
-      - rr serve -c .rr.yaml
+      - "{{.PHP}} tools/project.php run {{.CLI_ARGS}}"
+
+  perf:test:
+    desc: Run a k6 scenario
+    cmds:
+      - "{{.PHP}} tools/project.php perf:test {{.CLI_ARGS}}"
+
+  perf:test:all:
+    desc: Run all k6 scenarios
+    cmds:
+      - "{{.PHP}} tools/project.php perf:test:all {{.CLI_ARGS}}"
+
+  build:
+    desc: Build a runtime release archive
+    cmds:
+      - "{{.PHP}} tools/project.php build {{.CLI_ARGS}}"

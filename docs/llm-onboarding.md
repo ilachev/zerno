@@ -6,7 +6,7 @@
 
 `base-api-template` развивается из backend template в небольшое автономное PHP веб-ядро для создания сайтов, в том числе муниципальных. Работа с БД через PDO и явный SQL входит в основу; CMS и продуктовая админка остаются прикладным кодом.
 
-Сейчас проект использует PHP 8.5+, RoadRunner adapter, `protobuf-first` API, типизированную SQL-генерацию и набор reusable-блоков. Установка и проверки ещё используют Composer и Task. Автономная поставка — цель перехода, а не уже выполненное свойство; аудит и последовательность работ описаны в [плане автономного ядра](./design/autonomous-core.md).
+Сейчас проект использует PHP 8.5+, RoadRunner adapter, `protobuf-first` API, типизированную SQL-генерацию и набор reusable-блоков. Runtime-зависимости, генераторы и инструменты качества включены в поставку; команды запускаются через PHP без установки Composer или Task. Состав и границы поставки описаны в [плане автономного ядра](./design/autonomous-core.md).
 
 Это не готовый продукт и не framework. Репозиторий должен восприниматься так:
 
@@ -87,7 +87,7 @@ Reusable blocks:
 - `Platform` не должен содержать продуктовую политику
 - reusable block должен оставаться полезным вне конкретного продукта
 - example code должен быть явно вторичен по отношению к runtime
-- default `task verify` не должен требовать поднятых внешних сервисов
+- default `php tools/project.php verify` не должен требовать поднятых внешних сервисов
 - текущий RoadRunner adapter работает в long-running процессе, значит надо следить за памятью и накоплением состояния; `App` получает общий `RequestHandler` и не запускает worker
 - состав middleware принадлежит конфигурации приложения: `config/container.php` сохраняет API-композицию, `config/core.php` задаёт минимальный HTTP/PDO вариант
 - DI не ищет generated endpoints автоматически; API provider регистрирует их bindings явно, а `has()` проверяет регистрации без autoload
@@ -102,26 +102,27 @@ Reusable blocks:
 
 ## Команды
 
+`tools/project.php` использует включённые в репозиторий исходники и закреплённые инструменты. Установка пакетов не нужна; Task остаётся необязательной обёрткой.
+
 ```bash
-task install
-task proto:gen:all
-task sql:gen
-task lint
-task phpstan
-task test
-task test:integration
-task verify
-task verify:full
-task services:start
-task services:stop
-task run
+php tools/project.php proto:gen:all
+php tools/project.php sql:gen
+php tools/project.php lint
+php tools/project.php phpstan
+php tools/project.php test
+php tools/project.php test:integration
+php tools/project.php verify
+php tools/project.php verify:full
+php tools/project.php services:start
+php tools/project.php services:stop
+php tools/project.php run
 ```
 
 Практически:
 
-- `task verify` — основной локальный gate
-- `task test:integration` использует PostgreSQL profile
-- `task verify:full` дополнительно включает `tools/sql-gen` quality gate и PostgreSQL profile
+- `php tools/project.php verify` — основной локальный gate
+- `php tools/project.php test:integration` использует PostgreSQL profile
+- `php tools/project.php verify:full` дополнительно включает quality gates обоих генераторов и PostgreSQL profile
 - storage/runtime изменения нельзя проверять только unit-тестами
 
 ## Минимальный порядок чтения

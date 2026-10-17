@@ -135,7 +135,7 @@ final class SapiResponseEmitterTest extends TestCase
 
     public function testRefusesToEmitAfterHeadersWereSent(): void
     {
-        $autoload = \dirname(__DIR__, 4) . '/vendor/autoload.php';
+        $autoload = \dirname(__DIR__, 4) . '/bootstrap.php';
         $script = 'require ' . var_export($autoload, true) . '; '
             . 'echo "prefix"; '
             . 'try { (new App\Platform\Runtime\SapiResponseEmitter())->emit(new Nyholm\Psr7\Response()); } '

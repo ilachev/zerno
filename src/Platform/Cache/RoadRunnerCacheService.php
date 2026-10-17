@@ -60,7 +60,7 @@ final class RoadRunnerCacheService implements CacheService
 
     private function isTestingEnvironment(): bool
     {
-        return \defined('PHPUNIT_COMPOSER_INSTALL') || \defined('__PHPUNIT_PHAR__')
+        return \defined('__PHPUNIT_PHAR__')
             || isset($_SERVER['ENVIRONMENT']) && $_SERVER['ENVIRONMENT'] === 'testing';
     }
 

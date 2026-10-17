@@ -2,16 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   validate:
     name: Validate and Test
     runs-on: ubuntu-latest
-    
-    # Set environment variables for database connection in CI
     env:
       STORAGE_ENGINE: pgsql
       TEST_DB_HOST: 127.0.0.1
@@ -19,7 +17,6 @@ jobs:
       TEST_DB_NAME: app_test
       TEST_DB_USER: app
       TEST_DB_PASSWORD: password
-    
     services:
       postgres:
         image: postgres:16-alpine
@@ -34,32 +31,16 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Setup PHP
+      - name: Setup PHP platform
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, intl, sqlite3, pdo_sqlite, pgsql, pdo_pgsql
+          extensions: bcmath, curl, dom, fileinfo, intl, mbstring, pdo_sqlite, pdo_pgsql, sqlite3, pgsql, xml, xmlwriter, zip
           coverage: none
-          tools: composer:v2
-      
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-      
-      - name: Install Taskfile
-        uses: arduino/setup-task@v1
-        with:
-          version: '3.x'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Debug PHP and environment
-        run: |
-          php --version
-          php -r "var_dump(get_loaded_extensions());"
-          php -r "var_dump(ini_get_all());" | grep -i "memor"
-      
-      - name: Run full verify (unit, integration, lint and static analysis)
-        run: task verify:full
+          tools: none
+      - name: Verify bundled sources, tools and application
+        run: php tools/project.php verify:full
+      - name: Build runtime distribution
+        run: php tools/project.php build ci
