@@ -25,10 +25,20 @@ final readonly class HttpLoggingMiddleware implements Middleware
         ]);
 
         $response = $handler->handle($request);
+        $body = $response->getBody();
 
-        $this->logger->info('Application responded.', [
-            'response' => $response->getBody()->getContents(),
-        ]);
+        try {
+            $this->logger->info('Application responded.', [
+                'status' => $response->getStatusCode(),
+                'body_size' => $body->getSize(),
+                'body_seekable' => $body->isSeekable(),
+            ]);
+        } catch (\Throwable $exception) {
+            // The transport cannot take ownership when logging interrupts the response.
+            $body->close();
+
+            throw $exception;
+        }
 
         return $response;
     }

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Examples\DocumentCatalog;
 
+use App\Platform\Http\AttachmentResponse;
 use App\Platform\Http\Handler\HandlerInterface;
-use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Stream;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -33,28 +34,20 @@ final readonly class DownloadHandler implements HandlerInterface
             return $this->html->error(404);
         }
 
-        $fallback = 'document-' . $document->id . '.pdf';
-        $name = str_replace(['/', '\\'], '_', $document->originalName);
-        $name = trim(preg_replace('/[\x00-\x1F\x7F]/', '', $name) ?? '');
-
-        if ($name === '') {
-            $name = $fallback;
-        }
-
-        $headers = [
-            'Content-Type' => 'application/pdf',
-            'Content-Length' => (string) $document->fileSize,
-            'Content-Disposition' => 'attachment; filename="' . $fallback . '"; filename*=UTF-8\'\'' . rawurlencode($name),
-            'Cache-Control' => 'no-store',
-            'X-Content-Type-Options' => 'nosniff',
-        ];
+        $response = AttachmentResponse::create(
+            $body,
+            $document->originalName,
+            $document->fileSize,
+            contentType: 'application/pdf',
+            fallbackFilename: 'document-' . $document->id . '.pdf',
+        )->withHeader('Cache-Control', 'no-store');
 
         if ($request->getMethod() === 'HEAD') {
             $body->close();
 
-            return new Response(200, $headers);
+            return $response->withBody(Stream::create());
         }
 
-        return new Response(200, $headers, $body);
+        return $response;
     }
 }

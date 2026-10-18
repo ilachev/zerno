@@ -177,7 +177,7 @@
       "path": "docs/architecture/request-lifecycle.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Порядок HTTP middleware, контракт ErrorResponse, подключение JSON/HTML и границы routing, сессий, статистики и ошибок.",
+      "summary": "HTTP pipeline, ErrorResponse, AttachmentResponse, владение streams и прозрачная metadata-диагностика.",
       "read_when": [
         "Изменение HTTP pipeline",
         "Анализ состояния worker и запросов"
@@ -194,7 +194,10 @@
         "tests/Unit/Examples/DocumentCatalog/CompositionTest.php",
         "src/Platform/Runtime",
         "src/Capabilities/Session/Transport/Http",
-        "src/Capabilities/ApiStats/Transport/Http"
+        "src/Capabilities/ApiStats/Transport/Http",
+        "src/Platform/Http/AttachmentResponse.php",
+        "examples/document-catalog/src/DownloadHandler.php",
+        "tests/Unit/Platform/Http/AttachmentResponseTest.php"
       ]
     },
     {

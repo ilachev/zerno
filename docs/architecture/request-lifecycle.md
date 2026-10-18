@@ -34,7 +34,7 @@ PHP SAPI → SapiRequestFactory::fromGlobals()
 
 [`SapiRequestFactory`](../../src/Platform/Runtime/SapiRequestFactory.php) переносит server params, заголовки, query, cookies, `php://input` и вложенные uploads в объекты Nyholm PSR-7. `parsedBody` заполняется из `$_POST` только для POST form-urlencoded/multipart; JSON остаётся в body stream. Scheme и authority берутся из SAPI, без автоматического доверия `Forwarded`/`X-Forwarded-*`. Некорректные host/request-target отклоняются; `public/http.php` преобразует `InvalidArgumentException` при создании запроса в общий `400 Bad Request`.
 
-[`SapiResponseEmitter`](../../src/Platform/Runtime/SapiResponseEmitter.php) проверяет `headers_sent()`, сохраняет отдельные значения заголовков и явный status, читает body блоками по 8192 байта. Seekable stream перематывается перед отправкой. Для HEAD, 1xx, 204 и 304 тело не читается и не выводится. Удаляется `Content-Length` для 1xx и 204. Ошибки построения `App` и отправки ответа находятся вне middleware error handler.
+[`SapiResponseEmitter`](../../src/Platform/Runtime/SapiResponseEmitter.php) проверяет `headers_sent()`, сохраняет отдельные значения заголовков и явный status, читает body блоками по 8192 байта. Seekable stream перематывается перед отправкой. Для HEAD, 1xx, 204 и 304 тело не читается и не выводится. Удаляется `Content-Length` для 1xx и 204. Весь `emit()` владеет body и закрывает его в `finally`, включая HEAD, ошибку чтения и уже отправленные headers. Повторная отправка того же body недопустима. Ошибки построения `App` и отправки ответа находятся вне middleware error handler.
 
 RoadRunner-путь:
 
@@ -83,6 +83,30 @@ HEAD обрабатывают transport adapters: прямой `App::handle()` �
 
 Unit tests проверяют generic 500 и логирование, сохранение готового ответа, HTML без загрузки `JsonResponse` и последовательность ошибок/health. `http:check` повторяет wire-матрицу для JSON и HTML на FPM/RR, включая 404/405/500, `Allow`, HEAD и продолжение работы worker после исключения.
 
+## Файловый attachment и владение потоком
+
+[`AttachmentResponse::create()`](../../src/Platform/Http/AttachmentResponse.php) создаёт PSR-7 response со status 200, Content-Type (default `application/octet-stream`), явным Content-Length, Content-Disposition attachment и `nosniff`. Он принимает уже открытый stream, имя и проверенный вызывающим кодом размер; не открывает файл, не читает и не перемещает body. Путь разработчика — проверить доступ и файл, открыть новый поток, передать его helper и вернуть response:
+
+```php
+return AttachmentResponse::create(
+    $body,
+    $originalName,
+    $verifiedSize,
+    contentType: 'application/pdf',
+    fallbackFilename: 'document-' . $id . '.pdf',
+)->withHeader('Cache-Control', 'no-store');
+```
+
+В заголовке всегда два имени: ASCII `filename` и UTF-8 `filename*`. В fallback остаются только ASCII буквы, цифры, `.`, `_`, `-`; остальные байты заменяются `_`, крайние точки убираются, пустое имя заменяется на `download`. UTF-8 имя очищается от Unicode control/format characters, `/` и `\` заменяются `_`, крайние точки и пробелы убираются; затем всё имя кодируется `rawurlencode`. Пустой или невалидный UTF-8 заменяется fallback. Имя служит подсказкой скачивания, не путём storage. Отрицательный размер и невалидные header values отклоняются. Размер не пересчитывается и соответствие MIME содержимому не проверяется.
+
+Helper принимает владение stream при вызове: если создание ответа завершается исключением, он закрывает body. После успеха владение переходит вызывающему коду до передачи transport. Прямой `App::handle()` ничего не закрывает: его пользователь должен отправить ответ или закрыть body сам. SAPI emitter и RR runtime закрывают отправленный body и при ошибках. Handler возвращает свежий stream на каждый запрос и не хранит его в сервисе. Замена body через PSR-7 `withBody()` сама по себе не закрывает старый: заменивший его код обязан сделать это явно.
+
+[`DownloadHandler`](../../examples/document-catalog/src/DownloadHandler.php) — полный потребитель. Document, published lookup, private FileStore, проверка regular file/размера, PDF-only и no-store остаются в приложении. Для HEAD handler проверяет файл, создаёт те же headers и закрывает исходный stream без чтения, возвращая пустой body. Для общего ответа HEAD также подавляет transport; выбирать метод внутри helper не требуется. Range, conditional requests, HTTP cache и upload в контракт не входят. Файл должен оставаться неизменным между проверкой и завершением отправки.
+
+Без вызова helper нет новой регистрации DI, middleware или файлового I/O. При вызове выполняются обработка имени, создание headers/response и передача того же body; цена обработки имени зависит от длины имени, не от размера файла. Размер проверяется приложением. SAPI читает по 8192 байта; RR требует явного `RoadRunnerServiceProvider(chunkSize: 8192)` и seekable файла. Default RR `0` материализует body. Non-seekable body допустим для helper/SAPI при корректном размере и позиции, но bundled RR chunk path безусловно перематывает поток и общей поддержки такого streaming не даёт. Некоторые ошибки последующих чтений bundled RR adapter подавляет; закрытие ресурса не означает гарантированное завершение передачи при изменившемся файле.
+
+Наличие stream не заменяет проверку всего HTTP pipeline, включая middleware и выбранный transport.
+
 ## Routing и конечный handler
 
 [`Router`](../../src/Platform/Routing/Router.php) строит таблицы маршрутов и компилирует parameter patterns при создании. Literal-части пути экранируются для regex. Dispatch сначала ищет статический путь для запрошенного метода, затем параметризованные пути этого метода в порядке регистрации. Статический путь другого метода не блокирует подходящий параметризованный маршрут. Повторная регистрация method/path заменяет handler, сохраняя позицию маршрута.
@@ -116,7 +140,9 @@ Fingerprint, IP и User-Agent не восстанавливают session identi
 
 [`ApiStatsMiddleware`](../../src/Capabilities/ApiStats/Transport/Http/ApiStatsMiddleware.php) измеряет выполнение следующих слоёв и после нормального возврата записывает session ID, route, method, status, execution time и timestamp. В текущем порядке он видит исходный request до routing, поэтому `route` записывается как URI path; внутренний `RouteResult` не возвращается наружу. Обычные 404 учитываются, поскольку routing возвращает response. Исключение downstream прерывает запись: внешний `ErrorHandlerMiddleware` обрабатывает его уже после выхода из ApiStats.
 
-[`HttpLoggingMiddleware`](../../src/Platform/Http/Middleware/HttpLoggingMiddleware.php) расположен после routing. Он логирует query params перед handler и содержимое response после нормального возврата. Это не общий access log: 404/405 и исключения handler не проходят обе записи. Текущая реализация читает `getContents()` response stream без восстановления позиции; считать этот слой прозрачным для произвольных потоков нельзя.
+[`HttpLoggingMiddleware`](../../src/Platform/Http/Middleware/HttpLoggingMiddleware.php) расположен после routing. Он логирует query params перед handler; после нормального возврата — `status`, `body_size` и `body_seekable`. `body_size` — результат PSR-7 `getSize()`, а не число переданных байтов: значение может быть `null`, socket Nyholm может сообщать `0`. Для seekable и non-seekable streams одинаково не вызываются чтение, string conversion, tell, seek или rewind. Содержимое и позиция сохраняются, HEAD не читает body даже ради диагностики. Payload и preview в log отсутствуют; это намеренное изменение прежнего response context.
+
+Это не общий access log: при расположении после routing 404/405 и исключения handler не проходят обе записи. Нормальный возврат передаёт владение body дальше; при исключении metadata/response logger middleware закрывает уже полученный body перед пробросом ошибки. Сбой request logger происходит до handler. Логирование включается явно добавлением `$container->get(HttpLoggingMiddleware::class)` в выбранный `Pipeline`; минимальный core и каталог по умолчанию его не включают. Оно добавляет две записи и получение метаданных stream, без чтения payload или новых БД/сетевых обращений. Размер query params и особенности logger влияют на цену; общего лимита для произвольного request context этот контракт не вводит.
 
 При нормальном возврате API-ответа порядок обратной обработки: HttpLogging → ApiStats → Session → ErrorHandler → RequestContext → transport. Поэтому `X-Response-Time` включает session/statistics post-processing, но не сетевую отправку ответа.
 

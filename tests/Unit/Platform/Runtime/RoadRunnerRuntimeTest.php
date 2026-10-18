@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Middleware\HttpLoggingMiddleware;
+use App\Platform\Http\Middleware\Pipeline;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Runtime\RoadRunnerRuntime;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
+use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -19,6 +22,7 @@ use Spiral\RoadRunner\Http\PSR7Worker;
 use Spiral\RoadRunner\Http\PSR7WorkerInterface;
 use Spiral\RoadRunner\Payload;
 use Spiral\RoadRunner\WorkerInterface;
+use Tests\Unit\Platform\Logging\TestLogger;
 
 final class RoadRunnerRuntimeTest extends TestCase
 {
@@ -165,6 +169,86 @@ final class RoadRunnerRuntimeTest extends TestCase
         $this->expectExceptionMessage('Transport failed');
 
         new RoadRunnerRuntime($worker, $handler)->run();
+    }
+
+    #[DataProvider('provideClosesRealLoggedFileThroughTheChunkedAdapterCases')]
+    public function testClosesRealLoggedFileThroughTheChunkedAdapter(bool $transportFails): void
+    {
+        $content = str_repeat('0123456789abcdef', 1024) . 'final-file-bytes!';
+        $resource = tmpfile();
+        self::assertIsResource($resource);
+        self::assertSame(16401, fwrite($resource, $content));
+        $body = Stream::create($resource);
+        $body->seek(29);
+        $response = new Response(200, ['Content-Length' => (string) \strlen($content)], $body);
+        $logger = new TestLogger();
+        $handler = new Pipeline(new FixedResponseHandler($response), [new HttpLoggingMiddleware($logger)]);
+        $transport = $this->createMock(WorkerInterface::class);
+        $transport->expects(self::exactly($transportFails ? 1 : 2))->method('waitPayload')->willReturn(
+            new Payload('', json_encode([
+                'remoteAddr' => '127.0.0.1:12345',
+                'protocol' => 'HTTP/1.1',
+                'method' => 'GET',
+                'uri' => 'http://localhost/document',
+                'headers' => [],
+                'cookies' => [],
+                'uploads' => [],
+                'attributes' => [],
+                'rawQuery' => '',
+                'parsed' => false,
+            ], JSON_THROW_ON_ERROR)),
+            null,
+        );
+        $failure = new RoadRunnerException('Transport failed after the first file chunk');
+        /** @var list<Payload> $frames */
+        $frames = [];
+        $transport->expects(self::exactly($transportFails ? 2 : 3))->method('respond')->willReturnCallback(
+            static function (Payload $payload) use ($transportFails, $failure, &$frames, $resource): void {
+                self::assertTrue(\is_resource($resource));
+                if ($transportFails && \count($frames) === 1) {
+                    throw $failure;
+                }
+                $frames[] = $payload;
+            },
+        );
+        $factory = new Psr17Factory();
+        $worker = new PSR7Worker($transport, $factory, $factory, $factory);
+        $worker->chunkSize = 8192;
+        $caught = null;
+
+        try {
+            new RoadRunnerRuntime($worker, $handler)->run();
+        } catch (RoadRunnerException $exception) {
+            $caught = $exception;
+        }
+
+        self::assertSame($transportFails ? $failure : null, $caught);
+        self::assertFalse(\is_resource($resource));
+        self::assertFalse($body->isReadable());
+        self::assertSame([
+            ['level' => 'info', 'message' => 'Request.', 'context' => ['request' => []]],
+            ['level' => 'info', 'message' => 'Application responded.', 'context' => [
+                'status' => 200,
+                'body_size' => \strlen($content),
+                'body_seekable' => true,
+            ]],
+        ], $logger->logs);
+        self::assertSame(
+            $transportFails ? [8192] : [8192, 8192, 17],
+            array_map(static fn(Payload $frame): int => \strlen($frame->body), $frames),
+        );
+        self::assertSame(
+            $transportFails ? substr($content, 0, 8192) : $content,
+            implode('', array_map(static fn(Payload $frame): string => $frame->body, $frames)),
+        );
+        self::assertSame($transportFails ? [false] : [false, false, true], array_map(static fn(Payload $frame): bool => $frame->eos, $frames));
+    }
+
+    /** @return iterable<string, array{bool}> */
+    public static function provideClosesRealLoggedFileThroughTheChunkedAdapterCases(): iterable
+    {
+        yield 'successful send' => [false];
+        yield 'transport fails after the first chunk' => [true];
     }
 }
 

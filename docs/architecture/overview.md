@@ -27,7 +27,7 @@
 
 [`Pipeline`](../../src/Platform/Http/Middleware/Pipeline.php) собирается явно конфигурацией. Core: RequestContext → ErrorHandler → Routing → resolver. API: RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → resolver. Состав middleware не зашит в `App`.
 
-Для файловых ответов стоимость проверяется через весь путь. RR provider по умолчанию оставляет `chunkSize=0` и материализацию body; каталог явно задаёт 8192 для seekable files. Runtime исключает чтение тела HEAD/1xx/204/304 и закрывает response streams после отправки. API HttpLogging по-прежнему читает остаток тела до EOF: bounded memory каталога не является гарантией для API-композиции.
+Для файловых ответов стоимость проверяется через весь путь. RR provider по умолчанию оставляет `chunkSize=0` и материализацию body; каталог явно задаёт 8192 для seekable files. Оба transport adapters исключают чтение тела HEAD/1xx/204/304 и закрывают response streams в `finally`. Общий [AttachmentResponse](request-lifecycle.md#файловый-attachment-и-владение-потоком) собирает безопасные имена и headers из готового stream; HttpLogging пишет только metadata без чтения и перемещения body. Ограниченная память зависит также от выбранного RR chunk path, logger и остального pipeline.
 
 [`Пример каталога`](../../examples/document-catalog/README.md) имеет собственный opt-in autoload, миграцию, прямой параметризованный SQL с LIMIT 21, HTML-шаблоны и GET/HEAD routes. Только published записи видны списку, карточке и download; файлы выбираются по связанному opaque key вне webroot, с проверкой типа/размера и выдачей attachment. HTML ошибки, no-store и выбор PDF — политика примера. Шаблонизацию, формы и auth workflow ядро не навязывает.
 
