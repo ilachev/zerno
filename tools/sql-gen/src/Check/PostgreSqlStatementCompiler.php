@@ -142,6 +142,12 @@ final readonly class PostgreSqlStatementCompiler
             ));
         }
 
+        if ($query->limit !== null) {
+            $sql .= ' LIMIT ' . ($query->limit instanceof SelectPlaceholder
+                ? $this->renderPlaceholder($query->limit, $parameterIndexByName, $statementName)
+                : (string) $query->limit);
+        }
+
         return $sql;
     }
 

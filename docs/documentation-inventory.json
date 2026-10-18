@@ -300,6 +300,8 @@
       "source_paths": [
         "tools/sql-gen/src",
         "tools/sql-gen/tests",
+        "tests/Fixtures/SqlLimit",
+        "tests/Integration/Storage/SqlLimitTest.php",
         "codegen/Sql",
         "sql",
         "gen/Generated/Sql",

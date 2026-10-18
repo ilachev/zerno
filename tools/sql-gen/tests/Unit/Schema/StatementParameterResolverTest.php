@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Schema;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\SchemaColumn;
@@ -22,6 +23,241 @@ final class StatementParameterResolverTest extends TestCase
     protected function setUp(): void
     {
         $this->phpTypeRenderer = new PhpTypeRenderer();
+    }
+
+    public function testInfersLimitOnlyParameterWithoutColumnMapping(): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions ORDER BY id DESC LIMIT :row_limit;',
+                parameters: [new SqlParameter('row_limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                ]),
+            ]),
+        );
+
+        self::assertCount(1, $resolved);
+        self::assertSame('row_limit', $resolved[0]->name);
+        self::assertSame('rowLimit', $resolved[0]->propertyName);
+        self::assertSame('BIGINT', $resolved[0]->sqlType);
+        self::assertSame('int', $this->phpTypeRenderer->renderNative($resolved[0]->phpType));
+        self::assertFalse($resolved[0]->nullable);
+    }
+
+    public function testPreservesStatementParameterOrderForWhereAndLimit(): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions WHERE id < :before_id ORDER BY id DESC LIMIT :limit;',
+                parameters: [new SqlParameter('limit'), new SqlParameter('before_id')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                ]),
+            ]),
+        );
+
+        self::assertCount(2, $resolved);
+        self::assertSame('limit', $resolved[0]->name);
+        self::assertSame('BIGINT', $resolved[0]->sqlType);
+        self::assertFalse($resolved[0]->nullable);
+        self::assertSame('before_id', $resolved[1]->name);
+        self::assertSame('TEXT', $resolved[1]->sqlType);
+    }
+
+    #[DataProvider('integerLimitColumnTypes')]
+    public function testLimitReusedWithIntegerColumnBecomesNonNullable(string $sqlType): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::One,
+                sql: 'SELECT user_id FROM sessions WHERE :limit = user_id ORDER BY user_id LIMIT :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'user_id' => new SchemaColumn('user_id', $sqlType, PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+
+        self::assertCount(1, $resolved);
+        self::assertSame('int', $this->phpTypeRenderer->renderNative($resolved[0]->phpType));
+        self::assertFalse($resolved[0]->nullable);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function integerLimitColumnTypes(): iterable
+    {
+        foreach (['INTEGER', 'BIGINT', 'SERIAL', 'BIGSERIAL'] as $sqlType) {
+            yield $sqlType => [$sqlType];
+        }
+    }
+
+    #[DataProvider('incompatibleLimitColumnTypes')]
+    public function testRejectsLimitReusedWithNonIntegerColumn(string $sqlType, string $phpType): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('LIMIT parameter row_limit must be compatible with an integer column');
+
+        (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT value FROM sessions WHERE value = :row_limit LIMIT :row_limit;',
+                parameters: [new SqlParameter('row_limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'value' => new SchemaColumn('value', $sqlType, PhpTypeFactory::fromNativeType($phpType), true),
+                ]),
+            ]),
+        );
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function incompatibleLimitColumnTypes(): iterable
+    {
+        yield 'text' => ['TEXT', 'string'];
+        yield 'json' => ['JSONB', 'string'];
+        yield 'boolean' => ['BOOLEAN', 'bool'];
+        yield 'real' => ['REAL', 'float'];
+        yield 'double' => ['DOUBLE', 'float'];
+        yield 'numeric' => ['NUMERIC', 'float'];
+        yield 'decimal' => ['DECIMAL', 'float'];
+    }
+
+    public function testRejectsEarlierIncompatibleMappingEvenWhenLastColumnIsInteger(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('LIMIT parameter limit must be compatible with an integer column');
+
+        (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions WHERE id = :limit AND user_id = :limit LIMIT :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                    'user_id' => new SchemaColumn('user_id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), false),
+                ]),
+            ]),
+        );
+    }
+
+    public function testLiteralLimitIntroducesNoParameter(): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions ORDER BY id DESC LIMIT 21;',
+                parameters: [],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                ]),
+            ]),
+        );
+
+        self::assertSame([], $resolved);
+    }
+
+    #[DataProvider('projectionsReusingLimitParameter')]
+    public function testRejectsLimitParameterReusedInProjectionExpressions(string $projection): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('LIMIT parameter limit cannot be reused in projection expressions in query ListSessions');
+
+        (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT ' . $projection . ' AS value FROM sessions LIMIT :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'user_id' => new SchemaColumn('user_id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function projectionsReusingLimitParameter(): iterable
+    {
+        yield 'min' => ['MIN(:limit)'];
+        yield 'coalesce first argument' => ['COALESCE(:limit, user_id)'];
+        yield 'coalesce later argument' => ['COALESCE(user_id, :limit)'];
+        yield 'coalesce repeated parameter' => ['COALESCE(:limit, :limit)'];
+        yield 'count' => ['COUNT(:limit)'];
+        yield 'case condition left operand' => ['CASE WHEN :limit = user_id THEN user_id ELSE user_id END'];
+        yield 'case condition right operand' => ['CASE WHEN user_id = :limit THEN user_id ELSE user_id END'];
+        yield 'case result' => ['CASE WHEN user_id = user_id THEN :limit ELSE user_id END'];
+        yield 'case later branch result' => ['CASE WHEN user_id = user_id THEN user_id WHEN user_id = user_id THEN :limit ELSE user_id END'];
+        yield 'case else result' => ['CASE WHEN user_id = user_id THEN user_id ELSE :limit END'];
+    }
+
+    public function testAllowsSeparateProjectionParameterWithLimitParameter(): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT COALESCE(:user_id, user_id) AS value FROM sessions WHERE user_id = :user_id LIMIT :limit;',
+                parameters: [new SqlParameter('user_id'), new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'user_id' => new SchemaColumn('user_id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+
+        self::assertCount(2, $resolved);
+        self::assertSame('user_id', $resolved[0]->name);
+        self::assertSame('int', $this->phpTypeRenderer->renderNative($resolved[0]->phpType));
+        self::assertTrue($resolved[0]->nullable);
+        self::assertSame('limit', $resolved[1]->name);
+        self::assertSame('int', $this->phpTypeRenderer->renderNative($resolved[1]->phpType));
+        self::assertFalse($resolved[1]->nullable);
+    }
+
+    public function testProjectionParameterNamedLimitWithoutLimitClauseKeepsColumnType(): void
+    {
+        $resolved = (new StatementParameterResolver())->resolve(
+            new SqlStatement(
+                name: 'FindSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT MIN(:limit) AS value FROM sessions WHERE user_id = :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'user_id' => new SchemaColumn('user_id', 'INTEGER', PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+
+        self::assertCount(1, $resolved);
+        self::assertSame('limit', $resolved[0]->name);
+        self::assertSame('INTEGER', $resolved[0]->sqlType);
+        self::assertSame('int', $this->phpTypeRenderer->renderNative($resolved[0]->phpType));
+        self::assertTrue($resolved[0]->nullable);
     }
 
     public function testResolvesParameterTypesFromSchemaColumns(): void
