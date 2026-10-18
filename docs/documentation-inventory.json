@@ -444,7 +444,7 @@
       "path": "docs/development/http-and-baseline.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Явные wire checks настоящих FPM/RR и воспроизведение малого JSON/SELECT baseline без installer.",
+      "summary": "Реальные FPM/RR wire checks с логированием и файлами; воспроизведение JSON/SELECT и файловых замеров без installer.",
       "read_when": [
         "Проверка HTTP adapters",
         "Измерение runtime и подготовка изолированной fixture"
@@ -453,7 +453,8 @@
         "tools/check-http.php",
         "tools/http-fixtures",
         "load-tests/baseline",
-        "tools/project.php"
+        "tools/project.php",
+        "load-tests/files"
       ]
     },
     {
@@ -507,6 +508,26 @@
         "load-tests/catalog",
         "src/Platform/Runtime/RoadRunnerRuntime.php",
         "docs/history/2026-10-17-public-catalog.json"
+      ]
+    },
+    {
+      "id": "file-responses-validation",
+      "path": "docs/history/2026-10-18-file-responses.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Общий attachment и metadata logging: FPM/RR проверки, lifecycle, ограниченная память и сопоставимая стоимость диагностики.",
+      "read_when": [
+        "Ревью файлового HTTP-контракта",
+        "Воспроизведение файловых проверок и замеров"
+      ],
+      "source_paths": [
+        "src/Platform/Http/AttachmentResponse.php",
+        "src/Platform/Http/Middleware/HttpLoggingMiddleware.php",
+        "src/Platform/Runtime/SapiResponseEmitter.php",
+        "tools/check-http.php",
+        "tools/http-fixtures",
+        "load-tests/files",
+        "docs/history/2026-10-18-file-responses.json"
       ]
     }
   ],
@@ -582,6 +603,21 @@
         "examples/document-catalog",
         "load-tests/catalog",
         "src/Platform/Runtime/RoadRunnerRuntime.php"
+      ]
+    },
+    {
+      "id": "file-responses-validation-data",
+      "path": "docs/history/2026-10-18-file-responses.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Файловая итерация: условия, server configs, source hashes, CPU/RSS/log bytes и k6 summaries.",
+      "read_when": [
+        "Анализ стоимости файловой диагностики"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-18-file-responses.md",
+        "load-tests/files",
+        "tools/http-fixtures"
       ]
     }
   ],

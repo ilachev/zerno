@@ -17,9 +17,11 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 [`tools/check-http.php`](../../tools/check-http.php) запускает собственные процессы на временных loopback-портах. Для FPM клиент говорит непосредственно по FastCGI, для RR — по HTTP. Конфигурации и логи временные; tool останавливает созданные им процессы и убирает временный каталог. Он не останавливает чужие серверы.
 
-Сейчас выполняются по 27 случаев с default JSON и с HTML-представлением ошибок: 54 для каждого runtime, 108 при выборе обоих. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный storage engine: БД, Session и ApiStats не включаются. Это проверки корректности, без измерения ускорения.
+Сейчас выполняются по 47 случаев с default JSON и с HTML-представлением ошибок: 94 для каждого runtime, 188 при выборе обоих. Каждый профиль включает реальный HttpLoggingMiddleware; RR fixture явно выбирает chunk 8192. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный storage engine: БД, Session и ApiStats не включаются. Это проверки корректности, без измерения ускорения.
 
-Это конкретная wire-матрица, а не полная проверка HTTP, uploads, reverse proxy, безопасности или памяти больших файлов. Исходники — [`tools/http-fixtures`](../../tools/http-fixtures); поведение router объясняет [жизненный цикл запроса](../architecture/request-lifecycle.md).
+Дополнительные 20 случаев на профиль проверяют GET/HEAD attachment для 0, 8191, 8192, 8193, 1 MiB и 16 MiB + 17 байт и четыре повторных больших GET/HEAD в одном worker. Проверяются длина, SHA-256, ASCII/UTF-8 Content-Disposition, no-store/nosniff и отсутствие session. Server memory_limit — 32M; после прогрева retained PHP allocation не должна вырасти больше чем на 2 MiB. Это проверка выбранного seekable-file path, а не универсальный memory budget: клиент отдельно буферизует body с ограничением 32 MiB, и этот предел не является RSS или peak server memory.
+
+Это конкретная wire-матрица, а не полная проверка HTTP, uploads, reverse proxy или безопасности. Исходники — [`tools/http-fixtures`](../../tools/http-fixtures); поведение router объясняет [жизненный цикл запроса](../architecture/request-lifecycle.md).
 
 ## Baseline: что сравнивается
 
@@ -143,3 +145,25 @@ php tools/project.php perf:cleanup "$DB_SCHEMA"
 ```
 
 Cleanup проверяет формат имени, baseline marker и принадлежность текущей DB-роли. Он не удаляет БД или контейнер PostgreSQL и не убирает чужие схемы. Metadata/результаты можно сохранить для сравнения; подготовка следующей схемы — отдельный запуск.
+
+## Стоимость файлового пути
+
+[`load-tests/files/scenario.js`](../../load-tests/files/scenario.js) выполняет один последовательный GET или HEAD attachment fixture, проверяет headers и точный SHA-256 body. Он требует заранее подготовленные private файлы и сервер с `tools/http-fixtures/config.php` (FPM) или `roadrunner.php` (RR). Это development fixture без БД. `WIRE_FILE_DIRECTORY` задаёт её private directory; `WIRE_HTTP_LOGGING=0` исключает только logging middleware для сопоставимого контрольного запуска (default включает его). Эти переменные не относятся к конфигурации core/каталога.
+
+Подготовка из корня, без загрузки зависимостей:
+
+```bash
+mkdir -m 700 -p var/file-benchmark
+php -r 'require "tools/http-fixtures/AttachmentFiles.php"; echo json_encode(Project\HttpFixtures\AttachmentFiles::prepare($argv[1]), JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);' var/file-benchmark > var/file-hashes.json
+```
+
+После запуска собственного сервера и HTTP front, для каждого варианта отдельно:
+
+```bash
+BASE_URL=http://127.0.0.1:18081 FILE_SIZE=1048576 \
+EXPECTED_SHA256="$(php -r '$h = json_decode(file_get_contents("var/file-hashes.json"), true, 512, JSON_THROW_ON_ERROR); echo $h[1048576];')" \
+DURATION=2s SUMMARY_PATH=var/file-warmup.json \
+k6 run --no-usage-report --quiet load-tests/files/scenario.js
+```
+
+Затем повторить с `DURATION=5s` и отдельным SUMMARY_PATH. `METHOD=HEAD` проверяет пустой body при том же Content-Length. Один VU задан сценарием; нагрузка не перекрывается с другими проверками/замерами. k6 материализует body на стороне клиента; его память и CPU не следует приписывать серверу. Собирать CPU/RSS всего runtime (master/server и PHP worker) и front отдельно; доступные counters, log bytes и пределы интерпретации фиксировать. В [отчёте 2026-10-18](../history/2026-10-18-file-responses.md) есть серверные конфигурации, результаты с/без диагностики, длительная серия и ограничения стенда. Файлы удаляются только после остановки собственных серверов.

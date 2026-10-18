@@ -4,14 +4,24 @@ declare(strict_types=1);
 
 use App\Platform\DI\Container;
 use App\Platform\Http\ErrorResponse;
+use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
+use App\Platform\Http\Middleware\HttpLoggingMiddleware;
+use App\Platform\Http\Middleware\Pipeline;
+use App\Platform\Http\Middleware\RequestContextMiddleware;
+use App\Platform\Http\Middleware\RoutingMiddleware;
+use App\Platform\Http\RequestHandler;
+use App\Platform\Http\RouteHandlerResolver;
 use App\Platform\Routing\RouteDefinition;
 use App\Platform\Routing\RouteDefinitionInterface;
 use App\Platform\Routing\RouteEntry;
 use App\Platform\Routing\StaticRouteProvider;
 use Examples\DocumentCatalog\Errors;
+use Project\HttpFixtures\AttachmentHandler;
 use Project\HttpFixtures\FixtureHandler;
 
 require_once __DIR__ . '/FixtureHandler.php';
+require_once __DIR__ . '/AttachmentHandler.php';
+require_once __DIR__ . '/AttachmentFiles.php';
 
 /** @var callable(Container<object>): void $configure */
 $configure = require dirname(__DIR__, 2) . '/config/core.php';
@@ -22,6 +32,18 @@ return static function (Container $container) use ($configure): void {
         require_once dirname(__DIR__, 2) . '/examples/document-catalog/bootstrap.php';
         $container->bind(ErrorResponse::class, Errors::class);
     }
+    $container->set(
+        RequestHandler::class,
+        static fn(Container $container): RequestHandler => new Pipeline(
+            $container->get(RouteHandlerResolver::class),
+            [
+                $container->get(RequestContextMiddleware::class),
+                $container->get(ErrorHandlerMiddleware::class),
+                $container->get(RoutingMiddleware::class),
+                ...(getenv('WIRE_HTTP_LOGGING') === '0' ? [] : [$container->get(HttpLoggingMiddleware::class)]),
+            ],
+        ),
+    );
     $container->set(
         RouteDefinitionInterface::class,
         static fn(): RouteDefinition => new RouteDefinition(new StaticRouteProvider([
@@ -39,6 +61,8 @@ return static function (Container $container) use ($configure): void {
             new RouteEntry('HEAD', '/__wire/failure', FixtureHandler::class),
             new RouteEntry('GET', '/__wire/context/{id}', FixtureHandler::class),
             new RouteEntry('GET', '/__wire/context', FixtureHandler::class),
+            new RouteEntry('GET', '/__wire/attachment/{size}', AttachmentHandler::class),
+            new RouteEntry('HEAD', '/__wire/attachment/{size}', AttachmentHandler::class),
         ])),
     );
 };

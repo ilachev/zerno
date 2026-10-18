@@ -3,6 +3,10 @@
 
 declare(strict_types=1);
 
+use Project\HttpFixtures\AttachmentFiles;
+
+require_once __DIR__ . '/http-fixtures/AttachmentFiles.php';
+
 final readonly class HttpWireResponse
 {
     /** @param array<string, list<string>> $headers */
@@ -174,8 +178,8 @@ function wireHttp(int $port, string $method, string $target, array $headers): Ht
                 throw new RuntimeException('Incomplete HTTP response or socket timeout');
             }
             $raw .= $chunk;
-            if (strlen($raw) > 1_048_576) {
-                throw new RuntimeException('Fixture response exceeded 1 MiB');
+            if (strlen($raw) > 33_554_432) {
+                throw new RuntimeException('Fixture response exceeded the bounded 32 MiB client limit');
             }
         }
 
@@ -245,8 +249,8 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
 
                 return wireResponse($output, true, $method);
             }
-            if (strlen($output) + strlen($error) > 1_048_576) {
-                throw new RuntimeException('FastCGI response exceeded 1 MiB');
+            if (strlen($output) + strlen($error) > 33_554_432) {
+                throw new RuntimeException('FastCGI response exceeded the bounded 32 MiB client limit');
             }
         }
     } finally {
@@ -374,6 +378,58 @@ function wireMatrix(string $runtime, int $port, string $root, string $errorForma
     return count($cases) + 4;
 }
 
+/** @param array<int, string> $hashes */
+function wireAttachments(string $runtime, int $port, string $root, array $hashes): int
+{
+    $pid = null;
+    $count = 0;
+    $retainedMemory = null;
+    // Include repeated large transfers after warmup in the same PHP worker.
+    $sizes = [...AttachmentFiles::SIZES, ...array_fill(0, 4, 16_777_233)];
+    foreach ($sizes as $index => $size) {
+        foreach (['GET', 'HEAD'] as $method) {
+            $context = $method . ' attachment ' . $size . ' iteration ' . $index;
+            $requestId = 'attachment-' . $index . '-' . $method;
+            $response = wireRequest($runtime, $port, $root, $method, '/__wire/attachment/' . $size, ['X-Request-ID' => $requestId]);
+            wireSame(200, $response->status, $context . ' status');
+            wireSame([$requestId], $response->headers['x-request-id'] ?? [], $context . ' request ID');
+            wireSame([(string) $size], $response->headers['content-length'] ?? [], $context . ' Content-Length');
+            wireSame(['application/octet-stream'], $response->headers['content-type'] ?? [], $context . ' Content-Type');
+            wireSame(['attachment; filename="fixture-' . $size . '.bin"; filename*=UTF-8\'\'' . rawurlencode('Отчёт "' . $size . '".bin')], $response->headers['content-disposition'] ?? [], $context . ' Content-Disposition');
+            wireSame(['nosniff'], $response->headers['x-content-type-options'] ?? [], $context . ' nosniff');
+            wireSame(['no-store'], $response->headers['cache-control'] ?? [], $context . ' cache policy');
+            wireSame([], $response->headers['set-cookie'] ?? [], $context . ' no session');
+            wireSame([$method], $response->headers['x-fixture-method'] ?? [], $context . ' handler method');
+            wireSame(['32M'], $response->headers['x-fixture-memory-limit'] ?? [], $context . ' PHP memory limit');
+            $currentPid = $response->headers['x-fixture-pid'] ?? [];
+            if (count($currentPid) !== 1 || $currentPid[0] === '') {
+                throw new RuntimeException($context . ': missing fixture worker PID');
+            }
+            $pid ??= $currentPid;
+            wireSame($pid, $currentPid, $context . ' worker reuse');
+            if ($method === 'HEAD') {
+                wireSame('', $response->body, $context . ' empty body');
+            } else {
+                wireSame($size, strlen($response->body), $context . ' exact bytes');
+                wireSame($hashes[$size], hash('sha256', $response->body), $context . ' exact hash');
+            }
+            if ($index >= count(AttachmentFiles::SIZES)) {
+                $memory = $response->headers['x-fixture-memory-usage'][0] ?? '';
+                if (!ctype_digit($memory)) {
+                    throw new RuntimeException($context . ': missing allocated memory counter');
+                }
+                $retainedMemory ??= (int) $memory;
+                if ((int) $memory > $retainedMemory + 2_097_152) {
+                    throw new RuntimeException($context . ': retained PHP allocation grew by more than 2 MiB after warmup');
+                }
+            }
+            ++$count;
+        }
+    }
+
+    return $count;
+}
+
 /**
  * @param non-empty-list<string> $command
  * @param array<string, string> $environment
@@ -405,20 +461,21 @@ function wireStop($process): void
     proc_close($process);
 }
 
-function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat): void
+/** @param array<int, string> $hashes */
+function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat, array $hashes): void
 {
     $port = wirePort();
     $log = $temporary . '/' . $runtime . '-' . $errorFormat . '.log';
     $config = $temporary . '/' . $runtime . '-' . $errorFormat . ($runtime === 'fpm' ? '.conf' : '.yaml');
-    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'STORAGE_ENGINE' => 'wire-unavailable', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat];
+    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'STORAGE_ENGINE' => 'wire-unavailable', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat, 'WIRE_FILE_DIRECTORY' => $temporary, 'WIRE_HTTP_LOGGING' => '1'];
     if ($runtime === 'fpm') {
-        $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\n";
+        $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\nphp_admin_value[memory_limit] = 32M\n";
         $command = [$binary, '-F', '-y', $config];
     } else {
-        $worker = PHP_BINARY . ' public/index.php';
+        $worker = PHP_BINARY . ' -d memory_limit=32M public/index.php';
         $contents = "version: '3'\nserver:\n  command: " . json_encode($worker, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
             . "\n  env: " . json_encode($environment, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
-            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: error\n  mode: production\n";
+            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: info\n  mode: production\n";
         $command = [$binary, 'serve', '-w', $root, '-c', $config];
     }
     if (file_put_contents($config, $contents) !== strlen($contents)) {
@@ -443,6 +500,9 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
             throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
         }
         $count = wireMatrix($runtime, $port, $root, $errorFormat);
+        $count += wireAttachments($runtime, $port, $root, $hashes);
+        $logged = file_get_contents($log);
+        wireSame(true, $logged !== false && str_contains($logged, 'Application responded.') && str_contains($logged, 'body_size'), 'Response metadata reached the runtime log');
         fwrite(STDOUT, sprintf("HTTP wire: %s, %s errors, %d cases passed (%s).\n", $runtime, $errorFormat, $count, $binary));
     } catch (Throwable $exception) {
         $output = is_file($log) ? file_get_contents($log) : '';
@@ -482,6 +542,7 @@ try {
     if (!mkdir($temporary, 0o700)) {
         throw new RuntimeException('Cannot create the temporary fixture directory');
     }
+    $hashes = AttachmentFiles::prepare($temporary);
     if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
         pcntl_async_signals(true);
         foreach ([SIGINT, SIGTERM] as $signal) {
@@ -492,7 +553,7 @@ try {
     }
     foreach ($binaries as $runtime => $binary) {
         foreach (['json', 'html'] as $errorFormat) {
-            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat);
+            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat, $hashes);
         }
     }
 } catch (Throwable $exception) {

@@ -10,5 +10,5 @@ $configure = require __DIR__ . '/config.php';
 
 return static function (Container $container) use ($configure): void {
     $configure($container);
-    new RoadRunnerServiceProvider()->register($container);
+    new RoadRunnerServiceProvider(chunkSize: 8192)->register($container);
 };

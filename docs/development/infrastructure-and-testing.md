@@ -1,6 +1,6 @@
 # Инфраструктура и тестирование
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-18.
 
 Архитектурные границы описаны в [обзоре](../architecture/overview.md), точный порядок middleware — в [потоке запроса](../architecture/request-lifecycle.md). Источник команд — [`tools/project.php`](../../tools/project.php), а не прежние Composer/Task инструкции.
 
@@ -95,7 +95,7 @@ docker compose exec db-postgres createdb -U app app_test
 |---|---|
 | `php tools/project.php verify` | Third-party integrity → documentation inventory/links → стиль → PHPStan → соответствие SQL-артефактов → root unit tests |
 | `php tools/project.php docs:check` | Инвентарь собственных документов, пути источников и локальные Markdown-ссылки без сети |
-| `php tools/project.php http:check` | 24 wire cases для каждого выбранного настоящего FPM/RR; запускается отдельно от default gates |
+| `php tools/project.php http:check` | [188 wire cases](http-and-baseline.md) routing/errors и файлов с логированием для FPM/RR; запускается отдельно от default gates |
 | `php tools/project.php perf:prepare`, `perf:baseline`, `perf:cleanup <schema>` | Изолированная fixture PostgreSQL, явный k6 JSON/SELECT запуск и удаление только своей схемы |
 | `php tools/project.php verify:integration` | PostgreSQL SQL validation → root integration tests |
 | `php tools/project.php verify:full` | `verify` → style/PHPStan/tests SQL generator → style/PHPStan/tests protobuf generator → `verify:integration` |
