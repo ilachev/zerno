@@ -262,7 +262,7 @@ function wireRequest(string $runtime, int $port, string $root, string $method, s
         : wireHttp($port, $method, $target, $headers);
 }
 
-function wireMatrix(string $runtime, int $port, string $root): int
+function wireMatrix(string $runtime, int $port, string $root, string $errorFormat): int
 {
     /** @var list<array{string, string, int, array<string, string>|null, list<string>}> $cases */
     $cases = [
@@ -283,6 +283,9 @@ function wireMatrix(string $runtime, int $port, string $root): int
         ['GET', '/__wire/a+b/42', 200, ['id' => '42'], []],
         ['GET', '/__wire/aab/42', 404, null, []],
         ['GET', '/__wire/missing', 404, null, []],
+        ['HEAD', '/__wire/missing', 404, null, []],
+        ['GET', '/__wire/failure', 500, null, []],
+        ['HEAD', '/__wire/failure', 500, null, []],
         ['GET', '/__wire/status/204', 204, null, []],
         ['GET', '/__wire/status/304', 304, null, []],
         ['GET', '/__wire/headers', 200, [], []],
@@ -299,10 +302,26 @@ function wireMatrix(string $runtime, int $port, string $root): int
         sort($allow);
         sort($actualAllow);
         wireSame($allow, $actualAllow, $context . ' Allow');
+        if ($status >= 400) {
+            wireSame([$errorFormat === 'html' ? 'text/html; charset=utf-8' : 'application/json'], $response->headers['content-type'] ?? [], $context . ' error representation');
+            wireSame([], $response->headers['set-cookie'] ?? [], $context . ' no session');
+        }
         if ($method === 'HEAD' || $status === 204 || $status === 304) {
             wireSame('', $response->body, $context . ' forbidden body');
-        } elseif ($status === 404 || $status === 405) {
-            wireSame(['error' => $status === 404 ? 'Not found' : 'Method not allowed'], json_decode($response->body, true, 512, JSON_THROW_ON_ERROR), $context . ' error');
+        } elseif ($status >= 400) {
+            if ($errorFormat === 'html') {
+                wireSame(['no-store'], $response->headers['cache-control'] ?? [], $context . ' error cache policy');
+                wireSame(true, str_contains($response->body, '<html lang="ru">'), $context . ' HTML document');
+                wireSame(true, str_contains($response->body, '<h1>'), $context . ' HTML title');
+                wireSame(false, str_contains($response->body, 'wire-private-exception-details'), $context . ' private details');
+            } else {
+                $message = match ($status) {
+                    404 => 'Not found',
+                    405 => 'Method not allowed',
+                    default => 'Internal Server Error',
+                };
+                wireSame(['error' => $message], json_decode($response->body, true, 512, JSON_THROW_ON_ERROR), $context . ' error');
+            }
         } else {
             $payload = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($payload)) {
@@ -386,12 +405,12 @@ function wireStop($process): void
     proc_close($process);
 }
 
-function wireRun(string $runtime, string $binary, string $root, string $temporary): void
+function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat): void
 {
     $port = wirePort();
-    $log = $temporary . '/' . $runtime . '.log';
-    $config = $temporary . '/' . $runtime . ($runtime === 'fpm' ? '.conf' : '.yaml');
-    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'STORAGE_ENGINE' => 'wire-unavailable', 'ENVIRONMENT' => 'testing'];
+    $log = $temporary . '/' . $runtime . '-' . $errorFormat . '.log';
+    $config = $temporary . '/' . $runtime . '-' . $errorFormat . ($runtime === 'fpm' ? '.conf' : '.yaml');
+    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'STORAGE_ENGINE' => 'wire-unavailable', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat];
     if ($runtime === 'fpm') {
         $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\n";
         $command = [$binary, '-F', '-y', $config];
@@ -423,8 +442,8 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
         if (!$ready) {
             throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
         }
-        $count = wireMatrix($runtime, $port, $root);
-        fwrite(STDOUT, sprintf("HTTP wire: %s, %d cases passed (%s).\n", $runtime, $count, $binary));
+        $count = wireMatrix($runtime, $port, $root, $errorFormat);
+        fwrite(STDOUT, sprintf("HTTP wire: %s, %s errors, %d cases passed (%s).\n", $runtime, $errorFormat, $count, $binary));
     } catch (Throwable $exception) {
         $output = is_file($log) ? file_get_contents($log) : '';
 
@@ -472,7 +491,9 @@ try {
         }
     }
     foreach ($binaries as $runtime => $binary) {
-        wireRun($runtime, $binary, dirname(__DIR__), $temporary);
+        foreach (['json', 'html'] as $errorFormat) {
+            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat);
+        }
     }
 } catch (Throwable $exception) {
     fwrite(STDERR, 'HTTP wire check failed: ' . $exception->getMessage() . "\n");

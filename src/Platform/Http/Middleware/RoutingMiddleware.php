@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Error\Error;
-use App\Platform\Http\JsonResponse;
+use App\Platform\Http\ErrorResponse;
 use App\Platform\Http\Middleware;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Routing\RouteResult;
@@ -17,12 +17,9 @@ final readonly class RoutingMiddleware implements Middleware
 {
     public function __construct(
         private RouterInterface $router,
-        private JsonResponse $jsonResponse,
+        private ErrorResponse $errors,
     ) {}
 
-    /**
-     * @throws \JsonException
-     */
     public function process(
         ServerRequestInterface $request,
         RequestHandler $handler,
@@ -31,7 +28,7 @@ final readonly class RoutingMiddleware implements Middleware
 
         if (!$routeResult->isFound()) {
             $status = $routeResult->getStatusCode();
-            $response = $this->jsonResponse->error(
+            $response = $this->errors->error(
                 $status === 405 ? Error::METHOD_NOT_ALLOWED : Error::NOT_FOUND,
                 $status,
             );

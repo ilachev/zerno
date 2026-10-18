@@ -23,7 +23,7 @@
 
 ## Текущее состояние
 
-Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
+Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Общий [ErrorResponse](docs/architecture/request-lifecycle.md#представление-http-ошибок) позволяет выбрать представление routing/exception ошибок: JSON по умолчанию, собственный HTML через одну привязку. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
 
 Первый сквозной пример — [публичный каталог документов](examples/document-catalog/README.md): HTML-список с ограниченной пагинацией, карточка и потоковое скачивание PDF. Он имеет собственные маршруты, явный SQL, миграцию и PHP-шаблоны; подключается отдельной конфигурацией без JavaScript, сессий и установки пакетов. Текущий приоритет — общие возможности ядра, выявленные этим примером; редактор и публикационный workflow отложены. Очередь core-задач описана в [roadmap](docs/project/roadmap.md).
 

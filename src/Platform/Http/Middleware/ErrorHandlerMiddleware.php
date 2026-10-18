@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Error\Error;
-use App\Platform\Http\JsonResponse;
+use App\Platform\Http\ErrorResponse;
 use App\Platform\Http\Middleware;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Logging\Logger;
@@ -15,13 +15,10 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class ErrorHandlerMiddleware implements Middleware
 {
     public function __construct(
-        private JsonResponse $jsonResponse,
+        private ErrorResponse $errors,
         private Logger $logger,
     ) {}
 
-    /**
-     * @throws \JsonException
-     */
     public function process(
         ServerRequestInterface $request,
         RequestHandler $handler,
@@ -31,7 +28,7 @@ final readonly class ErrorHandlerMiddleware implements Middleware
         } catch (\Throwable $e) {
             $this->logger->error((string) $e);
 
-            return $this->jsonResponse->error(
+            return $this->errors->error(
                 Error::INTERNAL_ERROR,
                 500,
             );

@@ -30,6 +30,7 @@ final class JsonResponseTest extends TestCase
     public static function provideErrorReturnsAJsonObjectWithTheRequestedStatusCases(): iterable
     {
         yield 'not found' => [Error::NOT_FOUND, 404];
+        yield 'method not allowed' => [Error::METHOD_NOT_ALLOWED, 405];
         yield 'internal error' => [Error::INTERNAL_ERROR, 500];
     }
 

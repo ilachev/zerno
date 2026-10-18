@@ -1,6 +1,6 @@
 # Проверка HTTP и малый performance baseline
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-18.
 
 Здесь два отдельных действия: проверка HTTP на настоящих adapters и небольшой воспроизводимый замер JSON/SELECT. Они запускаются явно, не входят в default `verify` и не устанавливают зависимости. Общие команды и тестовая БД описаны в [инфраструктуре](./infrastructure-and-testing.md), границы измерений — в [принципах](../project/principles.md) и [roadmap](../project/roadmap.md).
 
@@ -17,7 +17,7 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 [`tools/check-http.php`](../../tools/check-http.php) запускает собственные процессы на временных loopback-портах. Для FPM клиент говорит непосредственно по FastCGI, для RR — по HTTP. Конфигурации и логи временные; tool останавливает созданные им процессы и убирает временный каталог. Он не останавливает чужие серверы.
 
-Сейчас выполняются 24 случая для каждого runtime: статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405 и `Allow`, HEAD и отсутствие тела для 204/304, повторные headers/Set-Cookie. Последовательные запросы проверяют request ID, route parameters и повторное использование одного worker без переноса контекста. Конфигурация задаёт недоступный storage engine: БД, Session и ApiStats не включаются.
+Сейчас выполняются по 27 случаев с default JSON и с HTML-представлением ошибок: 54 для каждого runtime, 108 при выборе обоих. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный storage engine: БД, Session и ApiStats не включаются. Это проверки корректности, без измерения ускорения.
 
 Это конкретная wire-матрица, а не полная проверка HTTP, uploads, reverse proxy, безопасности или памяти больших файлов. Исходники — [`tools/http-fixtures`](../../tools/http-fixtures); поведение router объясняет [жизненный цикл запроса](../architecture/request-lifecycle.md).
 

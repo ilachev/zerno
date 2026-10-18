@@ -16,6 +16,9 @@ final readonly class FixtureHandler implements HandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $path = $request->getUri()->getPath();
+        if ($path === '/__wire/failure') {
+            throw new \RuntimeException('wire-private-exception-details');
+        }
         $headers = [
             'Content-Type' => 'application/json',
             'X-Fixture-Method' => $request->getMethod(),

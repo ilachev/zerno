@@ -1,6 +1,6 @@
 # Поток HTTP-запроса
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-18.
 
 Документ описывает существующие композиции приложения. Общая карта компонентов находится в [обзоре архитектуры](overview.md), команды запуска и проверки — в [инфраструктуре и тестировании](../development/infrastructure-and-testing.md).
 
@@ -11,7 +11,7 @@
 | Минимальное HTTP/PDO-ядро | [`config/core.php`](../../config/core.php) | Явные [`config/routes.php`](../../config/routes.php) | RequestContext → ErrorHandler → Routing → RouteHandlerResolver |
 | То же ядро в RoadRunner | [`config/core-roadrunner.php`](../../config/core-roadrunner.php) | Те же явные маршруты | Тот же pipeline; добавлена регистрация RR worker и logger |
 | Существующее protobuf API | [`config/container.php`](../../config/container.php) | Generated operation manifests | RequestContext → ErrorHandler → Session → ApiStats → Routing → HttpLogging → RouteHandlerResolver |
-| Публичный каталог | [`examples/document-catalog/config.php`](../../examples/document-catalog/config.php), `roadrunner.php` | Собственные GET/HEAD | RequestContext → Errors → Routing → RouteHandlerResolver |
+| Публичный каталог | [`examples/document-catalog/config.php`](../../examples/document-catalog/config.php), `roadrunner.php` | Собственные GET/HEAD | Общий core pipeline; HTML-представление ошибок |
 
 Минимальное ядро обрабатывает `GET /health` и явно зарегистрированный `HEAD /health`; тело ответа обработчика — `{"status":"ok"}`. Оно не подключает capability middleware, protobuf endpoints, GeoIP и RR KV. `Storage` и миграции зарегистрированы, но `/health` не открывает соединение с БД.
 
@@ -63,9 +63,25 @@ RoadRunner HTTP → PSR7Worker::waitRequest()
 
 Deadline — бюджет для явно подключённого downstream-кода, а не принудительное прерывание запроса. [`RequestContextAttributes::inheritDeadline()`](../../src/Platform/Http/RequestContextAttributes.php) переносит его в options исходящего HTTP-вызова, если у options ещё нет своего deadline. Общий входящий deadline из клиентских заголовков не наследуется.
 
-[`ErrorHandlerMiddleware`](../../src/Platform/Http/Middleware/ErrorHandlerMiddleware.php) оборачивает следующие слои: логирует `Throwable` и возвращает JSON `500` с общей ошибкой. Он не оборачивает предшествующий код `RequestContextMiddleware`, создание приложения, преобразование входящего запроса или transport emission.
+[`ErrorHandlerMiddleware`](../../src/Platform/Http/Middleware/ErrorHandlerMiddleware.php) оборачивает следующие слои: логирует полный `Throwable` строкой и создаёт общий `500` через выбранный `ErrorResponse`. Он не оборачивает предшествующий код `RequestContextMiddleware`, создание приложения, преобразование входящего запроса или transport emission. Детали исключения остаются в логах; доступ и хранение логов определяет эксплуатационный профиль.
 
-В каталоге вместо него подключён прикладной [`Errors`](../../examples/document-catalog/src/Errors.php): исключения следующих слоёв превращаются в общую HTML 500. JSON 404/405 от router заменяются HTML-ответами, Allow сохраняется. Ошибки конкретных handlers уже HTML. Эта адаптация не меняет JSON-контракт минимального ядра и API.
+## Представление HTTP-ошибок
+
+[`ErrorResponse`](../../src/Platform/Http/ErrorResponse.php) — один метод `error(Error $error, int $status): ResponseInterface`. Он создаёт ответ с переданным status, заголовками и телом. Core передаёт только публичную ошибку из [`Error`](../../src/Platform/Error/Error.php), без `Throwable`, trace или других внутренних деталей. `RoutingMiddleware` использует его для 404/405 и сам добавляет `Allow` для 405; `ErrorHandlerMiddleware` — для 500. Готовые ответы handlers, включая ошибки, не преобразуются.
+
+По умолчанию [`CoreServiceProvider`](../../src/Platform/DI/ServiceProviders/CoreServiceProvider.php) связывает контракт с [`JsonResponse`](../../src/Platform/Http/JsonResponse.php). Точные JSON bodies остаются прежними. Для другого формата:
+
+1. Реализовать `ErrorResponse` в приложении, возвращая новый response/body для каждого вызова и сохраняя status. Шаблоны, язык сообщений и cache policy выбирает приложение.
+2. После регистрации core и до разрешения `RequestHandler` указать `$container->bind(ErrorResponse::class, MyErrors::class)`. Зависимости renderer задаются обычным конструктором; настройка не требует замены pipeline.
+3. Без контейнера передать тот же объект вторым аргументом `RoutingMiddleware($router, $errors)` и первым аргументом `ErrorHandlerMiddleware($errors, $logger)`.
+
+Полный потребитель — [`конфигурация каталога`](../../examples/document-catalog/config.php) и его [`Errors`](../../examples/document-catalog/src/Errors.php). Каталог использует общий core pipeline и непосредственно строит HTML, без промежуточного JSON и распознавания `Content-Type`. `Html` и тексты страниц остаются локальными.
+
+Выбор представления выполняется композицией один раз при построении pipeline. В default-профиле разрешается прежний `JsonResponse`; добавлены interface и binding. HTML-профиль разрешает свой renderer и `Html`, шаблоны читаются только при создании страницы. Успешный ответ handler не вызывает `error()`. Формат не выбирается по `Accept`, и дополнительных БД/сетевых обращений механизм не добавляет. Числовая стоимость и ускорение не измерены; сокращение промежуточной работы не объявляется доказанным выигрышем latency.
+
+HEAD обрабатывают transport adapters: прямой `App::handle()` возвращает обычный response с телом, emitter/runtime его не читает и не отправляет. Ошибки SAPI request conversion и bootstrap находятся вне этого контракта. Ошибка логирования или создания самого ответа 500 выходит наружу; автоматического запасного renderer нет. Renderer не должен хранить состояние текущего запроса между вызовами.
+
+Unit tests проверяют generic 500 и логирование, сохранение готового ответа, HTML без загрузки `JsonResponse` и последовательность ошибок/health. `http:check` повторяет wire-матрицу для JSON и HTML на FPM/RR, включая 404/405/500, `Allow`, HEAD и продолжение работы worker после исключения.
 
 ## Routing и конечный handler
 
@@ -73,7 +89,7 @@ Deadline — бюджет для явно подключённого downstream-
 
 Статические пути допускают прежний fallback: `/item/` и `/item///` могут выбрать `/item`; точное совпадение имеет приоритет. Корень остаётся `/`, параметризованные пути требуют точного trailing slash. HEAD → GET автоматически не подставляется.
 
-Если path существует только для других методов, `RouteResult::getAllowedMethods()` возвращает объединение методов всех совпавших маршрутов без дубликатов, в порядке регистрации методов. `RoutingMiddleware` отвечает `405`, JSON `{"error":"Method not allowed"}` и `Allow`. Для неизвестного path ответ — `404`, `{"error":"Not found"}`, без `Allow`. На этих ветках внутренние middleware и handler не вызываются. Метод `getHandler()` больше не используется для передачи списка разрешённых методов.
+Если path существует только для других методов, `RouteResult::getAllowedMethods()` возвращает объединение методов всех совпавших маршрутов без дубликатов, в порядке регистрации методов. `RoutingMiddleware` отвечает `405` и `Allow`. Для неизвестного path ответ — `404` без `Allow`. Представление создаёт выбранный `ErrorResponse`; default JSON — `{"error":"Method not allowed"}` / `{"error":"Not found"}`. На этих ветках внутренние middleware и handler не вызываются. Метод `getHandler()` больше не используется для передачи списка разрешённых методов.
 
 Для найденного маршрута [`RoutingMiddleware`](../../src/Platform/Http/Middleware/RoutingMiddleware.php) передаёт дальше attributes `RouteResult::class`, `routeParams`, `handler`. [`RouteHandlerResolver`](../../src/Platform/Http/RouteHandlerResolver.php) передаёт class name в `HandlerFactoryInterface`; `ContainerHandlerFactory` получает экземпляр из DI и вызывает `handle()`.
 

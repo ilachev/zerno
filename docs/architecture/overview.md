@@ -1,6 +1,6 @@
 # Текущая архитектура
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-18.
 
 Репозиторий содержит небольшое HTTP/PDO-ядро и существующее API-приложение, которое подключает дополнительные возможности. Этот документ описывает реализованное состояние; дальнейшие направления находятся в [roadmap](../project/roadmap.md), история перехода — в [датированном аудите](../history/2026-10-17-autonomy-audit.md). Подробный [поток запроса](request-lifecycle.md) и [среда/проверки](../development/infrastructure-and-testing.md) дополняют обзор.
 
@@ -29,9 +29,9 @@
 
 Для файловых ответов стоимость проверяется через весь путь. RR provider по умолчанию оставляет `chunkSize=0` и материализацию body; каталог явно задаёт 8192 для seekable files. Runtime исключает чтение тела HEAD/1xx/204/304 и закрывает response streams после отправки. API HttpLogging по-прежнему читает остаток тела до EOF: bounded memory каталога не является гарантией для API-композиции.
 
-[`Пример каталога`](../../examples/document-catalog/README.md) имеет собственный opt-in autoload, миграцию, прямой параметризованный SQL с LIMIT 21, HTML-шаблоны и GET/HEAD routes. Только published записи видны списку, карточке и download; файлы выбираются по связанному opaque key вне webroot, с проверкой типа/размера и выдачей attachment. HTML ошибки, no-store и выбор PDF — политика примера. Общего renderer/forms/auth workflow ядро не навязывает.
+[`Пример каталога`](../../examples/document-catalog/README.md) имеет собственный opt-in autoload, миграцию, прямой параметризованный SQL с LIMIT 21, HTML-шаблоны и GET/HEAD routes. Только published записи видны списку, карточке и download; файлы выбираются по связанному opaque key вне webroot, с проверкой типа/размера и выдачей attachment. HTML ошибки, no-store и выбор PDF — политика примера. Шаблонизацию, формы и auth workflow ядро не навязывает.
 
-[`RequestContext`](../../src/Platform/Runtime/RequestContext.php) передаётся через request attributes и содержит request ID и deadline. Бюджет новый для каждого запроса, из [`config/http.php`](../../config/http.php); он используется downstream только при явной передаче и не останавливает произвольный handler автоматически. `ErrorHandlerMiddleware` преобразует исключения следующих слоёв в JSON 500; transport/bootstrap ошибки лежат вне его границ.
+[`RequestContext`](../../src/Platform/Runtime/RequestContext.php) передаётся через request attributes и содержит request ID и deadline. Бюджет новый для каждого запроса, из [`config/http.php`](../../config/http.php); он используется downstream только при явной передаче и не останавливает произвольный handler автоматически. `ErrorHandlerMiddleware` преобразует исключения следующих слоёв в общий 500; transport/bootstrap ошибки лежат вне его границ. Общий [`ErrorResponse`](../../src/Platform/Http/ErrorResponse.php) создаёт также routing 404/405: default — JSON, каталог одной привязкой выбирает HTML и сохраняет core pipeline. Контракт и подключение описаны в [жизненном цикле](request-lifecycle.md#представление-http-ошибок).
 
 ## DI и время жизни
 

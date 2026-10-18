@@ -177,7 +177,7 @@
       "path": "docs/architecture/request-lifecycle.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Точный порядок HTTP middleware и фактические границы routing, сессий, статистики и ошибок.",
+      "summary": "Порядок HTTP middleware, контракт ErrorResponse, подключение JSON/HTML и границы routing, сессий, статистики и ошибок.",
       "read_when": [
         "Изменение HTTP pipeline",
         "Анализ состояния worker и запросов"
@@ -186,6 +186,12 @@
         "config/core.php",
         "config/container.php",
         "src/Platform/Http/Middleware",
+        "src/Platform/Http/ErrorResponse.php",
+        "src/Platform/Http/JsonResponse.php",
+        "examples/document-catalog/config.php",
+        "examples/document-catalog/src/Errors.php",
+        "tests/Unit/Platform/Http/Middleware",
+        "tests/Unit/Examples/DocumentCatalog/CompositionTest.php",
         "src/Platform/Runtime",
         "src/Capabilities/Session/Transport/Http",
         "src/Capabilities/ApiStats/Transport/Http"

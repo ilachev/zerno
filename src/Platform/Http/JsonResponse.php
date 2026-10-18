@@ -8,7 +8,7 @@ use App\Platform\Error\Error;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
-final readonly class JsonResponse
+final readonly class JsonResponse implements ErrorResponse
 {
     public function success(string $data, int $status = 200): ResponseInterface
     {

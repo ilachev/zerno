@@ -1,6 +1,6 @@
 # Карта блоков и границ
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-18.
 
 Этот документ отвечает, где должна жить функциональность и как она подключается. Общие цели и порядок оценки решений заданы в [принципах проекта](project/principles.md); здесь описаны границы компонентов. Композиции и точки входа находятся в [обзоре архитектуры](architecture/overview.md), будущие результаты — в [roadmap](project/roadmap.md).
 
@@ -17,7 +17,7 @@
 | Блок | Реализованная роль | Граница |
 |---|---|---|
 | `Platform/Runtime` | `App` / общий handler, request context, SAPI adapters; отдельный RR loop | Цикл конкретного сервера не должен определять прикладную логику |
-| `Platform/Http` | Request/response contracts, middleware, JSON responses | API/protobuf adapters и исходящий клиент используются по потребности |
+| `Platform/Http` | Request/response contracts, middleware, JSON responses, выбор представления ошибок через `ErrorResponse` | HTML renderer и его тексты — приложение; API/protobuf adapters и исходящий клиент используются по потребности |
 | `Platform/Routing` | Dispatch, route result, явные маршруты; support generated routes | Минимальное ядро использует `StaticRouteProvider`; generated discovery включается API provider |
 | `Platform/DI` | Контейнер, явные factories/bindings, providers | Нет неявного поиска generated endpoints; `has()` проверяет регистрацию без autoload |
 | `Platform/Storage` | PDO adapters, SQL executor, параметры, транзакции, миграции | Доступен из ядра лениво; PostgreSQL — целевой движок, SQL остаётся явным |
@@ -56,7 +56,7 @@
 - `HealthService.Check` и `SystemService.Describe` показывают optional protobuf flow для GET и POST, а не обязательный контракт всех сайтов.
 - [Каталог документов](../examples/document-catalog/README.md) — проверочный потребитель с работающими публичными списком, карточкой и скачиванием. Его `Document`, SQL, PHP-шаблоны и publication states живут вне `Platform`; редактор и публикационный workflow [отложены](project/document-catalog-example.md).
 
-HTML rendering и read-only файловая выдача проверяются на каталоге, но Html, FileStore и HTML Errors пока являются локальным кодом примера. Ближайшая работа обобщает HTTP-ошибки, файловый ответ и нужные SQL-контракты. Формы, валидация и опциональные механизмы защиты развиваются как нейтральные блоки; прикладной редактор не становится обязательной следующей задачей. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
+HTML rendering и read-only файловая выдача проверяются на каталоге, но Html, FileStore и HTML Errors остаются локальным кодом примера. Общий выбор представления routing/exception ошибок уже реализован через [ErrorResponse](architecture/request-lifecycle.md#представление-http-ошибок); каталог подключает его HTML-реализацию без собственного middleware. Ближайшая работа обобщает файловый ответ и нужные SQL-контракты. Формы, валидация и опциональные механизмы защиты развиваются как нейтральные блоки; прикладной редактор не становится обязательной следующей задачей. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
 
 ## Решение перед добавлением блока
 
