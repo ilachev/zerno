@@ -19,7 +19,7 @@ final class ObservedStream
 
     public int $offset = 0;
 
-    public function __construct(public readonly string $content, public readonly bool $failRead = false, public readonly ?int $failAfterReads = null) {}
+    public function __construct(public readonly string $content, public readonly bool $failRead = false, public readonly ?int $failAfterReads = null, public readonly bool $stallRead = false) {}
 
     public function open(): Body
     {
@@ -65,6 +65,9 @@ final class ObservedStreamWrapper
         $this->state->largestRead = max($length, $this->state->largestRead);
         if ($this->state->failRead || ($this->state->failAfterReads !== null && $this->state->reads > $this->state->failAfterReads)) {
             throw new \RuntimeException('Observed stream read failed');
+        }
+        if ($this->state->stallRead) {
+            return '';
         }
         $chunk = substr($this->state->content, $this->state->offset, $length);
         $this->state->offset += \strlen($chunk);

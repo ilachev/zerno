@@ -11,6 +11,7 @@
 | Минимальное HTTP/PDO-ядро | [`config/core.php`](../../config/core.php) | Явные [`config/routes.php`](../../config/routes.php) | RequestContext → ErrorHandler → Routing → RouteHandlerResolver |
 | То же ядро в RoadRunner | Та же config/core.php | Те же объекты маршрутов | Транспорт/logger создаёт public/index.php |
 | Публичный каталог | [config.php](../../examples/document-catalog/config.php), [application.php](../../examples/document-catalog/application.php) | Собственные GET/HEAD с готовыми handlers | Те же middleware, прикладной HTML ErrorResponse |
+| POST JSON | [config.php](../../examples/json-echo/config.php) | GET/HEAD /health, POST /echo | Общие middleware, готовый EchoHandler с лимитом 64 KiB |
 
 GET/HEAD /health сохраняют JSON {"status":"ok"}. Core HTTP граф не создаёт Storage или migration services. Каталог строит Storage и handlers заранее, но PDO открывается при первой SQL-операции: /health/404/405 не зависят от БД.
 
@@ -57,6 +58,10 @@ Request хранит method, Uri, headers, Body, protocol, server/query/cookie p
 Headers принимают string/int array keys: PHP превращает числовое имя вроде "123" в int; на границе имя переводится в string. Числовые поля сохраняются в запросе и ответе через SAPI/RR. Headers хранят отдельные значения, ищутся без учёта регистра и отклоняют недопустимые имена/CR/LF/control values. Set-Cookie не склеивается при отправке. Header value — string либо list<string>, status — 100..599. Reason phrase и response protocol выбирает server transport.
 
 Body хранит строку с позицией либо владеет PHP stream resource. read/getContents читают с текущей позиции; преобразование в string перематывает seekable body и читает до конца. Ошибка чтения выбрасывается, не превращается в пустой успех. close идемпотентен; закрытый body не читается, getSize возвращает null. Body нельзя клонировать; копии сообщений разделяют его. String Body не создаёт временный ресурс; файловый payload не материализуется до явного чтения. При замене body вызывающий код отвечает за прежний поток.
+
+`Body::readLimited($maxBytes)` читает остаток без rewind/close и возвращает целую строку либо выбрасывает `LengthException` после не более limit + 1 логических байт. Отрицательный лимит — `InvalidArgumentException`, ошибка I/O/отсутствие прогресса до EOF — `RuntimeException`. Заголовки и getSize не используются для доверия размеру. PHP stream wrapper может иметь собственное предварительное чтение. Вызов явный: общего лимита для всех маршрутов и автоматического JSON-разбора нет. [POST-пример](../../examples/json-echo/README.md) задаёт 64 KiB, закрывает input в finally и сам определяет JSON/ошибки 400/413/415.
+
+Это предел чтения и разбора в handler, а не приёма до PHP. Входной RR payload уже материализован транспортом; до него нужен отдельный серверный cap. POST-пример содержит проверенные RR3 и Caddy/FPM конфигурации с cap 1 MiB и описывает отличие их ранних ответов. HTTP front, PHP и приложение имеют разные буферы и владельцев ресурсов. PHP post_max_size не является общей границей сырого JSON.
 
 UploadedFile лениво открывает body и сохраняет error/размер/непроверенные client name/media type. Ошибочный или перемещённый upload нельзя читать/перемещать. moveTo закрывает открытый body и разрешён один раз: SAPI всегда использует move_uploaded_file, включая CLI-тесты; RR — rename своего временного файла. Имя клиента не выбирает storage path. Пределы загрузки задаются SAPI/RR и приложением; общий upload policy/validation framework не добавлен.
 

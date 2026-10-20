@@ -181,4 +181,37 @@ final class Body implements \Stringable
 
         return $contents;
     }
+
+    /**
+     * Reads remaining bytes without rewinding or closing the body.
+     * On overflow consumes at most maxBytes + 1 logical bytes; partial data is not returned.
+     * @throws \InvalidArgumentException when the limit is negative
+     * @throws \LengthException when the remaining body exceeds the limit
+     * @throws \RuntimeException when reading fails or makes no progress before EOF
+     */
+    public function readLimited(int $maxBytes): string
+    {
+        if ($maxBytes < 0) {
+            throw new \InvalidArgumentException('Body byte limit must not be negative');
+        }
+        $remaining = $maxBytes;
+        $contents = '';
+
+        while (true) {
+            // Only add one when remaining is small, including when maxBytes is PHP_INT_MAX.
+            $chunk = $this->read($remaining >= 8192 ? 8192 : $remaining + 1);
+            $length = \strlen($chunk);
+            if ($length > $remaining) {
+                throw new \LengthException('HTTP body exceeds the byte limit');
+            }
+            $contents .= $chunk;
+            $remaining -= $length;
+            if ($this->eof()) {
+                return $contents;
+            }
+            if ($length === 0) {
+                throw new \RuntimeException('HTTP body returned no data before EOF');
+            }
+        }
+    }
 }

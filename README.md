@@ -9,7 +9,7 @@
 ## Конкретный состав
 
 - Собственные Request/Response/Body без Nyholm и PSR-пакетов, маршруты, middleware и сборка объектов через обычные PHP-конструкторы и функции. Контейнера и autowiring нет.
-- JSON/прикладные HTML-ошибки через ErrorResponse; файловый AttachmentResponse с безопасными заголовками.
+- JSON/прикладные HTML-ошибки через ErrorResponse; файловый AttachmentResponse с безопасными заголовками; явное ограниченное чтение входного Body.
 - Request ID, время обработки и логирование метаданных без чтения тела ответа.
 - PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции.
 - SQL-генератор: типизированные queries/rows, явный LIMIT, проверки PostgreSQL. Генератор не загружается при запросе.
@@ -38,7 +38,7 @@ php tools/project.php run
 
 При нескольких установках выберите RR3 через PATH; бинарник является требованием платформы и не загружается командами проекта. `version: '3'` в YAML — версия формата конфигурации.
 
-[.rr.yaml](.rr.yaml) запускает ту же [функцию сборки](config/core.php), что SAPI/FPM: `Closure(Logger): App`. Точка входа выбирает logger, функция явно создаёт граф через new. APP_CONFIG задаёт этот файл; отдельных RR service providers/профилей нет. Маршруты хранят готовые RequestHandler objects. Примеры применения — [обычные маршруты](config/routes.php) и [каталог документов](examples/document-catalog/README.md).
+[.rr.yaml](.rr.yaml) запускает ту же [функцию сборки](config/core.php), что SAPI/FPM: `Closure(Logger): App`. Точка входа выбирает logger, функция явно создаёт граф через new. APP_CONFIG задаёт этот файл; отдельных RR service providers/профилей нет. Маршруты хранят готовые RequestHandler objects. Примеры применения — [обычные маршруты](config/routes.php), [POST JSON с лимитом body](examples/json-echo/README.md) и [каталог документов](examples/document-catalog/README.md).
 
 ## База данных и генерация
 

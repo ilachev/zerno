@@ -90,7 +90,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', 'examples/document-catalog', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',
@@ -328,7 +328,7 @@ function projectBuild(string $version): void
         foreach ([
             'bootstrap.php', 'bootstrap', 'src', 'gen', 'config', 'public', 'bin',
             'third_party/runtime', 'docs', 'README.md',
-            'examples/document-catalog',
+            'examples/document-catalog', 'examples/json-echo',
             '.rr.yaml',
         ] as $relative) {
             $path = $root . '/' . $relative;

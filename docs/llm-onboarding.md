@@ -20,6 +20,7 @@
 | Задача | Документ | Код |
 | --- | --- | --- |
 | HTTP, runtime, routing, сборка объектов | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, public/index.php, src/Platform |
+| Ограниченный JSON input | [Ручной POST-пример](../examples/json-echo/README.md) | Body::readLimited, examples/json-echo, tools/check-http.php |
 | API-контракт и генерация DTO/endpoints | [План protobuf](design/protobuf-contract-generation.md) | Контур пока удалён; реализуется отдельным законченным этапом |
 | SQL, миграции, генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
 | Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |

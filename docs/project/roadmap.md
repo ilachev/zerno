@@ -7,6 +7,7 @@
 ## Проверенная база
 
 - [RoadRunner 3](../history/2026-10-20-roadrunner3.md): native transport, фиксированные upstream sources и проверки SAPI/RR без Composer/PSR.
+- [Границы JSON input](../../examples/json-echo/README.md): явный Body::readLimited, ручной POST с 400/413/415, серверный cap и реальные FPM/RR/chunked проверки.
 
 - [Явная сборка без контейнера](../history/2026-10-20-explicit-composition.md): конструкторы, готовые handlers, общий HTTP config для SAPI/RR и lazy PDO.
 - Автономные runtime, SQL codegen и quality tools; проверки и runtime archive без package installation/download.
@@ -25,7 +26,6 @@
 | API из protobuf-контракта — принят, не реализован | Один Echo-контракт → DTO/endpoint/HTTP adapter/routes → ручная реализация | [Критерии сквозного этапа](../design/protobuf-contract-generation.md), автономная генерация и реальные FPM/RR checks |
 | Контракт чтения одной строки | SqlExecutor.fetchOne сейчас сначала получает fetchAll; lookup каталога существует | Явно определены кардинальность, объём чтения и стоимость; SQL не получает скрытые переписывания |
 | Восстановление после ошибок БД | Storage.transaction и последовательные migration DDL уже используются | Реальный PostgreSQL подтверждает состояние транзакции/версий после ошибки и возможность следующей операции |
-| Границы входящего HTTP | SapiRequestFactory уже переносит raw body/parsed forms/uploads | Конкретный сценарий фиксирует допустимые размеры/ошибки до расширения API; проверки через реальные transports |
 
 Это отдельные задачи, не заказ на новую подсистему. Для каждой сначала показать текущего потребителя, минимальный API, шаги разработчика и сравнимые затраты, затем реализовывать. Сессии, редактор, auth framework и общий cache не следуют автоматически из таблицы. Protobuf-генерация имеет отдельное прямое основание — уточнённый пользователем API-контракт; старый API-шаблон целиком не восстанавливается.
 

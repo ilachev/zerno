@@ -158,17 +158,30 @@ function wireResponse(string $raw, bool $fastcgi, string $method): HttpWireRespo
 }
 
 /** @param array<array-key, string> $headers */
-function wireHttp(int $port, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
+function wireHttp(int $port, string $method, string $target, array $headers, string $body = '', bool $chunked = false, bool $expectRejection = false): HttpWireResponse
 {
     $socket = wireConnect($port);
     $deadline = microtime(true) + 3;
 
     try {
-        $request = $method . ' ' . $target . " HTTP/1.1\r\nHost: fixture.test\r\nConnection: close\r\nContent-Length: " . strlen($body) . "\r\n";
+        $request = $method . ' ' . $target . " HTTP/1.1\r\nHost: fixture.test\r\nConnection: close\r\n"
+            . ($chunked ? "Transfer-Encoding: chunked\r\n" : 'Content-Length: ' . strlen($body) . "\r\n");
         foreach ($headers as $name => $value) {
             $request .= $name . ': ' . $value . "\r\n";
         }
-        wireWrite($socket, $request . "\r\n" . $body, $deadline);
+        if ($expectRejection) {
+            $request .= "Expect: 100-continue\r\n";
+        }
+        wireWrite($socket, $request . "\r\n", $deadline);
+        // With Expect, require a final rejection before uploading any of the payload.
+        if ($chunked) {
+            foreach (str_split($body, 8192) as $chunk) {
+                wireWrite($socket, dechex(strlen($chunk)) . "\r\n" . $chunk . "\r\n", $deadline);
+            }
+            wireWrite($socket, "0\r\n\r\n", $deadline);
+        } elseif (!$expectRejection) {
+            wireWrite($socket, $body, $deadline);
+        }
         $raw = '';
 
         while (!feof($socket)) {
@@ -223,8 +236,11 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
 
     try {
         wireWrite($socket, wireFcgiRecord(1, pack('nC', 1, 0) . str_repeat("\0", 5))
-            . wireFcgiRecord(4, $encoded) . wireFcgiRecord(4, '')
-            . ($body === '' ? '' : wireFcgiRecord(5, $body)) . wireFcgiRecord(5, ''), $deadline);
+            . wireFcgiRecord(4, $encoded) . wireFcgiRecord(4, ''), $deadline);
+        foreach (str_split($body, 65_535) as $chunk) {
+            wireWrite($socket, wireFcgiRecord(5, $chunk), $deadline);
+        }
+        wireWrite($socket, wireFcgiRecord(5, ''), $deadline);
         $output = '';
         $error = '';
 
@@ -266,6 +282,88 @@ function wireRequest(string $runtime, int $port, string $root, string $method, s
     return $runtime === 'fpm'
         ? wireFastcgi($port, $root, $method, $target, $headers, $body)
         : wireHttp($port, $method, $target, $headers, $body);
+}
+
+/** Valid JSON whose wire representation has exactly the requested byte length. */
+function wireJsonBody(int $bytes): string
+{
+    return '{"message":"' . str_repeat('x', $bytes - 14) . '"}';
+}
+
+function wireBoundedJson(string $runtime, int $port, string $root): int
+{
+    $before = wireRequest($runtime, $port, $root, 'GET', '/__wire/context', []);
+    $pid = $before->headers['x-fixture-pid'] ?? [];
+    wireSame(1, count($pid), 'Bounded JSON worker PID');
+    $count = 1;
+    $cases = [
+        ['{"message":"Привет"}', 'application/json', '', 200],
+        ['{"message":""}', 'Application/JSON; charset=UTF-8', 'identity', 200],
+        [wireJsonBody(65_535), 'application/json', '', 200],
+        [wireJsonBody(65_536), 'application/json', '', 200],
+        [wireJsonBody(65_537), 'application/json', '', 413],
+        ['', 'application/json', '', 400],
+        ['{"message":', 'application/json', '', 400],
+        ["{\"message\":\"\xff\"}", 'application/json', '', 400],
+        ['[]', 'application/json', '', 400],
+        ['{"message":1}', 'application/json', '', 400],
+        ['{"message":"hi","extra":true}', 'application/json', '', 400],
+        ['{"message":"hi"}', '', '', 415],
+        [wireJsonBody(65_537), 'text/plain', '', 415],
+        ['{"message":"hi"}', 'application/json', 'gzip', 415],
+    ];
+    foreach ($cases as $index => [$body, $type, $encoding, $status]) {
+        $context = 'Bounded JSON case ' . $index;
+        $requestId = 'wire-json-' . $index;
+        $headers = ['X-Request-ID' => $requestId];
+        if ($type !== '') {
+            $headers['Content-Type'] = $type;
+        }
+        if ($encoding !== '') {
+            $headers['Content-Encoding'] = $encoding;
+        }
+        $response = wireRequest($runtime, $port, $root, 'POST', '/__wire/echo', $headers, $body);
+        wireSame($status, $response->status, $context . ' status');
+        wireSame([$requestId], $response->headers['x-request-id'] ?? [], $context . ' request ID');
+        wireSame(['application/json'], $response->headers['content-type'] ?? [], $context . ' response type');
+        $expected = match ($status) {
+            200 => json_decode($body, true, 32, JSON_THROW_ON_ERROR),
+            413 => ['error' => 'Request body too large'],
+            415 => ['error' => 'Unsupported media type'],
+            default => ['error' => 'Invalid JSON request'],
+        };
+        wireSame($expected, json_decode($response->body, true, 32, JSON_THROW_ON_ERROR), $context . ' response');
+        $after = wireRequest($runtime, $port, $root, 'GET', '/__wire/context', []);
+        wireSame(200, $after->status, $context . ' next request');
+        wireSame($pid, $after->headers['x-fixture-pid'] ?? [], $context . ' same worker');
+        $count += 2;
+    }
+    if ($runtime === 'fpm') {
+        return $count;
+    }
+
+    // A real HTTP front must enforce its ingress cap even without Content-Length.
+    foreach ([65_536, 65_537, 1_048_576, 1_048_577] as $bytes) {
+        foreach ([false, true] as $chunked) {
+            $context = 'HTTP body ' . $bytes . ($chunked ? ' chunked' : ' with length');
+            $target = '/__wire/echo' . ($bytes > 1_048_576 ? '?ingress_rejected=1' : '');
+            $response = wireHttp($port, 'POST', $target, ['Content-Type' => 'application/json', 'X-Request-ID' => 'wire-ingress'], wireJsonBody($bytes), $chunked, expectRejection: $runtime === 'caddy' && !$chunked && $bytes > 1_048_576);
+            // Caddy 2.11.4 cannot establish a FastCGI length after its capped chunked read fails.
+            $status = $bytes <= 65_536 ? 200 : ($runtime === 'caddy' && $chunked && $bytes > 1_048_576 ? 411 : 413);
+            wireSame($status, $response->status, $context . ' status');
+            if ($bytes <= 1_048_576) {
+                wireSame(['wire-ingress'], $response->headers['x-request-id'] ?? [], $context . ' reached PHP');
+            } else {
+                wireSame([], $response->headers['x-request-id'] ?? [], $context . ' rejected before PHP');
+            }
+            $after = wireHttp($port, 'GET', '/__wire/context', []);
+            wireSame(200, $after->status, $context . ' next request');
+            wireSame($pid, $after->headers['x-fixture-pid'] ?? [], $context . ' same worker');
+            $count += 2;
+        }
+    }
+
+    return $count;
 }
 
 function wireMatrix(string $runtime, int $port, string $root, string $errorFormat): int
@@ -497,21 +595,65 @@ function wireStop($process): void
     proc_close($process);
 }
 
+/** @param resource $process */
+function wireReady($process, int $port): void
+{
+    $deadline = microtime(true) + 10;
+
+    while (proc_get_status($process)['running'] && microtime(true) < $deadline) {
+        $socket = @stream_socket_client('tcp://127.0.0.1:' . $port, $error, $message, 0.1);
+        if ($socket !== false) {
+            fclose($socket);
+
+            return;
+        }
+        usleep(20_000);
+    }
+
+    throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
+}
+
+function wireFront(string $binary, int $fpmPort, string $root, string $temporary): int
+{
+    $port = wirePort();
+    $template = file_get_contents($root . '/examples/json-echo/Caddyfile');
+    if ($template === false) {
+        throw new RuntimeException('Cannot read the JSON example HTTP front configuration');
+    }
+    $config = $temporary . '/Caddyfile';
+    $contents = str_replace([':18083', ':19003'], [':' . $port, ':' . $fpmPort], $template);
+    if (file_put_contents($config, $contents) !== strlen($contents)) {
+        throw new RuntimeException('Cannot write the HTTP front configuration');
+    }
+    $log = $temporary . '/caddy.log';
+    $process = wireStart([$binary, 'run', '--config', $config, '--adapter', 'caddyfile'], $root, $log, ['ZERNO_ROOT' => $root]);
+
+    try {
+        wireReady($process, $port);
+
+        return wireBoundedJson('caddy', $port, $root);
+    } catch (Throwable $exception) {
+        throw new RuntimeException($exception->getMessage() . "\n" . file_get_contents($log), 0, $exception);
+    } finally {
+        wireStop($process);
+    }
+}
+
 /** @param array<int, string> $hashes */
-function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat, array $hashes): void
+function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat, array $hashes, ?string $caddy): void
 {
     $port = wirePort();
     $log = $temporary . '/' . $runtime . '-' . $errorFormat . '.log';
     $config = $temporary . '/' . $runtime . '-' . $errorFormat . ($runtime === 'fpm' ? '.conf' : '.yaml');
     $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/config.php', 'DB_HOST' => '127.0.0.1', 'DB_PORT' => '1', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat, 'WIRE_FILE_DIRECTORY' => $temporary, 'WIRE_HTTP_LOGGING' => '1', 'RR_HTTP_CHUNK_SIZE' => '8192'];
     if ($runtime === 'fpm') {
-        $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\nphp_admin_value[memory_limit] = 32M\n";
+        $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\naccess.log = {$temporary}/fpm-access-{$errorFormat}.log\naccess.format = \"%m %{REQUEST_URI}e\"\nphp_admin_value[memory_limit] = 32M\nphp_admin_value[post_max_size] = 1M\nphp_admin_value[upload_max_filesize] = 1M\n";
         $command = [$binary, '-F', '-y', $config];
     } else {
         $worker = PHP_BINARY . ' -d memory_limit=32M public/index.php';
         $contents = "version: '3'\nserver:\n  command: " . json_encode($worker, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
             . "\n  env: " . json_encode($environment, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
-            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: error\n  mode: production\n  channels:\n    server:\n      level: info\n      mode: production\n";
+            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  max_request_size: 1\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: error\n  mode: production\n  channels:\n    server:\n      level: info\n      mode: production\n";
         $command = [$binary, 'serve', '-w', $root, '-c', $config];
     }
     if (file_put_contents($config, $contents) !== strlen($contents)) {
@@ -520,24 +662,19 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
     $process = wireStart($command, $root, $log, $environment);
 
     try {
-        $ready = false;
-        $deadline = microtime(true) + 10;
-
-        while (proc_get_status($process)['running'] && microtime(true) < $deadline) {
-            $socket = @stream_socket_client('tcp://127.0.0.1:' . $port, $error, $message, 0.1);
-            if ($socket !== false) {
-                fclose($socket);
-                $ready = true;
-                break;
-            }
-            usleep(20_000);
-        }
-        if (!$ready) {
-            throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
-        }
+        wireReady($process, $port);
         $count = wireMatrix($runtime, $port, $root, $errorFormat);
         $count += wireInputs($runtime, $port, $root);
         $count += wireAttachments($runtime, $port, $root, $hashes);
+        $count += wireBoundedJson($runtime, $port, $root);
+        if ($runtime === 'fpm' && $caddy !== null) {
+            $frontCount = wireFront($caddy, $port, $root, $temporary);
+            $count += $frontCount;
+            $access = file_get_contents($temporary . '/fpm-access-' . $errorFormat . '.log');
+            wireSame(true, $access !== false && str_contains($access, '/__wire/echo'), 'FPM access log records accepted requests');
+            wireSame(false, $access !== false && str_contains($access, 'ingress_rejected'), 'Oversized HTTP requests never entered FPM');
+            fwrite(STDOUT, sprintf("HTTP ingress: Caddy/FPM, %s errors, %d cases passed.\n", $errorFormat, $frontCount));
+        }
         $logged = file_get_contents($log);
         wireSame(true, $logged !== false && str_contains($logged, 'Application responded.') && str_contains($logged, 'body_size'), 'Response metadata reached the runtime log');
         wireSame(true, $logged !== false && str_contains($logged, 'wire-private-exception-details'), 'Private error reached the runtime log');
@@ -572,12 +709,12 @@ $temporary = null;
 $exitCode = 0;
 
 try {
-    $options = getopt('', ['runtime:', 'php-fpm:', 'rr:', 'help']);
+    $options = getopt('', ['runtime:', 'php-fpm:', 'rr:', 'caddy:', 'help']);
     if (!is_array($options)) {
         throw new RuntimeException('Cannot read HTTP wire options');
     }
     if (isset($options['help'])) {
-        fwrite(STDOUT, "Usage: php tools/check-http.php [--runtime=all|fpm|rr] [--php-fpm=/path/to/php-fpm] [--rr=/path/to/rr]\nRequires real PHP-FPM/RoadRunner executables; no package installation or database.\n");
+        fwrite(STDOUT, "Usage: php tools/check-http.php [--runtime=all|fpm|rr] [--php-fpm=/path/to/php-fpm] [--rr=/path/to/rr] [--caddy=/path/to/caddy]\nRequires real PHP-FPM/RoadRunner executables; --caddy also checks the FPM HTTP ingress cap. No package installation or database.\n");
         exit(0);
     }
     $selected = $options['runtime'] ?? 'all';
@@ -586,6 +723,13 @@ try {
     }
     $runtimes = $selected === 'all' ? ['fpm', 'rr'] : [$selected];
     $binaries = [];
+    $caddy = $options['caddy'] ?? null;
+    if ($caddy !== null) {
+        if (!is_string($caddy) || $caddy === '') {
+            throw new InvalidArgumentException('Expected a Caddy executable path');
+        }
+        $caddy = wireExecutable($caddy);
+    }
     foreach ($runtimes as $runtime) {
         $binary = $options[$runtime === 'fpm' ? 'php-fpm' : 'rr'] ?? ($runtime === 'fpm' ? 'php-fpm' : 'rr');
         if (!is_string($binary) || $binary === '') {
@@ -608,7 +752,7 @@ try {
     }
     foreach ($binaries as $runtime => $binary) {
         foreach (['json', 'html'] as $errorFormat) {
-            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat, $hashes);
+            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat, $hashes, $caddy);
         }
     }
 } catch (Throwable $exception) {

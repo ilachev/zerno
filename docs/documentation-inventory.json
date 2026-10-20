@@ -174,7 +174,8 @@
         "src/Platform/Http/Body.php",
         "src/Platform/Http/Uri.php",
         "src/Platform/Http/UploadedFile.php",
-        "src/Platform/Runtime/RoadRunnerHttpWorker.php"
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "examples/json-echo"
       ]
     },
     {
@@ -206,7 +207,8 @@
         "src/Platform/Http/Body.php",
         "src/Platform/Http/Uri.php",
         "src/Platform/Http/UploadedFile.php",
-        "src/Platform/Runtime/RoadRunnerHttpWorker.php"
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "examples/json-echo"
       ]
     },
     {
@@ -565,6 +567,24 @@
         "third_party/runtime/autoload.php",
         "src/Platform/Runtime/RoadRunnerHttpWorker.php",
         ".rr.yaml",
+        "tools/check-http.php"
+      ]
+    },
+    {
+      "id": "bounded-json-example",
+      "path": "examples/json-echo/README.md",
+      "kind": "operations",
+      "status": "current",
+      "summary": "Явное чтение ограниченного body, ручной POST JSON с 400/413/415 и проверенные RR3/Caddy/FPM ingress-профили.",
+      "read_when": [
+        "Приём JSON и ограничение входящего body",
+        "Проверка серверных лимитов и владельца input stream"
+      ],
+      "source_paths": [
+        "src/Platform/Http/Body.php",
+        "examples/json-echo",
+        "tests/Unit/Platform/Http/BodyLimitTest.php",
+        "tests/Unit/Examples/JsonEcho",
         "tools/check-http.php"
       ]
     }

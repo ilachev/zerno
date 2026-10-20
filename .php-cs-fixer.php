@@ -17,7 +17,7 @@ $config = new Config()
             ->in(__DIR__ . '/public')
             ->in(__DIR__ . '/tools/http-fixtures')
             ->in(__DIR__ . '/load-tests/baseline')
-            ->in(__DIR__ . '/examples/document-catalog')
+            ->in(__DIR__ . '/examples')
             ->append([
                 __FILE__,
                 __DIR__ . '/bootstrap.php',

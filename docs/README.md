@@ -34,6 +34,7 @@
 - [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
 - [HTTP и малый baseline](development/http-and-baseline.md) — реальные FPM/RR wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
 - [Запуск публичного каталога](../examples/document-catalog/README.md) — отдельная БД, миграция/seed, HTML и private PDF storage на SAPI/RR.
+- [Ограниченный POST JSON](../examples/json-echo/README.md) — Body::readLimited, ошибки 400/413/415 и серверные пределы FPM/RR.
 - [Правила кода](development/coding-guidelines.md) — законченные сценарии, небольшие границы, ошибки и владение ресурсами; адаптация принципов devctl к PHP.
 - [Правила документации](development/documentation.md) — статусы, источники истины, инвентаризация, ссылки и порядок обновления.
 - [Bundled distributions](../third_party/README.md) — карта включённых сторонних исходников и инструментов.
