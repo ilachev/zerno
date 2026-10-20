@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Platform\Routing;
 
-use Psr\Http\Message\ServerRequestInterface;
+use App\Platform\Http\Request;
 
 interface RouterInterface
 {
-    public function dispatch(ServerRequestInterface $request): RouteResult;
+    public function dispatch(Request $request): RouteResult;
 }

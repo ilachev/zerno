@@ -29,7 +29,7 @@
     {
       "name": "runtime",
       "manifest": "runtime/manifest.json",
-      "sha256": "5344c51769ead8d930409e65964f8508e638c4451682015341647328b5bc50c3"
+      "sha256": "32fc7604cedb4224ff41516129b05ccc5191c0347be9043396f5860f880166c2"
     },
     {
       "name": "codegen/sql",

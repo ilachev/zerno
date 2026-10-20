@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Http\Middleware;
 
+use App\Platform\Http\Body;
 use App\Platform\Http\Middleware\HttpLoggingMiddleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
-use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Log\LoggerTrait;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class HttpLoggingMiddlewareTest extends TestCase
@@ -23,10 +20,10 @@ final class HttpLoggingMiddlewareTest extends TestCase
     public function testPreservesSeekableResponseAndItsPosition(string $method, int $offset): void
     {
         $logger = new TestLogger();
-        $body = Stream::create('private payload');
+        $body = Body::create('private payload');
         $body->seek($offset);
         $expected = new Response(201, ['X-Application' => 'kept'], $body);
-        $request = new ServerRequest($method, '/file')->withQueryParams(['id' => '42']);
+        $request = new Request($method, '/file')->withQueryParams(['id' => '42']);
 
         try {
             $actual = new HttpLoggingMiddleware($logger)->process($request, $this->handler($expected));
@@ -66,14 +63,14 @@ final class HttpLoggingMiddlewareTest extends TestCase
         self::assertNotFalse($sockets);
         fwrite($sockets[1], 'prefix-private payload');
         fclose($sockets[1]);
-        $body = Stream::create($sockets[0]);
+        $body = Body::create($sockets[0]);
         self::assertFalse($body->isSeekable());
         self::assertSame('prefix-', $body->read(7));
         $logger = new TestLogger();
         $expected = new Response(200, [], $body);
 
         try {
-            $actual = new HttpLoggingMiddleware($logger)->process(new ServerRequest($method, '/file'), $this->handler($expected));
+            $actual = new HttpLoggingMiddleware($logger)->process(new Request($method, '/file'), $this->handler($expected));
 
             self::assertSame($expected, $actual);
             self::assertSame('private payload', $body->getContents());
@@ -94,16 +91,14 @@ final class HttpLoggingMiddlewareTest extends TestCase
         yield 'HEAD' => ['HEAD'];
     }
 
-    public function testLogsUnknownSizeWithoutReadingDetachedBody(): void
+    public function testLogsUnknownSizeWithoutReadingClosedBody(): void
     {
         $logger = new TestLogger();
-        $body = Stream::create('detached');
-        $resource = $body->detach();
-        self::assertIsResource($resource);
-        fclose($resource);
+        $body = Body::create('detached');
+        $body->close();
         $expected = new Response(200, [], $body);
 
-        self::assertSame($expected, new HttpLoggingMiddleware($logger)->process(new ServerRequest('GET', '/file'), $this->handler($expected)));
+        self::assertSame($expected, new HttpLoggingMiddleware($logger)->process(new Request('GET', '/file'), $this->handler($expected)));
         self::assertSame([
             'status' => 200,
             'body_size' => null,
@@ -118,12 +113,12 @@ final class HttpLoggingMiddlewareTest extends TestCase
         self::assertIsResource($resource);
         fwrite($resource, 'private payload');
         rewind($resource);
-        $body = Stream::create($resource);
+        $body = Body::create($resource);
         $failure = new \RuntimeException('Log output unavailable');
         $logger = new FailingHttpLogger($failure, 2);
 
         try {
-            new HttpLoggingMiddleware($logger)->process(new ServerRequest($method, '/file'), $this->handler(new Response(200, [], $body)));
+            new HttpLoggingMiddleware($logger)->process(new Request($method, '/file'), $this->handler(new Response(200, [], $body)));
             self::fail('Expected the logger failure');
         } catch (\RuntimeException $exception) {
             self::assertSame($failure, $exception);
@@ -140,7 +135,7 @@ final class HttpLoggingMiddlewareTest extends TestCase
         $handler = new class implements RequestHandler {
             public bool $called = false;
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 $this->called = true;
 
@@ -149,7 +144,7 @@ final class HttpLoggingMiddlewareTest extends TestCase
         };
 
         try {
-            new HttpLoggingMiddleware(new FailingHttpLogger($failure, 1))->process(new ServerRequest('GET', '/file'), $handler);
+            new HttpLoggingMiddleware(new FailingHttpLogger($failure, 1))->process(new Request('GET', '/file'), $handler);
             self::fail('Expected the logger failure');
         } catch (\RuntimeException $exception) {
             self::assertSame($failure, $exception);
@@ -158,12 +153,12 @@ final class HttpLoggingMiddlewareTest extends TestCase
         self::assertFalse($handler->called);
     }
 
-    private function handler(ResponseInterface $response): RequestHandler
+    private function handler(Response $response): RequestHandler
     {
         return new readonly class ($response) implements RequestHandler {
-            public function __construct(private ResponseInterface $response) {}
+            public function __construct(private Response $response) {}
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 return $this->response;
             }
@@ -173,7 +168,69 @@ final class HttpLoggingMiddlewareTest extends TestCase
 
 final class FailingHttpLogger implements Logger
 {
-    use LoggerTrait;
+    /**
+     * @param array<mixed> $context
+     */
+    public function emergency(string $message, array $context = []): void
+    {
+        $this->log('emergency', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function alert(string $message, array $context = []): void
+    {
+        $this->log('alert', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function critical(string $message, array $context = []): void
+    {
+        $this->log('critical', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function error(string $message, array $context = []): void
+    {
+        $this->log('error', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function warning(string $message, array $context = []): void
+    {
+        $this->log('warning', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function notice(string $message, array $context = []): void
+    {
+        $this->log('notice', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function info(string $message, array $context = []): void
+    {
+        $this->log('info', $message, $context);
+    }
+
+    /**
+     * @param array<mixed> $context
+     */
+    public function debug(string $message, array $context = []): void
+    {
+        $this->log('debug', $message, $context);
+    }
 
     public function __construct(
         private readonly \RuntimeException $failure,
@@ -181,7 +238,7 @@ final class FailingHttpLogger implements Logger
     ) {}
 
     /** @param array<mixed> $context */
-    public function log(mixed $level, string|\Stringable $message, array $context = []): void
+    public function log(string $level, string $message, array $context = []): void
     {
         if (--$this->callsBeforeFailure === 0) {
             throw $this->failure;

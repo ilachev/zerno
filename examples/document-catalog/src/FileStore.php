@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Examples\DocumentCatalog;
 
+use App\Platform\Http\Body;
 use App\Platform\Logging\Logger;
-use Nyholm\Psr7\Stream;
-use Psr\Http\Message\StreamInterface;
 
 final readonly class FileStore
 {
@@ -15,7 +14,7 @@ final readonly class FileStore
         private Logger $logger,
     ) {}
 
-    public function open(Document $document): ?StreamInterface
+    public function open(Document $document): ?Body
     {
         if (preg_match('/\A[a-f0-9]{64}\.pdf\z/', $document->storageKey) !== 1 || $document->fileSize < 0) {
             return $this->unavailable($document);
@@ -61,7 +60,7 @@ final readonly class FileStore
             return $this->unavailable($document);
         }
 
-        return Stream::create($handle);
+        return Body::create($handle);
     }
 
     private function unavailable(Document $document): null

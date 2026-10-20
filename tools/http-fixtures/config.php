@@ -34,6 +34,8 @@ return static function (Logger $logger): App {
     $fixture = new FixtureHandler();
     $attachment = new AttachmentHandler();
     $routes = [
+        new RouteEntry('GET', '/__wire/input', $fixture),
+        new RouteEntry('POST', '/__wire/input', $fixture),
         new RouteEntry('GET', '/__wire/static', $fixture),
         new RouteEntry('HEAD', '/__wire/static', $fixture),
         new RouteEntry('GET', '/__wire/items/{id}', $fixture),

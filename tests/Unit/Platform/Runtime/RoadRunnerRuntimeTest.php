@@ -4,63 +4,47 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Body;
 use App\Platform\Http\Middleware\HttpLoggingMiddleware;
 use App\Platform\Http\Middleware\Pipeline;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Runtime\RoadRunnerRuntime;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
-use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\StreamInterface;
 use Spiral\RoadRunner\Exception\RoadRunnerException;
-use Spiral\RoadRunner\Http\PSR7Worker;
-use Spiral\RoadRunner\Http\PSR7WorkerInterface;
 use Spiral\RoadRunner\Payload;
 use Spiral\RoadRunner\WorkerInterface;
+use Tests\Fixtures\ObservedStream;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class RoadRunnerRuntimeTest extends TestCase
 {
     public function testHandlesEachRequestBeforeWaitingForTheNextOne(): void
     {
-        $firstRequest = new ServerRequest('GET', '/first');
-        $secondRequest = new ServerRequest('POST', '/second');
         $handler = new RuntimeRecordingHandler();
-        $pendingRequests = [$firstRequest, $secondRequest];
-        $waitCalls = 0;
-        /** @var list<ResponseInterface> $responses */
-        $responses = [];
+        $transport = $this->createMock(WorkerInterface::class);
+        $pending = [$this->payload('GET', '/first'), $this->payload('POST', '/second')];
+        $waits = 0;
         $bodies = [];
-        $worker = $this->createMock(PSR7WorkerInterface::class);
-        $worker->expects(self::exactly(3))
-            ->method('waitRequest')
-            ->willReturnCallback(static function () use ($pendingRequests, &$waitCalls, &$responses): ?ServerRequestInterface {
-                self::assertCount($waitCalls, $responses);
+        $transport->expects(self::exactly(3))->method('waitPayload')->willReturnCallback(
+            static function () use ($pending, &$waits, &$bodies): ?Payload {
+                self::assertCount($waits, $bodies);
 
-                return $pendingRequests[$waitCalls++] ?? null;
-            });
-
-        $worker->expects(self::exactly(2))
-            ->method('respond')
-            ->willReturnCallback(static function (ResponseInterface $response) use ($handler, &$responses, &$bodies): void {
-                self::assertCount(\count($responses) + 1, $handler->requests);
-                self::assertSame($handler->responses[\count($responses)], $response);
-                $responses[] = $response;
-                $bodies[] = (string) $response->getBody();
-            });
-
-        (new RoadRunnerRuntime($worker, $handler))->run();
-
-        self::assertSame([$firstRequest, $secondRequest], $handler->requests);
-        self::assertSame(
-            ['/first', '/second'],
-            $bodies,
+                return $pending[$waits++] ?? null;
+            },
         );
+        $transport->expects(self::exactly(2))->method('respond')->willReturnCallback(
+            static function (Payload $payload) use ($handler, &$bodies): void {
+                self::assertCount(\count($bodies) + 1, $handler->requests);
+                $bodies[] = $payload->body;
+            },
+        );
+        new RoadRunnerRuntime(RoadRunnerRuntime::createWorker($transport), $handler)->run();
+
+        self::assertSame(['/first', '/second'], $bodies);
+        self::assertSame(['GET', 'POST'], array_map(static fn(Request $r): string => $r->getMethod(), $handler->requests));
         foreach ($handler->responses as $response) {
             self::assertFalse($response->getBody()->isReadable());
         }
@@ -69,11 +53,11 @@ final class RoadRunnerRuntimeTest extends TestCase
     public function testStopsWhenTheFirstRequestIsNull(): void
     {
         $handler = new RuntimeRecordingHandler();
-        $worker = $this->createMock(PSR7WorkerInterface::class);
-        $worker->expects(self::once())->method('waitRequest')->willReturn(null);
-        $worker->expects(self::never())->method('respond');
+        $transport = $this->createMock(WorkerInterface::class);
+        $transport->expects(self::once())->method('waitPayload')->willReturn(null);
+        $transport->expects(self::never())->method('respond');
 
-        (new RoadRunnerRuntime($worker, $handler))->run();
+        new RoadRunnerRuntime(RoadRunnerRuntime::createWorker($transport), $handler)->run();
 
         self::assertSame([], $handler->requests);
     }
@@ -82,12 +66,12 @@ final class RoadRunnerRuntimeTest extends TestCase
     {
         $handler = new RuntimeRecordingHandler();
         $exception = new RoadRunnerException('Worker connection failed');
-        $worker = $this->createMock(PSR7WorkerInterface::class);
-        $worker->expects(self::once())->method('waitRequest')->willThrowException($exception);
-        $worker->expects(self::never())->method('respond');
+        $transport = $this->createMock(WorkerInterface::class);
+        $transport->expects(self::once())->method('waitPayload')->willThrowException($exception);
+        $transport->expects(self::never())->method('respond');
 
         try {
-            (new RoadRunnerRuntime($worker, $handler))->run();
+            new RoadRunnerRuntime(RoadRunnerRuntime::createWorker($transport), $handler)->run();
             self::fail('Worker errors must propagate to the caller');
         } catch (RoadRunnerException $caught) {
             self::assertSame($exception, $caught);
@@ -98,11 +82,8 @@ final class RoadRunnerRuntimeTest extends TestCase
     #[DataProvider('provideDoesNotReadForbiddenBodiesThroughTheRealAdapterCases')]
     public function testDoesNotReadForbiddenBodiesThroughTheRealAdapter(int $status, string $method, int $chunkSize): void
     {
-        $body = $this->createMock(StreamInterface::class);
-        foreach (['read', 'rewind', 'getContents', '__toString'] as $methodName) {
-            $body->expects(self::never())->method($methodName);
-        }
-        $body->expects(self::once())->method('close');
+        $observed = new ObservedStream('must not be read');
+        $body = $observed->open();
         $response = new Response($status, ['Content-Length' => '17', 'X-Example' => 'preserved'], $body);
         $transport = $this->createMock(WorkerInterface::class);
         $transport->expects(self::exactly(2))->method('waitPayload')->willReturn(
@@ -135,12 +116,13 @@ final class RoadRunnerRuntimeTest extends TestCase
                 }
             },
         );
-        $factory = new Psr17Factory();
-        $worker = new PSR7Worker($transport, $factory, $factory, $factory);
-        $worker->chunkSize = $chunkSize;
+        $worker = RoadRunnerRuntime::createWorker($transport, $chunkSize);
         $handler = new FixedResponseHandler($response);
 
         new RoadRunnerRuntime($worker, $handler)->run();
+        self::assertSame(0, $observed->reads);
+        self::assertSame(0, $observed->seeks);
+        self::assertSame(1, $observed->closes);
     }
 
     /** @return iterable<string, array{int, string, int}> */
@@ -152,23 +134,27 @@ final class RoadRunnerRuntimeTest extends TestCase
             yield 'no content, chunk ' . $chunkSize => [204, 'GET', $chunkSize];
             yield 'not modified, chunk ' . $chunkSize => [304, 'GET', $chunkSize];
         }
-        // The bundled HTTP adapter rejects generators for informational responses.
         yield 'informational, buffered' => [103, 'GET', 0];
+        yield 'informational, chunked' => [103, 'GET', 8192];
     }
 
     public function testClosesTheOriginalBodyWhenTheTransportFails(): void
     {
-        $body = $this->createMock(StreamInterface::class);
-        $body->expects(self::once())->method('close');
+        $body = Body::create('payload');
         $handler = new FixedResponseHandler(new Response(200, [], $body));
-        $worker = $this->createMock(PSR7WorkerInterface::class);
-        $worker->expects(self::once())->method('waitRequest')->willReturn(new ServerRequest('GET', '/document'));
-        $worker->expects(self::once())->method('respond')->willThrowException(new RoadRunnerException('Transport failed'));
+        $transport = $this->createMock(WorkerInterface::class);
+        $transport->expects(self::once())->method('waitPayload')->willReturn($this->payload('GET', '/document'));
+        $transport->expects(self::once())->method('respond')->willThrowException(new RoadRunnerException('Transport failed'));
+        $worker = RoadRunnerRuntime::createWorker($transport);
 
         $this->expectException(RoadRunnerException::class);
         $this->expectExceptionMessage('Transport failed');
 
-        new RoadRunnerRuntime($worker, $handler)->run();
+        try {
+            new RoadRunnerRuntime($worker, $handler)->run();
+        } finally {
+            self::assertFalse($body->isReadable());
+        }
     }
 
     #[DataProvider('provideClosesRealLoggedFileThroughTheChunkedAdapterCases')]
@@ -178,7 +164,7 @@ final class RoadRunnerRuntimeTest extends TestCase
         $resource = tmpfile();
         self::assertIsResource($resource);
         self::assertSame(16401, fwrite($resource, $content));
-        $body = Stream::create($resource);
+        $body = Body::create($resource);
         $body->seek(29);
         $response = new Response(200, ['Content-Length' => (string) \strlen($content)], $body);
         $logger = new TestLogger();
@@ -211,9 +197,7 @@ final class RoadRunnerRuntimeTest extends TestCase
                 $frames[] = $payload;
             },
         );
-        $factory = new Psr17Factory();
-        $worker = new PSR7Worker($transport, $factory, $factory, $factory);
-        $worker->chunkSize = 8192;
+        $worker = RoadRunnerRuntime::createWorker($transport, 8192);
         $caught = null;
 
         try {
@@ -250,13 +234,53 @@ final class RoadRunnerRuntimeTest extends TestCase
         yield 'successful send' => [false];
         yield 'transport fails after the first chunk' => [true];
     }
+
+    public function testPropagatesMidStreamReadFailureAndClosesTheBody(): void
+    {
+        $observed = new ObservedStream(str_repeat('x', 24576), failAfterReads: 2);
+        $body = $observed->open();
+        $transport = $this->createMock(WorkerInterface::class);
+        $transport->expects(self::once())->method('waitPayload')->willReturn($this->payload('GET', '/file'));
+        $frames = [];
+        $transport->expects(self::exactly(2))->method('respond')->willReturnCallback(
+            static function (Payload $payload) use (&$frames): void {
+                $frames[] = [\strlen($payload->body), $payload->eos];
+            },
+        );
+
+        try {
+            new RoadRunnerRuntime(RoadRunnerRuntime::createWorker($transport, 8192), new FixedResponseHandler(new Response(200, [], $body)))->run();
+            self::fail('Read errors must not be swallowed by native stream completion');
+        } catch (\RuntimeException $exception) {
+            self::assertSame('Observed stream read failed', $exception->getMessage());
+        }
+        self::assertSame([[8192, false], [0, true]], $frames);
+        self::assertSame(1, $observed->closes);
+        self::assertFalse($body->isReadable());
+    }
+
+    private function payload(string $method, string $path): Payload
+    {
+        return new Payload('', json_encode([
+            'remoteAddr' => '127.0.0.1:12345',
+            'protocol' => 'HTTP/1.1',
+            'method' => $method,
+            'uri' => 'http://localhost' . $path,
+            'headers' => [],
+            'cookies' => [],
+            'uploads' => [],
+            'attributes' => [],
+            'rawQuery' => '',
+            'parsed' => false,
+        ], JSON_THROW_ON_ERROR));
+    }
 }
 
 final readonly class FixedResponseHandler implements RequestHandler
 {
-    public function __construct(private ResponseInterface $response) {}
+    public function __construct(private Response $response) {}
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         return $this->response;
     }
@@ -264,13 +288,13 @@ final readonly class FixedResponseHandler implements RequestHandler
 
 final class RuntimeRecordingHandler implements RequestHandler
 {
-    /** @var list<ServerRequestInterface> */
+    /** @var list<Request> */
     public array $requests = [];
 
-    /** @var list<ResponseInterface> */
+    /** @var list<Response> */
     public array $responses = [];
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         $this->requests[] = $request;
         $response = new Response(200, [], $request->getUri()->getPath());

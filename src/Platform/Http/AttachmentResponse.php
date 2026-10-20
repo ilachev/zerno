@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace App\Platform\Http;
 
-use Nyholm\Psr7\Response;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-
 final readonly class AttachmentResponse
 {
     /**
@@ -15,12 +11,12 @@ final readonly class AttachmentResponse
      * The caller verifies the representation byte size; emission owns successful responses.
      */
     public static function create(
-        StreamInterface $body,
+        Body $body,
         string $filename,
         int $size,
         string $contentType = 'application/octet-stream',
         string $fallbackFilename = 'download',
-    ): ResponseInterface {
+    ): Response {
         try {
             if ($size < 0) {
                 throw new \InvalidArgumentException('Attachment size must not be negative');

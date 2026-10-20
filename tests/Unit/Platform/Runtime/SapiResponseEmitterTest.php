@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Body;
+use App\Platform\Http\Response;
 use App\Platform\Runtime\SapiResponseEmitter;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\StreamInterface;
+use Tests\Fixtures\ObservedStream;
 
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -23,7 +23,7 @@ final class SapiResponseEmitterTest extends TestCase
         $resource = fopen('php://temp', 'w+b');
         self::assertIsResource($resource);
         fwrite($resource, $content);
-        $body = Stream::create($resource);
+        $body = Body::create($resource);
         $body->rewind();
         $body->getContents();
 
@@ -45,15 +45,8 @@ final class SapiResponseEmitterTest extends TestCase
     #[DataProvider('provideDoesNotReadBodyWhenHttpForbidsItCases')]
     public function testDoesNotReadBodyWhenHttpForbidsIt(int $status, string $method): void
     {
-        $resource = fopen('php://temp', 'w+b');
-        self::assertIsResource($resource);
-        fwrite($resource, 'must not be emitted');
-        $stream = Stream::create($resource);
-        $body = $this->createMock(StreamInterface::class);
-        foreach (['read', 'rewind', 'getContents', '__toString'] as $methodName) {
-            $body->expects(self::never())->method($methodName);
-        }
-        $body->expects(self::once())->method('close')->willReturnCallback($stream->close(...));
+        $observed = new ObservedStream('must not be emitted');
+        $body = $observed->open();
 
         ob_start();
 
@@ -66,7 +59,9 @@ final class SapiResponseEmitterTest extends TestCase
 
         self::assertSame('', $output);
         self::assertSame($status, http_response_code());
-        self::assertFalse(\is_resource($resource));
+        self::assertSame(0, $observed->reads);
+        self::assertSame(0, $observed->seeks);
+        self::assertSame(1, $observed->closes);
     }
 
     /** @return iterable<string, array{int, string}> */
@@ -85,7 +80,7 @@ final class SapiResponseEmitterTest extends TestCase
         self::assertNotFalse($sockets);
         fwrite($sockets[1], 'non-seekable payload');
         fclose($sockets[1]);
-        $body = Stream::create($sockets[0]);
+        $body = Body::create($sockets[0]);
         self::assertFalse($body->isSeekable());
 
         ob_start();
@@ -104,23 +99,8 @@ final class SapiResponseEmitterTest extends TestCase
     public function testReadsLargeBodiesInBoundedChunks(): void
     {
         $content = str_repeat('payload-', 16384);
-        $state = new class {
-            public int $offset = 0;
-
-            public int $reads = 0;
-        };
-        $body = $this->createMock(StreamInterface::class);
-        $body->expects(self::once())->method('close');
-        $body->method('isSeekable')->willReturn(false);
-        $body->method('eof')->willReturnCallback(static fn(): bool => $state->offset >= \strlen($content));
-        $body->method('read')->willReturnCallback(static function (int $length) use ($content, $state): string {
-            self::assertLessThanOrEqual(65536, $length);
-            $chunk = substr($content, $state->offset, $length);
-            $state->offset += \strlen($chunk);
-            ++$state->reads;
-
-            return $chunk;
-        });
+        $observed = new ObservedStream($content);
+        $body = $observed->open();
 
         ob_start();
 
@@ -132,7 +112,9 @@ final class SapiResponseEmitterTest extends TestCase
         }
 
         self::assertSame($content, $output);
-        self::assertGreaterThan(1, $state->reads);
+        self::assertGreaterThan(1, $observed->reads);
+        self::assertLessThanOrEqual(8192, $observed->largestRead);
+        self::assertSame(1, $observed->closes);
     }
 
     public function testPreservesExplicitStatusWithLocationHeader(): void
@@ -154,7 +136,7 @@ final class SapiResponseEmitterTest extends TestCase
         self::assertNotFalse($path);
         $resource = fopen($path, 'wb');
         self::assertIsResource($resource);
-        $body = Stream::create($resource);
+        $body = Body::create($resource);
         self::assertFalse($body->isReadable());
         ob_start();
 
@@ -179,9 +161,9 @@ final class SapiResponseEmitterTest extends TestCase
         $autoload = \dirname(__DIR__, 4) . '/bootstrap.php';
         $script = 'require ' . var_export($autoload, true) . '; '
             . '$resource = fopen("php://temp", "w+b"); '
-            . '$body = Nyholm\Psr7\Stream::create($resource); '
+            . '$body = App\Platform\Http\Body::create($resource); '
             . 'echo "prefix"; '
-            . 'try { (new App\Platform\Runtime\SapiResponseEmitter())->emit(new Nyholm\Psr7\Response(200, [], $body)); } '
+            . 'try { (new App\Platform\Runtime\SapiResponseEmitter())->emit(new App\Platform\Http\Response(200, [], $body)); } '
             . 'catch (RuntimeException $exception) { '
             . 'fwrite(STDERR, $exception->getMessage() . (is_resource($resource) ? ":open" : ":closed")); exit(23); }';
         $process = proc_open(

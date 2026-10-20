@@ -6,13 +6,11 @@ namespace Tests\Unit\Platform\Http\Middleware;
 
 use App\Platform\Http\JsonResponse;
 use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
+use App\Platform\Http\Response;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class ErrorHandlerMiddlewareTest extends TestCase
@@ -25,13 +23,13 @@ final class ErrorHandlerMiddlewareTest extends TestCase
         $handler = new readonly class ($failure) implements RequestHandler {
             public function __construct(private \Throwable $failure) {}
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 throw $this->failure;
             }
         };
 
-        $response = $middleware->process(new ServerRequest('GET', '/failure'), $handler);
+        $response = $middleware->process(new Request('GET', '/failure'), $handler);
 
         self::assertSame(500, $response->getStatusCode());
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
@@ -56,15 +54,15 @@ final class ErrorHandlerMiddlewareTest extends TestCase
         foreach ([200, 400, 404, 405, 500] as $status) {
             $expected = new Response($status, ['Content-Type' => 'application/json', 'X-Application' => 'kept'], '{"application":"response"}');
             $handler = new readonly class ($expected) implements RequestHandler {
-                public function __construct(private ResponseInterface $response) {}
+                public function __construct(private Response $response) {}
 
-                public function handle(ServerRequestInterface $request): ResponseInterface
+                public function handle(Request $request): Response
                 {
                     return $this->response;
                 }
             };
 
-            self::assertSame($expected, $middleware->process(new ServerRequest('GET', '/application'), $handler));
+            self::assertSame($expected, $middleware->process(new Request('GET', '/application'), $handler));
         }
 
         self::assertSame([], $logger->logs);

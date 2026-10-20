@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Tests\Unit\Platform\Http\Middleware;
 
 use App\Platform\Http\Middleware\RequestContextMiddleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestContextAttributes;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Runtime\RequestContext;
 use App\Platform\Runtime\RequestContextFactory;
 use App\Platform\Runtime\RequestIdGenerator;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class RequestContextMiddlewareTest extends TestCase
@@ -28,7 +26,7 @@ final class RequestContextMiddlewareTest extends TestCase
         $handler = new class implements RequestHandler {
             public ?RequestContext $capturedContext = null;
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 $this->capturedContext = RequestContextAttributes::get($request);
 
@@ -36,7 +34,7 @@ final class RequestContextMiddlewareTest extends TestCase
             }
         };
         $response = $middleware->process(
-            new ServerRequest('GET', '/test'),
+            new Request('GET', '/test'),
             $handler,
         );
 
@@ -58,7 +56,7 @@ final class RequestContextMiddlewareTest extends TestCase
         $handler = new class implements RequestHandler {
             public ?RequestContext $capturedContext = null;
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 $this->capturedContext = RequestContextAttributes::get($request);
 
@@ -66,7 +64,7 @@ final class RequestContextMiddlewareTest extends TestCase
             }
         };
         $response = $middleware->process(
-            new ServerRequest('GET', '/test', ['X-Request-ID' => 'incoming-request-id']),
+            new Request('GET', '/test', ['X-Request-ID' => 'incoming-request-id']),
             $handler,
         );
 

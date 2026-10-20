@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Http\Middleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class HttpLoggingMiddleware implements Middleware
 {
@@ -17,9 +17,9 @@ final readonly class HttpLoggingMiddleware implements Middleware
     ) {}
 
     public function process(
-        ServerRequestInterface $request,
+        Request $request,
         RequestHandler $handler,
-    ): ResponseInterface {
+    ): Response {
         $this->logger->info('Request.', [
             'request' => $request->getQueryParams(),
         ]);

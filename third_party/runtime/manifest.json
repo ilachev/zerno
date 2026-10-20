@@ -39,121 +39,6 @@
       "path": "packages/google/protobuf"
     },
     {
-      "name": "nyholm/psr7",
-      "version": "1.8.2",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/Nyholm/psr7.git",
-        "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/Nyholm/psr7/zipball/a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-        "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "php": ">=7.2",
-        "psr/http-factory": "^1.0",
-        "psr/http-message": "^1.1 || ^2.0"
-      },
-      "autoload": {
-        "psr-4": {
-          "Nyholm\\Psr7\\": "src/"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/nyholm/psr7"
-    },
-    {
-      "name": "psr/http-factory",
-      "version": "1.1.0",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/php-fig/http-factory.git",
-        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a",
-        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "php": ">=7.1",
-        "psr/http-message": "^1.0 || ^2.0"
-      },
-      "autoload": {
-        "psr-4": {
-          "Psr\\Http\\Message\\": "src/"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/psr/http-factory"
-    },
-    {
-      "name": "psr/http-message",
-      "version": "2.0",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/php-fig/http-message.git",
-        "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71",
-        "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "php": "^7.2 || ^8.0"
-      },
-      "autoload": {
-        "psr-4": {
-          "Psr\\Http\\Message\\": "src/"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/psr/http-message"
-    },
-    {
-      "name": "psr/log",
-      "version": "3.0.2",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/php-fig/log.git",
-        "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
-        "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "php": ">=8.0.0"
-      },
-      "autoload": {
-        "psr-4": {
-          "Psr\\Log\\": "src"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/psr/log"
-    },
-    {
       "name": "roadrunner-php/roadrunner-api-dto",
       "version": "v1.14.1",
       "source": {
@@ -346,10 +231,17 @@
       "upstream_sha256": "0a8d2e5981d9458e5ef6b1d859848cc8c6b667c0ce257afc3dcdb4ddd22361da",
       "patch": "patches/roadrunner-worker-version.patch",
       "reason": "Resolve the pinned RoadRunner compatibility metapackage version without an installed package registry; this is not the executable version."
+    },
+    {
+      "package": "spiral/roadrunner-worker",
+      "file": "packages/spiral/roadrunner-worker/src/Worker.php",
+      "upstream_sha256": "e3bcfe66e4658cb922b33ebaa69d65cb87197bed4b696f38d7a46afd643e0375",
+      "patch": "patches/roadrunner-worker-remove-logger.patch",
+      "reason": "Remove the unused logger constructor/factory parameters, property and getter from the transport worker. No worker code consumes that logger; core logging is explicitly composed. This removes its eager psr/log dependency without a compatibility shim."
     }
   ],
   "files": {
-    "autoload.php": "ecabe61e7429cc285f91b576a81332ac3e4bd7a026e8ab139aa0395d832241f4",
+    "autoload.php": "9fc4653a2c0a4785cc354c1df6ef5b566a52288d5b45955c24c278462a862e10",
     "packages/google/protobuf/LICENSE": "2d4cfcfdf007905742e8021124697f2e19e5e0853dd7722d324d954ddf1971f7",
     "packages/google/protobuf/README.md": "ae4b7704158130c1ce525c092758a367c3b4485fc489d80b53422d5d3a96514c",
     "packages/google/protobuf/composer.json": "bae03843c1c865a328c456633bc095d4233b0568e80e267275a26f1005bc95e0",
@@ -485,54 +377,6 @@
     "packages/google/protobuf/src/Google/Protobuf/UInt64Value.php": "3183a0fdd49c820646adadca10998cc681c2e026bbf78eea13c240409a1e53f0",
     "packages/google/protobuf/src/Google/Protobuf/Value.php": "b89550d31c4a475ef3b4304e68bab1fe448bbb3967b46ecd395a56c1acc3d2cc",
     "packages/google/protobuf/src/phpdoc.dist.xml": "5b171f7dc219e03f139ac01cb2651a64cc726bee1a99fb84954907296969fec7",
-    "packages/nyholm/psr7/CHANGELOG.md": "7634a85805747a91720150e04efdbb3cd80a73ce60ddb28401ed2e54539bfb44",
-    "packages/nyholm/psr7/LICENSE": "a683f57e45992c4f0e7394e2f99a7a49bcffee6f973e42c7b5b720af6c8a3f05",
-    "packages/nyholm/psr7/README.md": "f364f5d0e0a9c0cc7e64112418b79b92275f7960cbd89a846f66486d95824a0a",
-    "packages/nyholm/psr7/composer.json": "bd9ebc154d2f6d207ca245fa6739ffeaf9b4ef05f4c7febe7ba87d36622d6ca4",
-    "packages/nyholm/psr7/src/Factory/HttplugFactory.php": "f013ddc9269cb9f3ef9e41f7048c0c3480a2acfcfe250b83a83890dc03243851",
-    "packages/nyholm/psr7/src/Factory/Psr17Factory.php": "d54ebad6f281a56a745dc68edfef526e9215de9f51b28a4b67feb23cee1b8fd9",
-    "packages/nyholm/psr7/src/MessageTrait.php": "19440d84d353206a8715910414bd57f84e7cb7000a2f9cfa867d8f15b20e524b",
-    "packages/nyholm/psr7/src/Request.php": "605a1196b843a5fd2f13f138b2d25890afdd5128e241ea32d665e424cd70f54a",
-    "packages/nyholm/psr7/src/RequestTrait.php": "f662c13eed33696d1a0d760d687a80e19db81654fe94d886ba5fa268c2d74070",
-    "packages/nyholm/psr7/src/Response.php": "47be110bf8acedef3d8555d4e8a16b7d2125482b77ba50b29a2e0e3edf2cc8c7",
-    "packages/nyholm/psr7/src/ServerRequest.php": "65b9e137c57e767732fda2a0405901c95bea0ab21780c832483c46739b9cc026",
-    "packages/nyholm/psr7/src/Stream.php": "063897b94845dc3abe13259d00c7855d5be8c3d1676e9af81908b37f7a23f3f1",
-    "packages/nyholm/psr7/src/StreamTrait.php": "1f0b821cf1dc6612aa98dbbdeddbf8856e1479e5628d345c2b4404fce8266cf4",
-    "packages/nyholm/psr7/src/UploadedFile.php": "6432b1b361a811a60fe662aa5afc40d2826937b989a6587e2f072cb79b0afb88",
-    "packages/nyholm/psr7/src/Uri.php": "7f19627bf5d7bfe6491a7e47495a89a13af18054177d1d7fef17880c6be41feb",
-    "packages/psr/http-factory/LICENSE": "d2e70341a9667b93ad542e4842b0b7022d302aa7c2d2a909b156b8f1e3c4cca8",
-    "packages/psr/http-factory/README.md": "d80b63e2a8c4f80af830e5307683fc73718d15e71db3c5af56e15b56b2a47d63",
-    "packages/psr/http-factory/composer.json": "1dedaf2d8613201a978dbcad920bd7a332cd28c95be57c0d75be7a8d6e868362",
-    "packages/psr/http-factory/src/RequestFactoryInterface.php": "95bb9e09f52d05bf09630cce49abbfdb2282d396ccc3e16e77e3a9f54cd4071f",
-    "packages/psr/http-factory/src/ResponseFactoryInterface.php": "fb58f39db8e472bed4109f6392443a10785305ccc0c920d11f98208f91214e02",
-    "packages/psr/http-factory/src/ServerRequestFactoryInterface.php": "8584390af1bc3c624918525e725a7cfa639366c15bb7a3c7c065d04d8a20703b",
-    "packages/psr/http-factory/src/StreamFactoryInterface.php": "25fe9d048ce6718141d21c122ef9b3498be45025300717ccbe912ef5bc0083ec",
-    "packages/psr/http-factory/src/UploadedFileFactoryInterface.php": "712c705ac850b43dbf47458e571c8be314d1d1f01b0e470407ed014b702d9e5b",
-    "packages/psr/http-factory/src/UriFactoryInterface.php": "2600f967cd969706dcdff326d3fe602e812110352c75c6b5e9773601f2d17c7d",
-    "packages/psr/http-message/CHANGELOG.md": "0e0a6a6166edde635031315c05f880d4e792f2cdd493618f5bac0b09bd9a11a7",
-    "packages/psr/http-message/LICENSE": "8d36e938943b04ef01994bb148793c971685b746d0ced31da03a97594a47ee62",
-    "packages/psr/http-message/README.md": "4cd6339fa85e7a903f2117b081de8446cd45229b9b761539dd8f440ccd2eb288",
-    "packages/psr/http-message/composer.json": "96781ea96de30367767e298f5a340a040878144b7540ce490c9089bf7e0b9b37",
-    "packages/psr/http-message/docs/PSR7-Interfaces.md": "255d8acfecf55b477403a49775c907b4a9c833237ca9a856b96d8a71b545ea30",
-    "packages/psr/http-message/docs/PSR7-Usage.md": "49daf54cea1064dc256357ae684b42bac35ccb6df930a2f4cb3f05fa0226e9a6",
-    "packages/psr/http-message/src/MessageInterface.php": "1ef5798924509ccea3ff3e596af4c5b6b63e121f7d0441503310b29cf837b9df",
-    "packages/psr/http-message/src/RequestInterface.php": "3d7531e17a3e704d7bed9f0f2bb37ffc7f1842a2cd39f789ce7e7a4023d434f9",
-    "packages/psr/http-message/src/ResponseInterface.php": "1cc32dded30a668714b17688a2be8a0053effb7fabe7655bd4459ecfbc6eeb44",
-    "packages/psr/http-message/src/ServerRequestInterface.php": "43c218d6c4426c7f1d354b20736ec77be924b94e7c1b11786057de6c3f3f66e8",
-    "packages/psr/http-message/src/StreamInterface.php": "0a3267552ebbcac5f0cd522dd10d96ad985595fd4f90d8566b449db2e060b385",
-    "packages/psr/http-message/src/UploadedFileInterface.php": "2823ae936f8f0030879fe12a507080d4eb91c6a534f57ff38e8f37561d78916c",
-    "packages/psr/http-message/src/UriInterface.php": "8d96e63fb984db31eaedd858ae60549dcf6332c939d4cc940ca97f1fe6d91d1e",
-    "packages/psr/log/LICENSE": "6e944907067bae93c00a9f2ad51032243820b22df34b77c77690d46cb2e98e24",
-    "packages/psr/log/README.md": "4f2bc231e87cda248b1fa2aef7a930045f3e95f89ee46ff579188d2489372954",
-    "packages/psr/log/composer.json": "1f8dfc72d50f452d0795681fde72b7c008eedd4fcbca482b70a35401c9fbb661",
-    "packages/psr/log/src/AbstractLogger.php": "84c69c6cc60fd805eb525daa79bd04a8d0b73e52776e1a0c2a9e666b37b4512e",
-    "packages/psr/log/src/InvalidArgumentException.php": "403c6def4d4199a12cb4a54e804c7d29405968871366500f72d6f3ea401bfc64",
-    "packages/psr/log/src/LogLevel.php": "9f2520b22945ce1599c4fedba0a4c75985f172ca86cdf386766ebb8b2363768c",
-    "packages/psr/log/src/LoggerAwareInterface.php": "076efac38ab493f4fc3e701cce9a2641135048f2bf0407b322c45712ef73813c",
-    "packages/psr/log/src/LoggerAwareTrait.php": "eb114e265de2d1c8c1190b0fa9cb5f8a25e262a46d1d28d1aa02f01aaf025c64",
-    "packages/psr/log/src/LoggerInterface.php": "05aecbaded98967719d76a058ea27465ffae03b7800dc36049e1ed23c825e6b3",
-    "packages/psr/log/src/LoggerTrait.php": "c854406af9c4706980e93183b5f37fa9cca523df9bb1019a927f8e4713834172",
-    "packages/psr/log/src/NullLogger.php": "22fbb348f7b25259ca801f595fc9aa22b9f035a44e7899687bd89bf4070d78c8",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/modules.xml": "d3e2af6cfdd3677bfe5c1c22a0c89fc495299d35db969df850367744f685c92e",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/php.xml": "6247d1c27d460e9157c34acc7768cbd49a92a2bf95390a12bee8b13a6063276f",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/roadrunner-api.iml": "02019c718d06ae09955140c6454f50cadefdbe2035eff02ebbd11d30da81ac75",
@@ -1505,7 +1349,7 @@
     "packages/spiral/roadrunner-worker/src/PayloadFactory.php": "ea38d92622a25532a4eb351d5c742a68bde9660cb5e173acbb7424af3d591aac",
     "packages/spiral/roadrunner-worker/src/StreamWorkerInterface.php": "cdc28008a553103bbf5199e3cac419814a14c4349d553cf7f803f52ce8dade1e",
     "packages/spiral/roadrunner-worker/src/Version.php": "522d75604e7764bb4632bd024add9d0b8093cdcc9c50ef78bbb810b228cc18da",
-    "packages/spiral/roadrunner-worker/src/Worker.php": "e3bcfe66e4658cb922b33ebaa69d65cb87197bed4b696f38d7a46afd643e0375",
+    "packages/spiral/roadrunner-worker/src/Worker.php": "51eb29ee67c47acdae3c3c0d5ea8e866abeb416c14acc4ce7bed5e13d5359012",
     "packages/spiral/roadrunner-worker/src/WorkerAwareInterface.php": "7272d23fc3d137d069182ace9da06e1ba61e9714d78b5876316f15c2397eb47d",
     "packages/spiral/roadrunner-worker/src/WorkerInterface.php": "6203ac74b4548cb4366cc15de4d31e697c056a6d6f2c035ff159fc6ca46bb658",
     "packages/spiral/roadrunner-worker/src/WorkerPool.php": "caafa11dbbd865e25819ddffe0fb0480311130308637c2638dc9ff3d1934277f",
@@ -1526,12 +1370,17 @@
     "packages/symfony/polyfill-php83/bootstrap.php": "4094bea8f7ea8beed0d488b1e38edc8de90925295231b4dca494ee87195b0b1d",
     "packages/symfony/polyfill-php83/bootstrap81.php": "7e4f864396c6f4124c46aa1dd7341c889ac067d010408ef7f4ff8c79e2e4af65",
     "packages/symfony/polyfill-php83/composer.json": "06fa868d6ffe7965e5aacec69da00cf458dfa7e0fe7667c4123db0d4b669771d",
+    "patches/roadrunner-worker-remove-logger.patch": "b64f4404c5d68dad751258674709f07a4dcc9b475f0f6bbb21193b01b4ab50f0",
     "patches/roadrunner-worker-version.patch": "da2158cf684ba172ba2bf43d24aa18c3e4df7e45a73c8e182ebb909d23a0da58"
   },
   "adaptations": [
     {
       "date": "2026-10-20",
       "reason": "Remove GeoIP and KV/cache packages from the product scope. Full upstream trees of retained packages are preserved; protobuf and API DTO remain required by the pinned RoadRunner HTTP package."
+    },
+    {
+      "date": "2026-10-20",
+      "reason": "Replace Nyholm and PSR HTTP/factory/log packages with concrete core HTTP types and the existing own Logger contract. RoadRunner uses only the native HttpWorker API; the unused upstream PSR7 adapter source and original require metadata are retained for provenance, never loaded or registered as a core adapter."
     }
   ]
 }

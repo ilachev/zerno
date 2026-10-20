@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Examples\DocumentCatalog;
 
 use App\Platform\Http\AttachmentResponse;
+use App\Platform\Http\Body;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
-use Nyholm\Psr7\Stream;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use App\Platform\Http\Response;
 
 final readonly class DownloadHandler implements RequestHandler
 {
@@ -18,7 +18,7 @@ final readonly class DownloadHandler implements RequestHandler
         private Html $html,
     ) {}
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         $params = $request->getAttribute('routeParams');
         $id = DocumentId::parse(\is_array($params) ? ($params['id'] ?? null) : null);
@@ -45,7 +45,7 @@ final readonly class DownloadHandler implements RequestHandler
         if ($request->getMethod() === 'HEAD') {
             $body->close();
 
-            return $response->withBody(Stream::create());
+            return $response->withBody(Body::create());
         }
 
         return $response;

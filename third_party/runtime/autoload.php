@@ -13,16 +13,6 @@ return [
         'Google\\Protobuf\\' => [
             __DIR__ . '/packages/google/protobuf/src/Google/Protobuf',
         ],
-        'Nyholm\\Psr7\\' => [
-            __DIR__ . '/packages/nyholm/psr7/src',
-        ],
-        'Psr\\Http\\Message\\' => [
-            __DIR__ . '/packages/psr/http-factory/src',
-            __DIR__ . '/packages/psr/http-message/src',
-        ],
-        'Psr\\Log\\' => [
-            __DIR__ . '/packages/psr/log/src',
-        ],
         'RoadRunner\\' => [
             __DIR__ . '/packages/roadrunner-php/roadrunner-api-dto/generated/RoadRunner',
         ],

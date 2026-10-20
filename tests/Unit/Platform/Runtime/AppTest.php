@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Runtime\App;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Tests\Unit\Platform\Runtime\Fixtures\RequestTrace;
 
@@ -18,7 +18,7 @@ final class AppTest extends TestCase
         $app = $this->createApp($trace);
         self::assertInstanceOf(RequestHandler::class, $app);
 
-        $response = $app->handle(new ServerRequest('GET', '/example', ['X-Test-Value' => 'standalone']));
+        $response = $app->handle(new Request('GET', '/example', ['X-Test-Value' => 'standalone']));
 
         self::assertSame(202, $response->getStatusCode());
         self::assertSame('standalone:outer:inner', (string) $response->getBody());
@@ -30,8 +30,8 @@ final class AppTest extends TestCase
     {
         $trace = new RequestTrace();
         $app = $this->createApp($trace);
-        $firstRequest = new ServerRequest('GET', '/first', ['X-Test-Value' => 'first']);
-        $secondRequest = new ServerRequest('GET', '/second', ['X-Test-Value' => 'second']);
+        $firstRequest = new Request('GET', '/first', ['X-Test-Value' => 'first']);
+        $secondRequest = new Request('GET', '/second', ['X-Test-Value' => 'second']);
 
         $firstResponse = $app->handle($firstRequest);
         $secondResponse = $app->handleRequest($secondRequest);

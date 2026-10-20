@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Zerno\Baseline;
 
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Storage\Storage;
-use Nyholm\Psr7\Response;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class JsonHandler implements RequestHandler
 {
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         return new Response(200, ['Content-Type' => 'application/json'], '{"id":42,"value":"record-42"}');
     }
@@ -24,7 +23,7 @@ final readonly class SelectHandler implements RequestHandler
         private Storage $storage,
     ) {}
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         $parameters = $request->getAttribute('routeParams');
         if (!\is_array($parameters) || !\is_string($parameters['id'] ?? null)

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Platform\Routing;
 
-use Psr\Http\Message\ServerRequestInterface;
+use App\Platform\Http\Request;
 
 final class Router implements RouterInterface
 {
@@ -23,7 +23,7 @@ final class Router implements RouterInterface
         $this->buildRouteMap($routes);
     }
 
-    public function dispatch(ServerRequestInterface $request): RouteResult
+    public function dispatch(Request $request): RouteResult
     {
         $method = $request->getMethod();
         $path = $request->getUri()->getPath();

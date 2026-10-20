@@ -18,11 +18,13 @@ Runtime, генерация, проверки и сборка не устана�
 
 ## Потребители runtime libraries
 
-Nyholm PSR-7 и PSR HTTP contracts обслуживают оба транспорта; psr/log — logging/tests; Goridge, RR worker/HTTP и polyfill входят в текущую RR-поставку. Зафиксированный RR HTTP требует roadrunner-api-dto и Google protobuf. Эти транспортные исходники сохраняются полными, хотя приложение не предоставляет собственного protobuf API. GeoIP, psr/simple-cache и RR KV удалены; protobuf generator distribution удалён целиком.
+HTTP-типы и Logger принадлежат ядру. Nyholm/psr7, psr/http-factory, psr/http-message и psr/log удалены вместе с package trees и autoload prefixes. SAPI не загружает сторонние HTTP-типы. RR использует native HttpWorker: Goridge, RR worker/HTTP, polyfill, roadrunner-api-dto и Google protobuf остаются в runtime. Собственного protobuf API пока нет. GeoIP, psr/simple-cache и RR KV также удалены; protobuf generator distribution отсутствует.
 
-Общая autoload map регистрируется при bootstrap и имеет стоимость. Удаление исходников не объявляется доказанным ускорением HTTP. Изменения состава записаны в [истории очистки](../history/2026-10-20-core-scope.md).
+Retained upstream trees сохраняют исходные metadata и неиспользуемые PSR7Worker/Logger классы. Они не загружаются, PSR namespaces не регистрируются и этих packages в поставке нет. Это provenance, не поддерживаемый compatibility API. Крупные quality PHARs изолированы от runtime; их внутренние bundled libraries не являются API приложения.
 
-Bundled RR worker Version.php содержит единственную зафиксированную адаптацию: pinned compatibility metapackage version читается без installed registry. Patch, upstream hash и итоговые hashes остаются в runtime manifest. Это не версия executable rr. Других incidental edits bundled files не делать.
+У RR worker две явные адаптации: Version.php читает pinned compatibility metapackage version без installed registry; Worker.php удаляет неиспользуемые logger property/constructor/factory parameters/getter, которые eagerly создавали PSR logger. Обработка protocol/frames этим patch не меняется. Patch files, upstream hashes и итоговые hashes находятся в [runtime manifest](../../third_party/runtime/manifest.json). При обновлении upstream обе адаптации проверяются заново. Incidental edits bundled files запрещены.
+
+Общая autoload map имеет стоимость; отсутствие этих packages не означает нулевой bootstrap overhead. Короткое CLI-сравнение и проверки перехода описаны в [истории собственного HTTP](../history/2026-10-20-native-http.md). Это не FPM/RR performance baseline.
 
 ## SQL и сборка
 

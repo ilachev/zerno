@@ -1,0 +1,239 @@
+{
+  "date": "2026-10-20",
+  "source_before": "9c300d3eb0d892c48de421a1d70494f092b5cf69",
+  "removed_packages": [
+    "nyholm/psr7",
+    "psr/http-factory",
+    "psr/http-message",
+    "psr/log"
+  ],
+  "runtime_packages_before": 11,
+  "runtime_packages_after": 7,
+  "own_runtime_php_before": 49,
+  "own_runtime_php_after": 56,
+  "checks": {
+    "verify_full": "passed; 2026-10-20; TEST_DB_* isolated Docker PostgreSQL 16.15",
+    "root_unit": {
+      "tests": 229,
+      "assertions": 908
+    },
+    "sql_generator": {
+      "tests": 167,
+      "assertions": 625
+    },
+    "postgresql_integration": {
+      "tests": 32,
+      "assertions": 272
+    },
+    "http_wire": {
+      "cases": 204,
+      "profiles": [
+        "FPM JSON",
+        "FPM HTML",
+        "RoadRunner JSON",
+        "RoadRunner HTML"
+      ],
+      "cases_per_profile": 51,
+      "rr_chunk_size": 8192,
+      "memory_limit": "32M"
+    },
+    "archive_smoke": {
+      "checks": 43,
+      "default_core_sapi_rr": "passed with unavailable DB",
+      "explicit_catalog_migration_seed": "passed with PostgreSQL, SAPI/RR",
+      "startup_ddl": "absent before explicit migration",
+      "archive_manifest": "runtime only, hash verified",
+      "generated_queries": "21 typed rows through explicit SqlExecutor",
+      "migration_cli": "default directory, explicit catalog directory, rollback/reapply and invalid arguments passed without HTTP/app namespace registration",
+      "baseline": "JSON without DB; JSON/SELECT through source SAPI/RR composition passed",
+      "runtime_manifest_sha256": "32fc7604cedb4224ff41516129b05ccc5191c0347be9043396f5860f880166c2",
+      "note": "Final archive is rebuilt after documentation results; runtime source files are unchanged from the smoke and compared independently."
+    },
+    "bundled_files": 1614,
+    "limits": "CLI counters are not RSS; wire retained allocation and archive smoke do not establish long-term memory stability or complete HTTP/security coverage.",
+    "bundled_distributions": 3
+  },
+  "cli_comparison": {
+    "scope": "CLI core composition plus 10000 new requests and in-process GET /health calls; identical headers/status/body checked, all bodies closed; no network/DB/SAPI emission",
+    "platform": "PHP 8.5.9 (cli) (built: Jul 28 2026 13:06:52) (NTS)",
+    "opcache_enable_cli": false,
+    "source_before": "9c300d3eb0d892c48de421a1d70494f092b5cf69",
+    "runs": 7,
+    "warmup": "One discarded process per variant; seven alternating-order pairs",
+    "before": [
+      {
+        "startup_ms": 1.020084,
+        "requests_ms": 73.214,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 1.038166,
+        "requests_ms": 73.252625,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 1.398542,
+        "requests_ms": 74.359875,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 1.02075,
+        "requests_ms": 72.728125,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 1.229083,
+        "requests_ms": 73.326458,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 1.056958,
+        "requests_ms": 71.991333,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      {
+        "startup_ms": 0.981041,
+        "requests_ms": 72.190292,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      }
+    ],
+    "after": [
+      {
+        "startup_ms": 1.00075,
+        "requests_ms": 59.833083,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 1.021,
+        "requests_ms": 60.884584,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 1.427125,
+        "requests_ms": 61.123458,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 1.249333,
+        "requests_ms": 60.24325,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 1.142875,
+        "requests_ms": 58.635291,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 1.083583,
+        "requests_ms": 60.147084,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      },
+      {
+        "startup_ms": 0.9935,
+        "requests_ms": 60.338708,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      }
+    ],
+    "medians": {
+      "before": {
+        "startup_ms": 1.038166,
+        "requests_ms": 73.214,
+        "loaded_classes": 316,
+        "startup_php_bytes": 597400,
+        "after_requests_php_bytes": 883720,
+        "peak_php_bytes": 971704,
+        "included_files": 45
+      },
+      "after": {
+        "startup_ms": 1.083583,
+        "requests_ms": 60.24325,
+        "loaded_classes": 316,
+        "startup_php_bytes": 593504,
+        "after_requests_php_bytes": 689416,
+        "peak_php_bytes": 736952,
+        "included_files": 37
+      }
+    },
+    "limits": "PHP counters are not RSS; timings include fixed correctness checks and body closing. These short CLI runs do not establish FPM/RR throughput, latency or long-running memory stability."
+  },
+  "probe_source": "<?php\n\ndeclare(strict_types=1);\n\n$start = hrtime(true);\nrequire $argv[1] . '/bootstrap.php';\n$compose = require $argv[1] . '/config/core.php';\n$app = $compose(new App\\Platform\\Logging\\ReadableOutputLogger());\n$startup = hrtime(true) - $start;\n$startupBytes = memory_get_usage();\n$classes = count(get_declared_classes());\n$requestClass = $argv[2] === 'before' ? Nyholm\\Psr7\\ServerRequest::class : App\\Platform\\Http\\Request::class;\n$start = hrtime(true);\nfor ($i = 0; $i < 10000; ++$i) {\n    $request = new $requestClass('GET', '/health', ['X-Request-ID' => 'native-http-measure']);\n    $response = $app->handle($request);\n    if ($response->getStatusCode() !== 200 || $response->getHeaderLine('Content-Type') !== 'application/json' || $response->getHeaderLine('X-Request-ID') !== 'native-http-measure' || (string) $response->getBody() !== '{\"status\":\"ok\"}') {\n        throw new RuntimeException('Different measured response.');\n    }\n    $response->getBody()->close();\n    $request->getBody()->close();\n    unset($request, $response);\n}\necho json_encode([\n    'startup_ms' => $startup / 1000000,\n    'requests_ms' => (hrtime(true) - $start) / 1000000,\n    'loaded_classes' => $classes,\n    'startup_php_bytes' => $startupBytes,\n    'after_requests_php_bytes' => memory_get_usage(),\n    'peak_php_bytes' => memory_get_peak_usage(),\n    'included_files' => count(get_included_files()),\n], JSON_THROW_ON_ERROR), \"\\n\";\n",
+  "source_hashes": {
+    "src/Platform/Http/AttachmentResponse.php": "803cfae037c9226a5e357cdad9ea9692bf67a556715cd39ceae86b0f6761beb0",
+    "src/Platform/Http/Body.php": "708fff2bc770b74882e85dead68ee135bd1e4fd8f0f7bc1b966dafda4af13251",
+    "src/Platform/Http/ErrorResponse.php": "6039741ec0bc23d2464199241cd04e61b1c61f46af7d6256076344bd28a84893",
+    "src/Platform/Http/Handler/HealthHandler.php": "d1f79af26c2b8a20b8038710aeaffc069740818a87156341edc34ee8a284d4e3",
+    "src/Platform/Http/Headers.php": "9c705f85bd3de7ba49b86bf1c995454cc99b20b239cd328869e0d49f5855dcac",
+    "src/Platform/Http/JsonResponse.php": "716928ce20e11dda5e494f2fc11090e94a0bd2318ba4e6fbb99d2aaf9011daef",
+    "src/Platform/Http/Middleware/ErrorHandlerMiddleware.php": "a6e5785eb09ebccb4c0b3d21d6640eae89a6c82993dd83ecc8ca9edb21759657",
+    "src/Platform/Http/Middleware/HttpLoggingMiddleware.php": "dfe2fcdb9d3318674430488edc19b4639feb1c7225ea6804c35d402be02c9a93",
+    "src/Platform/Http/Middleware/Pipeline.php": "0f6df4144118062bf6273c7503086ebfacabeb5a3f4b8a5e7d7e6d956bdd9976",
+    "src/Platform/Http/Middleware/RequestContextMiddleware.php": "0e51ca436a3ab434ebb1faa43d866edd82f6d9f4c4a84588d7f48a05e949750a",
+    "src/Platform/Http/Middleware/RoutingMiddleware.php": "a54491d3acb27be944ac7ae4bcd8e0f7712b44553989927a13dc80fbd62229f7",
+    "src/Platform/Http/Middleware.php": "5aae20144d2f1127c1aa34e45e0d6d48281410cb8c6651617e12cc189d00fe28",
+    "src/Platform/Http/Request.php": "dde9df77bdbc48405d1afd60375b73724f6d94612ad71364f600af7e3a5aeeff",
+    "src/Platform/Http/RequestContextAttributes.php": "f9c9773e867d7c4f4b459bdae700f8957bc8e61c830a391d2743dd7a73d7a6fe",
+    "src/Platform/Http/RequestHandler.php": "36be042cafe53298eb36bd63bb64d0d6f579dfae8f7238cd07b11a2d95bb6683",
+    "src/Platform/Http/Response.php": "ccd44c47fdb1b04fa7b64eff585c5ce7b70bd030b7a442be4814f1f54d2822bc",
+    "src/Platform/Http/RouteHandlerResolver.php": "1c398f7edbb7974b091ff9a35484d778699b801bbb1bb16371fc5ae7f35f8ea6",
+    "src/Platform/Http/UploadedFile.php": "7e597da34aa3c81ef620710ce16387ddd9af35deba157c73e54382bb8927edf2",
+    "src/Platform/Http/Uri.php": "402a6da9aefec15942a6ffc702252d79f2e4650fb4586ee0b94b502ffd9daf79",
+    "src/Platform/Runtime/RoadRunnerHttpWorker.php": "584cad1d11176f0671929175ce6e7ff667ef0fd3d3b9037532e7ca9af8a435af",
+    "third_party/runtime/packages/spiral/roadrunner-worker/src/Worker.php": "51eb29ee67c47acdae3c3c0d5ea8e866abeb416c14acc4ce7bed5e13d5359012"
+  }
+}

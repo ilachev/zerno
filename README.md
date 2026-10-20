@@ -8,7 +8,7 @@
 
 ## Конкретный состав
 
-- PSR-7 request/response, маршруты, middleware и сборка объектов через обычные PHP-конструкторы и функции. Контейнера и autowiring нет.
+- Собственные Request/Response/Body без Nyholm и PSR-пакетов, маршруты, middleware и сборка объектов через обычные PHP-конструкторы и функции. Контейнера и autowiring нет.
 - JSON/прикладные HTML-ошибки через ErrorResponse; файловый AttachmentResponse с безопасными заголовками.
 - Request ID, время обработки и логирование метаданных без чтения тела ответа.
 - PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции.

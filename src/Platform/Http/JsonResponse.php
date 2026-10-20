@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Platform\Http;
 
 use App\Platform\Error\Error;
-use Nyholm\Psr7\Response;
-use Psr\Http\Message\ResponseInterface;
 
 final readonly class JsonResponse implements ErrorResponse
 {
-    public function success(string $data, int $status = 200): ResponseInterface
+    public function success(string $data, int $status = 200): Response
     {
         return new Response(
             $status,
@@ -22,7 +20,7 @@ final readonly class JsonResponse implements ErrorResponse
     /**
      * @throws \JsonException
      */
-    public function error(Error $error, int $status): ResponseInterface
+    public function error(Error $error, int $status): Response
     {
         return $this->success(
             json_encode(['error' => $error->text()], JSON_THROW_ON_ERROR),

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Body;
+use App\Platform\Http\Response;
 use App\Platform\Runtime\RoadRunnerRuntime;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Spiral\RoadRunner\Payload;
@@ -43,7 +43,7 @@ final class RoadRunnerWorkerTest extends TestCase
         $worker = RoadRunnerRuntime::createWorker($transport, chunkSize: 8192);
         $resource = fopen('php://temp/maxmemory:8192', 'w+b');
         self::assertIsResource($resource);
-        $body = Stream::create($resource);
+        $body = Body::create($resource);
 
         try {
             $remaining = $size;
@@ -81,6 +81,35 @@ final class RoadRunnerWorkerTest extends TestCase
         yield 'smaller than one chunk' => [8191];
         yield 'exact chunk' => [8192];
         yield 'large body with final partial chunk' => [16 * 1024 * 1024 + 17];
+    }
+
+    #[DataProvider('provideSendsNonSeekableBodyFromItsCurrentPositionCases')]
+    public function testSendsNonSeekableBodyFromItsCurrentPosition(int $chunkSize): void
+    {
+        $sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+        self::assertNotFalse($sockets);
+        fwrite($sockets[1], 'prefix-payload');
+        fclose($sockets[1]);
+        $body = Body::create($sockets[0]);
+        self::assertFalse($body->isSeekable());
+        self::assertSame('prefix-', $body->read(7));
+        $transport = new RecordingStreamWorker();
+
+        try {
+            RoadRunnerRuntime::createWorker($transport, $chunkSize)->respond(new Response(200, [], $body));
+            self::assertSame(7, $transport->bytes);
+            self::assertSame(hash('sha256', 'payload'), $transport->digest());
+            self::assertTrue($transport->lastFrameEndedStream);
+        } finally {
+            $body->close();
+        }
+    }
+
+    /** @return iterable<array{int}> */
+    public static function provideSendsNonSeekableBodyFromItsCurrentPositionCases(): iterable
+    {
+        yield [0];
+        yield [8192];
     }
 }
 

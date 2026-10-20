@@ -1,0 +1,21 @@
+--- a/packages/spiral/roadrunner-worker/src/Worker.php
++++ b/packages/spiral/roadrunner-worker/src/Worker.php
+@@ -7 +6,0 @@
+-use Psr\Log\LoggerInterface;
+@@ -49 +47,0 @@
+-        private readonly LoggerInterface $logger = new Logger(),
+@@ -60 +58 @@
+-    public static function create(bool $interceptSideEffects = true, LoggerInterface $logger = new Logger()): self
++    public static function create(bool $interceptSideEffects = true): self
+@@ -65 +62,0 @@
+-            logger: $logger,
+@@ -76 +72,0 @@
+-        LoggerInterface $logger = new Logger(),
+@@ -84 +79,0 @@
+-            logger: $logger,
+@@ -86,5 +80,0 @@
+-    }
+-
+-    public function getLogger(): LoggerInterface
+-    {
+-        return $this->logger;

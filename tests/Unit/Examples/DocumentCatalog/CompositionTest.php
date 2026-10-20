@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace Tests\Unit\Examples\DocumentCatalog;
 
 use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
 use App\Platform\Runtime\App;
 use App\Platform\Storage\PostgreSQLStorage;
 use App\Platform\Storage\Storage;
 use Examples\DocumentCatalog\Errors;
 use Examples\DocumentCatalog\Html;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Tests\Fixtures\SQLiteStorage;
 use Tests\Unit\Platform\Logging\TestLogger;
 
@@ -32,7 +30,7 @@ final class CompositionTest extends TestCase
         $compose = require \dirname(__DIR__, 4) . '/examples/document-catalog/application.php';
         $storage = new PostgreSQLStorage('/zerno-no-socket-' . bin2hex(random_bytes(12)), 5432, 'unused', 'unused', 'unused');
         $app = $compose(new TestLogger(), $storage, '/unused');
-        $response = $app->handle(new ServerRequest($method, $path));
+        $response = $app->handle(new Request($method, $path));
 
         self::assertSame($status, $response->getStatusCode());
         self::assertSame($contentType, $response->getHeaderLine('Content-Type'));
@@ -67,7 +65,7 @@ final class CompositionTest extends TestCase
             $handler = $compose($logger, new SQLiteStorage(':memory:'), '/unused');
 
             foreach ([['GET', '/unknown', 404], ['POST', '/documents', 405], ['GET', '/documents', 500], ['GET', '/health', 200], ['GET', '/unknown', 404]] as $index => [$method, $path, $status]) {
-                $response = $handler->handle(new ServerRequest($method, $path, ['X-Request-ID' => 'catalog-error-' . $index]));
+                $response = $handler->handle(new Request($method, $path, ['X-Request-ID' => 'catalog-error-' . $index]));
 
                 self::assertSame($status, $response->getStatusCode());
                 self::assertSame('catalog-error-' . $index, $response->getHeaderLine('X-Request-ID'));
@@ -90,14 +88,14 @@ final class CompositionTest extends TestCase
 
             $expected = new Response(404, ['Content-Type' => 'application/json', 'X-Application' => 'kept'], '{"application":"not found"}');
             $application = new readonly class ($expected) implements RequestHandler {
-                public function __construct(private ResponseInterface $response) {}
+                public function __construct(private Response $response) {}
 
-                public function handle(ServerRequestInterface $request): ResponseInterface
+                public function handle(Request $request): Response
                 {
                     return $this->response;
                 }
             };
-            self::assertSame($expected, new ErrorHandlerMiddleware(new Errors(new Html()), $logger)->process(new ServerRequest('GET', '/application'), $application));
+            self::assertSame($expected, new ErrorHandlerMiddleware(new Errors(new Html()), $logger)->process(new Request('GET', '/application'), $application));
         } finally {
             spl_autoload_unregister($guard);
         }

@@ -7,10 +7,10 @@ namespace App\Platform\Http\Middleware;
 use App\Platform\Error\Error;
 use App\Platform\Http\ErrorResponse;
 use App\Platform\Http\Middleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class ErrorHandlerMiddleware implements Middleware
 {
@@ -20,9 +20,9 @@ final readonly class ErrorHandlerMiddleware implements Middleware
     ) {}
 
     public function process(
-        ServerRequestInterface $request,
+        Request $request,
         RequestHandler $handler,
-    ): ResponseInterface {
+    ): Response {
         try {
             return $handler->handle($request);
         } catch (\Throwable $e) {

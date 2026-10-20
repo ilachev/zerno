@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 use App\Platform\Http\Middleware;
 use App\Platform\Http\Middleware\Pipeline;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
-use Nyholm\Psr7\Response;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use App\Platform\Http\Response;
 use Tests\Unit\Platform\Runtime\Fixtures\RequestTrace;
 
 return static function (RequestTrace $trace): RequestHandler {
     $handler = new readonly class ($trace) implements RequestHandler {
         public function __construct(private RequestTrace $trace) {}
 
-        public function handle(ServerRequestInterface $request): ResponseInterface
+        public function handle(Request $request): Response
         {
             $value = $request->getHeaderLine('X-Test-Value');
             $this->trace->events[] = 'handler:' . $value;
@@ -30,7 +29,7 @@ return static function (RequestTrace $trace): RequestHandler {
     $middleware = static fn(string $name): Middleware => new readonly class ($name, $trace) implements Middleware {
         public function __construct(private string $name, private RequestTrace $trace) {}
 
-        public function process(ServerRequestInterface $request, RequestHandler $handler): ResponseInterface
+        public function process(Request $request, RequestHandler $handler): Response
         {
             $value = $request->getHeaderLine('X-Test-Value');
             $this->trace->events[] = $this->name . ':enter:' . $value;

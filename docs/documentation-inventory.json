@@ -168,7 +168,13 @@
         "config/core.php",
         "public/index.php",
         "src/Platform/Runtime",
-        "src/Platform/Storage"
+        "src/Platform/Storage",
+        "src/Platform/Http/Request.php",
+        "src/Platform/Http/Response.php",
+        "src/Platform/Http/Body.php",
+        "src/Platform/Http/Uri.php",
+        "src/Platform/Http/UploadedFile.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php"
       ]
     },
     {
@@ -194,7 +200,13 @@
         "src/Platform/Runtime",
         "src/Platform/Http/AttachmentResponse.php",
         "examples/document-catalog/src/DownloadHandler.php",
-        "tests/Unit/Platform/Http/AttachmentResponseTest.php"
+        "tests/Unit/Platform/Http/AttachmentResponseTest.php",
+        "src/Platform/Http/Request.php",
+        "src/Platform/Http/Response.php",
+        "src/Platform/Http/Body.php",
+        "src/Platform/Http/Uri.php",
+        "src/Platform/Http/UploadedFile.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php"
       ]
     },
     {
@@ -518,6 +530,26 @@
         "bin/migrate.php",
         "src/Platform/Storage/PostgreSQLStorage.php"
       ]
+    },
+    {
+      "id": "native-http-history",
+      "path": "docs/history/2026-10-20-native-http.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Переход на собственные HTTP-типы без Nyholm/PSR packages, native RR adapter, worker patch и проверки.",
+      "read_when": [
+        "Разбор breaking HTTP API и цены собственного HTTP"
+      ],
+      "source_paths": [
+        "src/Platform/Http/Request.php",
+        "src/Platform/Http/Response.php",
+        "src/Platform/Http/Body.php",
+        "src/Platform/Http/Uri.php",
+        "src/Platform/Http/UploadedFile.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "third_party/runtime/manifest.json",
+        "tools/check-http.php"
+      ]
     }
   ],
   "artifacts": [
@@ -619,6 +651,19 @@
       ],
       "source_paths": [
         "docs/history/2026-10-20-explicit-composition.md"
+      ]
+    },
+    {
+      "id": "native-http-data",
+      "path": "docs/history/2026-10-20-native-http.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Raw CLI comparison, probe source, hashes и результаты проверки собственного HTTP.",
+      "read_when": [
+        "Воспроизведение ограниченного CLI comparison"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-native-http.md"
       ]
     }
   ],

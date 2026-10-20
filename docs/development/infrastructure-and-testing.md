@@ -31,7 +31,7 @@ Core migration path — пустой src/Migrations; пример имеет с�
 
 ## Unit и integration profiles
 
-[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего worker и реальный PSR7Worker.
+[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего WorkerInterface и реальный RoadRunnerHttpWorker/HttpWorker. HTTP-типы и ресурсы проверяются реальными объектами; ObservedStream — PHP stream wrapper для наблюдения чтений/seek/close.
 
 [phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом.
 
@@ -47,6 +47,6 @@ php tools/project.php tools:sql:check
 
 ## HTTP, нагрузки и поставка
 
-[HTTP guide](http-and-baseline.md) описывает реальные listeners, временные ports, контроль body/hash/HEAD и ограничения памяти. Ни наличие StreamInterface, ни один unit test не доказывают bounded memory всего pipeline. Короткие результаты не устанавливают runtime winner или длительную устойчивость.
+[HTTP guide](http-and-baseline.md) описывает реальные listeners, временные ports, контроль body/hash/HEAD и ограничения памяти. Ни наличие Body, ни один unit test не доказывают bounded memory всего pipeline. Короткие результаты не устанавливают runtime winner или длительную устойчивость.
 
 SQL inputs генератора, автономная загрузка PHP migrations без application autoload, default HTTP/RR и распакованный runtime archive проверяются вместе при изменении состава. Исторические данные предыдущих композиций остаются [историей](../README.md#исторические-материалы); они не являются инструкцией запускать удалённый API.

@@ -158,17 +158,17 @@ function wireResponse(string $raw, bool $fastcgi, string $method): HttpWireRespo
 }
 
 /** @param array<string, string> $headers */
-function wireHttp(int $port, string $method, string $target, array $headers): HttpWireResponse
+function wireHttp(int $port, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     $socket = wireConnect($port);
     $deadline = microtime(true) + 3;
 
     try {
-        $request = $method . ' ' . $target . " HTTP/1.1\r\nHost: fixture.test\r\nConnection: close\r\nContent-Length: 0\r\n";
+        $request = $method . ' ' . $target . " HTTP/1.1\r\nHost: fixture.test\r\nConnection: close\r\nContent-Length: " . strlen($body) . "\r\n";
         foreach ($headers as $name => $value) {
             $request .= $name . ': ' . $value . "\r\n";
         }
-        wireWrite($socket, $request . "\r\n", $deadline);
+        wireWrite($socket, $request . "\r\n" . $body, $deadline);
         $raw = '';
 
         while (!feof($socket)) {
@@ -201,7 +201,7 @@ function wireFcgiLength(int $length): string
 }
 
 /** @param array<string, string> $headers */
-function wireFastcgi(int $port, string $root, string $method, string $target, array $headers): HttpWireResponse
+function wireFastcgi(int $port, string $root, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     $socket = wireConnect($port);
     $deadline = microtime(true) + 3;
@@ -210,10 +210,11 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
         'SERVER_PROTOCOL' => 'HTTP/1.1', 'SERVER_NAME' => 'fixture.test', 'SERVER_PORT' => '80',
         'REMOTE_ADDR' => '127.0.0.1', 'REQUEST_METHOD' => $method, 'REQUEST_URI' => $target,
         'QUERY_STRING' => explode('?', $target, 2)[1] ?? '', 'SCRIPT_NAME' => '/http.php', 'HTTP_HOST' => 'fixture.test',
-        'SCRIPT_FILENAME' => $root . '/public/http.php', 'DOCUMENT_ROOT' => $root . '/public', 'CONTENT_LENGTH' => '0',
+        'SCRIPT_FILENAME' => $root . '/public/http.php', 'DOCUMENT_ROOT' => $root . '/public', 'CONTENT_LENGTH' => (string) strlen($body),
     ];
     foreach ($headers as $name => $value) {
-        $parameters['HTTP_' . strtoupper(str_replace('-', '_', $name))] = $value;
+        $key = strtoupper(str_replace('-', '_', $name));
+        $parameters[in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH'], true) ? $key : 'HTTP_' . $key] = $value;
     }
     $encoded = '';
     foreach ($parameters as $name => $value) {
@@ -222,7 +223,8 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
 
     try {
         wireWrite($socket, wireFcgiRecord(1, pack('nC', 1, 0) . str_repeat("\0", 5))
-            . wireFcgiRecord(4, $encoded) . wireFcgiRecord(4, '') . wireFcgiRecord(5, ''), $deadline);
+            . wireFcgiRecord(4, $encoded) . wireFcgiRecord(4, '')
+            . ($body === '' ? '' : wireFcgiRecord(5, $body)) . wireFcgiRecord(5, ''), $deadline);
         $output = '';
         $error = '';
 
@@ -259,11 +261,11 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
 }
 
 /** @param array<string, string> $headers */
-function wireRequest(string $runtime, int $port, string $root, string $method, string $target, array $headers): HttpWireResponse
+function wireRequest(string $runtime, int $port, string $root, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     return $runtime === 'fpm'
-        ? wireFastcgi($port, $root, $method, $target, $headers)
-        : wireHttp($port, $method, $target, $headers);
+        ? wireFastcgi($port, $root, $method, $target, $headers, $body)
+        : wireHttp($port, $method, $target, $headers, $body);
 }
 
 function wireMatrix(string $runtime, int $port, string $root, string $errorFormat): int
@@ -376,6 +378,38 @@ function wireMatrix(string $runtime, int $port, string $root, string $errorForma
     }
 
     return count($cases) + 4;
+}
+
+function wireInputs(string $runtime, int $port, string $root): int
+{
+    $form = wireRequest($runtime, $port, $root, 'POST', '/__wire/input?tag=a%20b', [
+        'Content-Type' => 'application/x-www-form-urlencoded', 'Cookie' => 'session=first',
+    ], 'name=Alice&nested%5Bk%5D=value');
+    wireSame(200, $form->status, 'Form input status');
+    wireSame([
+        'query' => ['tag' => 'a b'], 'cookies' => ['session' => 'first'],
+        'parsed' => ['name' => 'Alice', 'nested' => ['k' => 'value']], 'body' => null, 'upload' => null,
+    ], json_decode($form->body, true, 512, JSON_THROW_ON_ERROR), 'Form input');
+    $json = wireRequest($runtime, $port, $root, 'POST', '/__wire/input', ['Content-Type' => 'application/json'], '{"name":"Alice"}');
+    wireSame(200, $json->status, 'JSON input status');
+    wireSame([
+        'query' => [], 'cookies' => [], 'parsed' => null, 'body' => '{"name":"Alice"}', 'upload' => null,
+    ], json_decode($json->body, true, 512, JSON_THROW_ON_ERROR), 'JSON input');
+    $multipart = "--zerno-boundary\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\nAlice\r\n"
+        . "--zerno-boundary\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nuploaded\r\n--zerno-boundary--\r\n";
+    $file = wireRequest($runtime, $port, $root, 'POST', '/__wire/input', ['Content-Type' => 'multipart/form-data; boundary=zerno-boundary'], $multipart);
+    wireSame(200, $file->status, 'Multipart input status');
+    wireSame([
+        'query' => [], 'cookies' => [], 'parsed' => ['name' => 'Alice'], 'body' => null,
+        'upload' => ['name' => 'example.txt', 'type' => 'text/plain', 'size' => 8, 'sha256' => hash('sha256', 'uploaded'), 'closedAfterMove' => true],
+    ], json_decode($file->body, true, 512, JSON_THROW_ON_ERROR), 'Multipart upload and move');
+    $next = wireRequest($runtime, $port, $root, 'GET', '/__wire/input', []);
+    wireSame(200, $next->status, 'Next input status');
+    wireSame([
+        'query' => [], 'cookies' => [], 'parsed' => null, 'body' => null, 'upload' => null,
+    ], json_decode($next->body, true, 512, JSON_THROW_ON_ERROR), 'Next request reset');
+
+    return 4;
 }
 
 /** @param array<int, string> $hashes */
@@ -500,6 +534,7 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
             throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
         }
         $count = wireMatrix($runtime, $port, $root, $errorFormat);
+        $count += wireInputs($runtime, $port, $root);
         $count += wireAttachments($runtime, $port, $root, $hashes);
         $logged = file_get_contents($log);
         wireSame(true, $logged !== false && str_contains($logged, 'Application responded.') && str_contains($logged, 'body_size'), 'Response metadata reached the runtime log');

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Http\Middleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestContextAttributes;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
 use App\Platform\Logging\RoadRunnerLogger;
 use App\Platform\Runtime\RequestContextFactory;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class RequestContextMiddleware implements Middleware
 {
@@ -21,9 +21,9 @@ final readonly class RequestContextMiddleware implements Middleware
     ) {}
 
     public function process(
-        ServerRequestInterface $request,
+        Request $request,
         RequestHandler $handler,
-    ): ResponseInterface {
+    ): Response {
         $startTime = hrtime(true);
         $context = $this->requestContextFactory->create(
             requestId: $request->getHeaderLine('X-Request-ID'),

@@ -47,6 +47,8 @@
 
 ## Исторические материалы
 
+- [Собственный HTTP без Nyholm/PSR от 2026-10-20](history/2026-10-20-native-http.md) — контракты, native RoadRunner, worker adaptation и [данные проверки](history/2026-10-20-native-http.json).
+
 - [Явная композиция без контейнера от 2026-10-20](history/2026-10-20-explicit-composition.md) — контракт сборки, ленивый PDO, проверки и [данные сравнения](history/2026-10-20-explicit-composition.json).
 
 - [Очистка состава от 2026-10-20](history/2026-10-20-core-scope.md) — удалённые подсистемы, несовместимость, размеры и [данные ревизии](history/2026-10-20-core-scope.json).

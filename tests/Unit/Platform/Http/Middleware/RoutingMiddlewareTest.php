@@ -6,15 +6,13 @@ namespace Tests\Unit\Platform\Http\Middleware;
 
 use App\Platform\Http\JsonResponse;
 use App\Platform\Http\Middleware\RoutingMiddleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
+use App\Platform\Http\Response;
 use App\Platform\Routing\RouteEntry;
 use App\Platform\Routing\Router;
 use App\Platform\Routing\RouteResult;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 final class RoutingMiddlewareTest extends TestCase
 {
@@ -26,7 +24,7 @@ final class RoutingMiddlewareTest extends TestCase
         return $this->handlers[$name] ??= new readonly class ($name) implements RequestHandler {
             public function __construct(private string $name) {}
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
+            public function handle(Request $request): Response
             {
                 return new Response(200, [], $this->name);
             }
@@ -37,7 +35,7 @@ final class RoutingMiddlewareTest extends TestCase
     {
         $middleware = $this->createMiddleware([new RouteEntry('GET', '/items/{id}', $this->handler('ItemHandler'))]);
         $handler = new RoutingRecordingHandler();
-        $response = $middleware->process(new ServerRequest('POST', '/missing'), $handler);
+        $response = $middleware->process(new Request('POST', '/missing'), $handler);
 
         self::assertSame(404, $response->getStatusCode());
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
@@ -55,7 +53,7 @@ final class RoutingMiddlewareTest extends TestCase
             new RouteEntry('POST', '/items/{id}', $this->handler('SaveItemHandler')),
         ]);
         $handler = new RoutingRecordingHandler();
-        $response = $middleware->process(new ServerRequest('DELETE', '/items/new'), $handler);
+        $response = $middleware->process(new Request('DELETE', '/items/new'), $handler);
 
         self::assertSame(405, $response->getStatusCode());
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
@@ -69,7 +67,7 @@ final class RoutingMiddlewareTest extends TestCase
         $middleware = $this->createMiddleware([new RouteEntry('GET', '/items/{id}', $this->handler('ItemHandler'))]);
         foreach (['POST', 'HEAD'] as $method) {
             $handler = new RoutingRecordingHandler();
-            $response = $middleware->process(new ServerRequest($method, '/items/42'), $handler);
+            $response = $middleware->process(new Request($method, '/items/42'), $handler);
 
             self::assertSame(405, $response->getStatusCode());
             self::assertSame('GET', $response->getHeaderLine('Allow'));
@@ -83,7 +81,7 @@ final class RoutingMiddlewareTest extends TestCase
             new RouteEntry('GET', '/items/current', $this->handler('CurrentItemHandler')),
             new RouteEntry('POST', '/items/{id}', $this->handler('SaveItemHandler')),
         ]);
-        $request = new ServerRequest('POST', '/items/current?preview=1');
+        $request = new Request('POST', '/items/current?preview=1');
         $handler = new RoutingRecordingHandler();
         $response = $middleware->process($request, $handler);
 
@@ -107,16 +105,16 @@ final class RoutingMiddlewareTest extends TestCase
 
 final class RoutingRecordingHandler implements RequestHandler
 {
-    public ?ServerRequestInterface $request = null;
+    public ?Request $request = null;
 
-    public readonly ResponseInterface $response;
+    public readonly Response $response;
 
     public function __construct()
     {
         $this->response = new Response(202, ['X-Handler' => 'called'], 'handled');
     }
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         $this->request = $request;
 

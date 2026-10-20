@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace App\Platform\Runtime;
 
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\UploadedFile;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UploadedFileInterface;
-use Psr\Http\Message\UriInterface;
+use App\Platform\Http\Body;
+use App\Platform\Http\Request;
+use App\Platform\Http\UploadedFile;
+use App\Platform\Http\Uri;
 
 final readonly class SapiRequestFactory
 {
-    public function __construct(
-        private Psr17Factory $factory = new Psr17Factory(),
-    ) {}
-
-    public function fromGlobals(): ServerRequestInterface
+    public function fromGlobals(): Request
     {
         return $this->create(
             $_SERVER,
@@ -25,7 +19,7 @@ final readonly class SapiRequestFactory
             $_POST,
             $_COOKIE,
             $_FILES,
-            $this->factory->createStreamFromFile('php://input', 'rb'),
+            Body::fromFile('php://input'),
         );
     }
 
@@ -42,8 +36,8 @@ final readonly class SapiRequestFactory
         array $post = [],
         array $cookies = [],
         array $files = [],
-        ?StreamInterface $body = null,
-    ): ServerRequestInterface {
+        ?Body $body = null,
+    ): Request {
         $method = $this->serverString($server, 'REQUEST_METHOD', 'GET');
         $target = $this->serverString($server, 'REQUEST_URI', '/');
         if (
@@ -63,13 +57,13 @@ final readonly class SapiRequestFactory
             '3.0' => '3',
             default => $matches[1],
         };
-        $request = $this->factory->createServerRequest($method, $this->createUri($server, $target), $server)
+        $request = new Request($method, $this->createUri($server, $target), serverParams: $server)
             ->withProtocolVersion($version)
             ->withRequestTarget($target)
             ->withQueryParams($query)
             ->withCookieParams($cookies)
             ->withUploadedFiles($this->uploadedFiles($files))
-            ->withBody($body ?? $this->factory->createStream());
+            ->withBody($body ?? Body::create());
 
         foreach ($this->headers($server) as $name => $value) {
             $request = $request->withHeader($name, $value);
@@ -84,7 +78,7 @@ final readonly class SapiRequestFactory
     }
 
     /** @param array<array-key, mixed> $server */
-    private function createUri(array $server, string $target): UriInterface
+    private function createUri(array $server, string $target): Uri
     {
         $https = $this->serverString($server, 'HTTPS', 'off');
         $scheme = $https !== '' && $https !== '0' && strcasecmp($https, 'off') !== 0 ? 'https' : 'http';
@@ -110,12 +104,10 @@ final readonly class SapiRequestFactory
                 || filter_var($parts[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
                 throw new \InvalidArgumentException('Invalid request authority');
             }
-            $host = '[' . $parts[1] . ']';
         } else {
             if (preg_match("~\\A((?:[a-zA-Z0-9._\\~!$&'()*+,;=-]|%[a-fA-F0-9]{2})+)(?::([0-9]+))?\\z~", $authority, $parts) !== 1) {
                 throw new \InvalidArgumentException('Invalid request authority');
             }
-            $host = $parts[1];
         }
 
         $port = isset($parts[2]) ? (int) $parts[2] : null;
@@ -123,14 +115,7 @@ final readonly class SapiRequestFactory
             throw new \InvalidArgumentException('Invalid request port');
         }
 
-        $targetParts = explode('?', $target === '*' ? '' : $target, 2);
-
-        return $this->factory->createUri()
-            ->withScheme($scheme)
-            ->withHost($host)
-            ->withPort($port)
-            ->withPath($targetParts[0])
-            ->withQuery($targetParts[1] ?? '');
+        return new Uri($scheme . '://' . $authority . ($target === '*' ? '' : $target));
     }
 
     /**
@@ -189,9 +174,9 @@ final readonly class SapiRequestFactory
 
     /**
      * @param array<array-key, mixed> $file
-     * @return UploadedFileInterface|array<array-key, mixed>
+     * @return UploadedFile|array<array-key, mixed>
      */
-    private function uploadedFile(array $file): UploadedFileInterface|array
+    private function uploadedFile(array $file): UploadedFile|array
     {
         $error = $file['error'] ?? null;
         if (\is_array($error)) {

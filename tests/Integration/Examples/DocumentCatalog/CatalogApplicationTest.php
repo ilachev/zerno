@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Examples\DocumentCatalog;
 
+use App\Platform\Http\Request;
+use App\Platform\Http\Response;
 use App\Platform\Logging\Logger;
 use App\Platform\Logging\ReadableOutputLogger;
 use App\Platform\Runtime\App;
@@ -13,10 +15,8 @@ use App\Platform\Storage\Migration\MigrationService;
 use App\Platform\Storage\Storage;
 use App\Platform\Storage\StorageException;
 use Examples\DocumentCatalog\DocumentId;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ResponseInterface;
 use Tests\Integration\PostgreSqlTestDatabase;
 
 final class CatalogApplicationTest extends TestCase
@@ -278,9 +278,9 @@ final class CatalogApplicationTest extends TestCase
     /** @param array<string, mixed> $query
      * @param array<string, string> $headers
      */
-    private function request(string $method, string $path, array $query = [], array $headers = []): ResponseInterface
+    private function request(string $method, string $path, array $query = [], array $headers = []): Response
     {
-        return $this->app->handle(new ServerRequest($method, 'http://catalog.test' . $path, $headers)->withQueryParams($query));
+        return $this->app->handle(new Request($method, 'http://catalog.test' . $path, $headers)->withQueryParams($query));
     }
 
     private static function pdf(): string

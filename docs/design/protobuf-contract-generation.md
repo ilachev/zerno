@@ -31,7 +31,7 @@ Protobuf как язык контракта не определяет форма
 
 Runtime не ищет `.proto`, не читает descriptors и не запускает генератор/компилятор. Артефакты входят в checkout и runtime archive. Compiler executable — отдельное требование платформы разработчика; PHP-библиотеки и contract sources поставляются статически, с notices и manifest hashes. Новая команда генерации не устанавливает пакеты и не скачивает инструменты.
 
-Обычный HTTP handler остаётся корректным потребителем ядра. Общий router не должен знать дескрипторы protobuf; generated directories не сканируются для поиска сервисов. Контейнер/DI providers не возвращаются вместе с генератором. Полученные RouteEntry подключаются явно; расширение не требует отдельного server loop, старого `config/container.php` или встроенных sessions/statistics.
+Generated HTTP handler принимает собственный Request ядра и возвращает Response; PSR/Nyholm dependencies и полный message interface не генерируются. Обычный HTTP handler остаётся корректным потребителем ядра. Общий router не должен знать дескрипторы protobuf; generated directories не сканируются для поиска сервисов. Контейнер/DI providers не возвращаются вместе с генератором. Полученные RouteEntry подключаются явно; расширение не требует отдельного server loop, старого `config/container.php` или встроенных sessions/statistics.
 
 ## Первый законченный этап
 

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Http\Middleware;
+use App\Platform\Http\Request;
 use App\Platform\Http\RequestHandler;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use App\Platform\Http\Response;
 
 final readonly class Pipeline implements RequestHandler
 {
@@ -19,7 +19,7 @@ final readonly class Pipeline implements RequestHandler
         private array $middlewares = [],
     ) {}
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function handle(Request $request): Response
     {
         $middlewares = $this->middlewares;
         $middleware = array_shift($middlewares);

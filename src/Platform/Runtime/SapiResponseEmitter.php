@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Platform\Runtime;
 
-use Psr\Http\Message\ResponseInterface;
+use App\Platform\Http\Response;
 
 final readonly class SapiResponseEmitter
 {
     private const CHUNK_SIZE = 8192;
 
-    public function emit(ResponseInterface $response, string $requestMethod = 'GET'): void
+    public function emit(Response $response, string $requestMethod = 'GET'): void
     {
         $body = $response->getBody();
 

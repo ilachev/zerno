@@ -18,7 +18,7 @@ Document, статусы draft/published/withdrawn, PDF-only, private FileStore,
 
 Opaque storage key выбирается из записи, не из пользовательского пути. FileStore проверяет containment/тип/размер и метаданные открытого файла. DownloadHandler передаёт новый поток AttachmentResponse; HEAD закрывает файл и возвращает пустой body с теми же representation headers. Range игнорируется, выдаётся полный 200.
 
-SAPI/RR закрывают body после отправки. Каталог выбирает RR chunk 8192 для seekable regular files; default RR 0 буферизует. Логирование не читает payload. Ограниченная память подтверждается [полным transport-путём](../development/http-and-baseline.md), а не самим наличием StreamInterface. Изменение файла во время передачи/client abort и долгосрочная устойчивость не объявляются проверенными.
+SAPI/RR закрывают body после отправки. Каталог выбирает RR chunk 8192 для seekable regular files; default RR 0 буферизует. Логирование не читает payload. Ограниченная память подтверждается [полным transport-путём](../development/http-and-baseline.md), а не самим наличием Body. Изменение файла во время передачи/client abort и долгосрочная устойчивость не объявляются проверенными.
 
 ## Проверки и границы
 

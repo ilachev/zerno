@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Http\Body;
+use App\Platform\Http\UploadedFile;
 use App\Platform\Runtime\SapiRequestFactory;
-use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\UploadedFileInterface;
 
 final class SapiRequestFactoryTest extends TestCase
 {
     public function testCreatesRequestWithNativeSapiDataAndIgnoresForwardedAuthority(): void
     {
-        $body = Stream::create('name=Alice');
+        $body = Body::create('name=Alice');
         $request = (new SapiRequestFactory())->create(
             server: [
                 'REQUEST_METHOD' => 'POST',
@@ -141,7 +141,7 @@ final class SapiRequestFactoryTest extends TestCase
         $request = (new SapiRequestFactory())->create(
             ['HTTP_HOST' => 'example.test', 'REQUEST_METHOD' => $method, 'CONTENT_TYPE' => $contentType],
             post: ['field' => 'value'],
-            body: Stream::create('{"field":"value"}'),
+            body: Body::create('{"field":"value"}'),
         );
 
         self::assertSame($parsed ? ['field' => 'value'] : null, $request->getParsedBody());
@@ -195,8 +195,8 @@ final class SapiRequestFactoryTest extends TestCase
             self::assertIsArray($files);
             $first = $files[0];
             $missing = $files[1];
-            self::assertInstanceOf(UploadedFileInterface::class, $first);
-            self::assertInstanceOf(UploadedFileInterface::class, $missing);
+            self::assertInstanceOf(UploadedFile::class, $first);
+            self::assertInstanceOf(UploadedFile::class, $missing);
             self::assertSame('first.txt', $first->getClientFilename());
             self::assertSame('text/plain', $first->getClientMediaType());
             self::assertSame(8, $first->getSize());

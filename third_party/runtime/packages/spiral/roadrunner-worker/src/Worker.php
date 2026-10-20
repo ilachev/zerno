@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Spiral\RoadRunner;
 
-use Psr\Log\LoggerInterface;
 use Spiral\Goridge\BlockingRelayInterface;
 use Spiral\Goridge\Exception\GoridgeException;
 use Spiral\Goridge\Exception\TransportException;
@@ -46,7 +45,6 @@ class Worker implements StreamWorkerInterface
     public function __construct(
         private readonly RelayInterface $relay,
         bool $interceptSideEffects = true,
-        private readonly LoggerInterface $logger = new Logger(),
     ) {
         if ($interceptSideEffects) {
             StdoutHandler::register();
@@ -57,12 +55,11 @@ class Worker implements StreamWorkerInterface
      * Create a new RoadRunner {@see Worker} using global
      * environment ({@see Environment}) configuration.
      */
-    public static function create(bool $interceptSideEffects = true, LoggerInterface $logger = new Logger()): self
+    public static function create(bool $interceptSideEffects = true): self
     {
         return static::createFromEnvironment(
             env: Environment::fromGlobals(),
             interceptSideEffects: $interceptSideEffects,
-            logger: $logger,
         );
     }
 
@@ -73,7 +70,6 @@ class Worker implements StreamWorkerInterface
     public static function createFromEnvironment(
         EnvironmentInterface $env,
         bool $interceptSideEffects = true,
-        LoggerInterface $logger = new Logger(),
     ): self {
         $address = $env->getRelayAddress();
         \assert($address !== '', 'Relay address must be specified in environment');
@@ -81,13 +77,7 @@ class Worker implements StreamWorkerInterface
         return new self(
             relay: Relay::create($address),
             interceptSideEffects: $interceptSideEffects,
-            logger: $logger,
         );
-    }
-
-    public function getLogger(): LoggerInterface
-    {
-        return $this->logger;
     }
 
     public function waitPayload(): ?Payload

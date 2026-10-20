@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Platform\Http;
 
 use App\Platform\Http\AttachmentResponse;
-use Nyholm\Psr7\Stream;
+use App\Platform\Http\Body;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -13,7 +13,7 @@ final class AttachmentResponseTest extends TestCase
 {
     public function testCreatesAnAttachmentWithoutReadingOrRewindingTheStream(): void
     {
-        $body = Stream::create('payload');
+        $body = Body::create('payload');
         $body->seek(3);
         $response = AttachmentResponse::create($body, 'Отчёт "итоги".pdf', 7, 'application/pdf', 'report.pdf');
 
@@ -34,7 +34,7 @@ final class AttachmentResponseTest extends TestCase
     #[DataProvider('provideNormalizesUntrustedFilenamesCases')]
     public function testNormalizesUntrustedFilenames(string $name, string $fallback, string $expectedName, string $expectedFallback): void
     {
-        $response = AttachmentResponse::create(Stream::create(), $name, 0, fallbackFilename: $fallback);
+        $response = AttachmentResponse::create(Body::create(), $name, 0, fallbackFilename: $fallback);
 
         try {
             self::assertSame(
@@ -66,7 +66,7 @@ final class AttachmentResponseTest extends TestCase
         self::assertNotFalse($sockets);
         fwrite($sockets[1], 'payload');
         fclose($sockets[1]);
-        $body = Stream::create($sockets[0]);
+        $body = Body::create($sockets[0]);
         $response = AttachmentResponse::create($body, 'payload', 7);
 
         try {
@@ -80,7 +80,7 @@ final class AttachmentResponseTest extends TestCase
     #[DataProvider('provideClosesTheBodyWhenConstructionFailsCases')]
     public function testClosesTheBodyWhenConstructionFails(int $size, string $contentType): void
     {
-        $body = Stream::create('payload');
+        $body = Body::create('payload');
 
         try {
             AttachmentResponse::create($body, 'report', $size, $contentType);

@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Examples\DocumentCatalog;
 
-use Nyholm\Psr7\Response;
-use Psr\Http\Message\ResponseInterface;
+use App\Platform\Http\Response;
 
 final readonly class Html
 {
     /** @param list<Document> $documents */
-    public function listing(array $documents, ?int $next): ResponseInterface
+    public function listing(array $documents, ?int $next): Response
     {
         /** @var \Closure(list<Document>, ?int): void $template */
         $template = require __DIR__ . '/../templates/list.php';
@@ -19,7 +18,7 @@ final readonly class Html
         return $this->page('Документы', $content);
     }
 
-    public function detail(Document $document): ResponseInterface
+    public function detail(Document $document): Response
     {
         /** @var \Closure(Document): void $template */
         $template = require __DIR__ . '/../templates/detail.php';
@@ -28,7 +27,7 @@ final readonly class Html
         return $this->page($document->title, $content);
     }
 
-    public function error(int $status): ResponseInterface
+    public function error(int $status): Response
     {
         [$title, $message] = match ($status) {
             400 => ['Некорректный запрос', 'Проверьте адрес страницы и параметры запроса.'],
@@ -53,7 +52,7 @@ final readonly class Html
         return number_format($bytes, 0, ',', ' ') . ' байт';
     }
 
-    private function page(string $title, string $content, int $status = 200): ResponseInterface
+    private function page(string $title, string $content, int $status = 200): Response
     {
         /** @var \Closure(string, string): void $template */
         $template = require __DIR__ . '/../templates/layout.php';

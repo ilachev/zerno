@@ -6,7 +6,7 @@
 
 ## Текущий состав
 
-HTTP/маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation, SAPI/FPM и RoadRunner. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
+Собственные Request/Response/Body/Uri/UploadedFile без PSR/Nyholm, маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation, SAPI/FPM и RoadRunner. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
 
 Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. Старый protobuf API/генератор также удалён, но пользователь подтвердил направление `.proto → DTO/endpoint/HTTP adapter/routes`; это [принятый план](design/protobuf-contract-generation.md), не реализованная сейчас возможность и не запрет protobuf после очистки. PHP зависимости и quality/codegen tools включены; package installation/download отсутствуют на всех путях.
 
@@ -30,7 +30,7 @@ HTTP/маршруты/явная композиция, ErrorResponse, Attachment
 
 ## Композиции и ограничения
 
-config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/http.php и public/index.php используют одну APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
+config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/http.php и public/index.php используют одну APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
 
 Каталог собирается в examples/document-catalog/application.php из Logger/Storage/private directory; config.php только выбирает эти входы. PostgreSQLStorage лениво открывает PDO при первой операции; handlers/repository строятся заранее без SQL. /health/404/405 не открывают БД. Миграции — отдельный CLI граф с директорией migrations, не HTTP-конфигурацией.
 
