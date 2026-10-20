@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Generator;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SqlGen\Config\DefaultSqlGenerationProfile;
 use SqlGen\Config\GeneratorConfig;
@@ -19,6 +20,108 @@ use SqlGen\Type\PhpTypeFactory;
 
 final class PhpQueryGeneratorTest extends TestCase
 {
+    #[DataProvider('selectResultKindsAndLimits')]
+    public function testPreservesExplicitSqlAndResultKind(SqlResultKind $resultKind, string $limitClause): void
+    {
+        $sql = 'SELECT id FROM sessions ORDER BY id DESC' . $limitClause . ';';
+        $generator = new PhpQueryGenerator(
+            new GeneratorConfig(
+                inputDir: 'sql/queries',
+                outputDir: 'gen/Generated/Sql',
+                namespace: 'App\\Generated\\Sql',
+                schemaPath: 'sql/schema.sql',
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), false),
+                ]),
+            ]),
+        );
+
+        $files = $generator->generateForSqlFile(new SqlFile(
+            sourcePath: 'sql/queries/session.sql',
+            moduleName: 'Session',
+            statements: [new SqlStatement(
+                name: 'FindSessions',
+                resultKind: $resultKind,
+                sql: $sql,
+                parameters: [],
+            )],
+        ));
+
+        self::assertCount(2, $files);
+        foreach ($files as $file) {
+            self::assertNotEmpty(token_get_all($file->content, TOKEN_PARSE));
+        }
+        self::assertStringContainsString($sql, $files[1]->content);
+        self::assertStringContainsString('public static function create(): self', $files[1]->content);
+        self::assertStringContainsString('return [];', $files[1]->content);
+        self::assertStringContainsString(
+            $resultKind === SqlResultKind::One ? 'implements OneRowQuery' : 'implements ManyRowsQuery',
+            $files[1]->content,
+        );
+        if ($limitClause === '') {
+            self::assertStringNotContainsString('LIMIT', $files[1]->content);
+        }
+    }
+
+    /** @return iterable<string, array{SqlResultKind, string}> */
+    public static function selectResultKindsAndLimits(): iterable
+    {
+        foreach ([SqlResultKind::One, SqlResultKind::Many] as $resultKind) {
+            yield $resultKind->value . ' unbounded' => [$resultKind, ''];
+            yield $resultKind->value . ' bounded' => [$resultKind, ' LIMIT 21'];
+            yield $resultKind->value . ' zero' => [$resultKind, ' LIMIT 0'];
+        }
+    }
+
+    #[DataProvider('parameterizedSelectResultKinds')]
+    public function testGeneratesRequiredIntLimitAlongsideNullableWhereParameter(SqlResultKind $resultKind): void
+    {
+        $sql = 'SELECT id FROM sessions WHERE user_id = :user_id ORDER BY id DESC LIMIT :row_limit;';
+        $generator = new PhpQueryGenerator(
+            new GeneratorConfig(
+                inputDir: 'sql/queries',
+                outputDir: 'gen/Generated/Sql',
+                namespace: 'App\\Generated\\Sql',
+                schemaPath: 'sql/schema.sql',
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), false),
+                    'user_id' => new SchemaColumn('user_id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+
+        $files = $generator->generateForSqlFile(new SqlFile(
+            sourcePath: 'sql/queries/session.sql',
+            moduleName: 'Session',
+            statements: [new SqlStatement(
+                name: 'FindSessions',
+                resultKind: $resultKind,
+                sql: $sql,
+                parameters: [new SqlParameter('user_id'), new SqlParameter('row_limit')],
+            )],
+        ));
+
+        self::assertCount(2, $files);
+        self::assertNotEmpty(token_get_all($files[1]->content, TOKEN_PARSE));
+        self::assertStringContainsString($sql, $files[1]->content);
+        self::assertStringContainsString('private int $rowLimit', $files[1]->content);
+        self::assertStringContainsString('public static function create(?int $userId, int $rowLimit): self', $files[1]->content);
+        self::assertStringContainsString("@return array{'user_id': null|int, 'row_limit': int}", $files[1]->content);
+        self::assertStringContainsString("'user_id' => \$this->userId", $files[1]->content);
+        self::assertStringContainsString("'row_limit' => \$this->rowLimit", $files[1]->content);
+    }
+
+    /** @return iterable<string, array{SqlResultKind}> */
+    public static function parameterizedSelectResultKinds(): iterable
+    {
+        yield 'one' => [SqlResultKind::One];
+        yield 'many' => [SqlResultKind::Many];
+    }
+
     public function testGeneratesRowAndQueryFiles(): void
     {
         $generator = new PhpQueryGenerator(

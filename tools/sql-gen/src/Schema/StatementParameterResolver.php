@@ -9,13 +9,17 @@ use SqlGen\Ast\InsertQuery;
 use SqlGen\Ast\SelectColumnReference;
 use SqlGen\Ast\SelectComparison;
 use SqlGen\Ast\SelectPlaceholder;
+use SqlGen\Ast\SelectProjectionCase;
+use SqlGen\Ast\SelectProjectionFunction;
 use SqlGen\Ast\SelectQuery;
+use SqlGen\Ast\SqlQuery;
 use SqlGen\Ast\UpdateQuery;
 use SqlGen\Model\DatabaseSchema;
 use SqlGen\Model\ResolvedSqlParameter;
 use SqlGen\Model\SqlStatement;
 use SqlGen\Parser\PhplrtSqlParser;
 use SqlGen\Parser\SqlQueryParser;
+use SqlGen\Type\PhpTypeFactory;
 
 final class StatementParameterResolver
 {
@@ -36,10 +40,20 @@ final class StatementParameterResolver
     public function resolve(SqlStatement $statement, DatabaseSchema $schema): array
     {
         $tableMap = $this->tableMapResolver->resolve($statement, $schema);
+        $query = $this->sqlParser->parse($statement->sql);
+        $limit = $query instanceof SelectQuery && $query->limit instanceof SelectPlaceholder ? $query->limit : null;
+        $limitSqlType = null;
         $resolvedByName = [];
 
-        foreach ($this->extractParameterMappings($statement) as $mapping) {
+        foreach ($this->extractParameterMappings($query, $statement->name) as $mapping) {
             $resolvedColumn = $tableMap->resolveColumn($mapping->qualifier, $mapping->column);
+            if ($mapping->parameterName === $limit?->name) {
+                if (!in_array($resolvedColumn->column->sqlType, ['INTEGER', 'BIGINT', 'BIGSERIAL', 'SERIAL'], true)) {
+                    throw new \RuntimeException("LIMIT parameter {$mapping->parameterName} must be compatible with an integer column in query {$statement->name}");
+                }
+                // Native prepare infers a reused parameter from its first comparison before LIMIT.
+                $limitSqlType ??= $resolvedColumn->column->sqlType;
+            }
 
             $resolvedByName[$mapping->parameterName] = new ResolvedSqlParameter(
                 name: $mapping->parameterName,
@@ -47,6 +61,18 @@ final class StatementParameterResolver
                 sqlType: $resolvedColumn->column->sqlType,
                 phpType: $resolvedColumn->column->phpType,
                 nullable: $resolvedColumn->column->nullable,
+            );
+        }
+
+        if ($limit !== null) {
+            $this->assertLimitIsNotUsedInProjections($query, $limit, $statement->name);
+            // NULL means unbounded in PostgreSQL; a LIMIT parameter must always be a non-null integer.
+            $resolvedByName[$limit->name] = new ResolvedSqlParameter(
+                name: $limit->name,
+                propertyName: $this->snakeToCamel($limit->name),
+                sqlType: $limitSqlType ?? 'BIGINT',
+                phpType: PhpTypeFactory::fromNativeType('int'),
+                nullable: false,
             );
         }
 
@@ -66,13 +92,33 @@ final class StatementParameterResolver
         return $parameters;
     }
 
+    private function assertLimitIsNotUsedInProjections(SelectQuery $query, SelectPlaceholder $limit, string $statementName): void
+    {
+        foreach ($query->projections as $projection) {
+            $operands = [];
+            if ($projection instanceof SelectProjectionFunction) {
+                $operands = $projection->function->arguments;
+            } elseif ($projection instanceof SelectProjectionCase) {
+                $operands[] = $projection->expression->elseResult;
+                foreach ($projection->expression->whenClauses as $when) {
+                    array_push($operands, $when->condition->left, $when->condition->right, $when->result);
+                }
+            }
+
+            foreach ($operands as $operand) {
+                if ($operand instanceof SelectPlaceholder && $operand->name === $limit->name) {
+                    // Native PostgreSQL prepare may infer a projection type before seeing LIMIT.
+                    throw new \RuntimeException("LIMIT parameter {$limit->name} cannot be reused in projection expressions in query {$statementName}");
+                }
+            }
+        }
+    }
+
     /**
      * @return list<ResolvedParameterMapping>
      */
-    private function extractParameterMappings(SqlStatement $statement): array
+    private function extractParameterMappings(SqlQuery $query, string $statementName): array
     {
-        $query = $this->sqlParser->parse($statement->sql);
-
         if ($query instanceof SelectQuery) {
             $comparisons = [];
 
@@ -108,7 +154,7 @@ final class StatementParameterResolver
         }
 
         if (!$query instanceof DeleteQuery && !$query instanceof UpdateQuery) {
-            throw new \RuntimeException("Unsupported SQL query type for parameter resolution in {$statement->name}");
+            throw new \RuntimeException("Unsupported SQL query type for parameter resolution in {$statementName}");
         }
 
         $comparisons = [];

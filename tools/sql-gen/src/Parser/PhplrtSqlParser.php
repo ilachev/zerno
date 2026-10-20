@@ -88,6 +88,7 @@ final class PhplrtSqlParser implements SqlQueryParser
         $where = [];
         $whereOperators = [];
         $orderBy = [];
+        $limit = null;
 
         foreach ($select->children as $child) {
             if (!$child instanceof PrintableNode) {
@@ -106,6 +107,11 @@ final class PhplrtSqlParser implements SqlQueryParser
 
             if ($child->getState() === 'OrderByClause') {
                 $orderBy = $this->normalizeOrderByClause($child);
+                continue;
+            }
+
+            if ($child->getState() === 'LimitClause') {
+                $limit = $this->normalizeLimitClause($child);
             }
         }
 
@@ -116,7 +122,30 @@ final class PhplrtSqlParser implements SqlQueryParser
             where: $where,
             whereOperators: $whereOperators,
             orderBy: $orderBy,
+            limit: $limit,
         );
+    }
+
+    private function normalizeLimitClause(PrintableNode $limit): int|SelectPlaceholder
+    {
+        $placeholder = $this->findFirstChildNode($limit, 'Placeholder');
+        if ($placeholder instanceof PrintableNode) {
+            return $this->normalizePlaceholder($placeholder);
+        }
+
+        $literal = $this->findDirectTokenValueAfter($limit, 'T_LIMIT', 'T_INTEGER');
+        if ($literal === null) {
+            throw new \RuntimeException('LimitClause must contain an integer literal or placeholder.');
+        }
+
+        // Compare decimal strings before casting so overflow cannot silently change the bound.
+        $digits = ltrim($literal, '0');
+        $maximum = (string) PHP_INT_MAX;
+        if (strlen($digits) > strlen($maximum) || (strlen($digits) === strlen($maximum) && strcmp($digits, $maximum) > 0)) {
+            throw new \RuntimeException('LIMIT literal must be between 0 and PHP_INT_MAX.');
+        }
+
+        return (int) $digits;
     }
 
     private function normalizeInsertQuery(PrintableNode $insert): InsertQuery

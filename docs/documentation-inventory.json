@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-10-18",
+  "reviewed_at": "2026-10-20",
   "scope": "Собственные repository guides, design/architecture/planning docs и связанные reference artifacts. Пути относительны корню; current/accepted-plan описывают статус документа, не реализацию каждой идеи.",
   "documents": [
     {
@@ -303,6 +303,8 @@
       "source_paths": [
         "tools/sql-gen/src",
         "tools/sql-gen/tests",
+        "tests/Fixtures/SqlLimit",
+        "tests/Integration/Storage/SqlLimitTest.php",
         "codegen/Sql",
         "sql",
         "gen/Generated/Sql",

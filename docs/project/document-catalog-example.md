@@ -1,6 +1,6 @@
 # Пример: публичный каталог документов
 
-Тип: `design`. Статус: `accepted-plan`. Сверено с кодом: 2026-10-17.
+Тип: `design`. Статус: `accepted-plan`. Сверено с кодом: 2026-10-20.
 
 ## Задача и границы
 
@@ -41,7 +41,7 @@
 
 Пагинация ограничивает SQL-результат на сервере до его чтения в PHP; query parameter не может запросить весь каталог или неограниченный размер страницы. Выбирается простой способ навигации со стабильным порядком. Число запросов на страницу не растёт на каждую отображаемую запись; необходимость общего `COUNT` определяется интерфейсом.
 
-Текущий [generator subset](../../tools/sql-gen/src/Parser/grammar/sql_subset.pp2) не поддерживает `LIMIT`, а [SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) получает массив через storage и `fetchAll()`, в том числе для `fetchOne()`. Поэтому первый пример использует три явных SQL constants в `CatalogRepository`: фиксированный LIMIT 21, keyset `id < :before`, ORDER BY id DESC и lookup по primary key. Handler показывает 20 строк, дополнительная определяет ссылку следующей страницы. Это не требует расширения grammar, общей потоковой DB API или outer JOIN с известным [ограничением nullable inference](../design/sql-gen-product.md).
+Текущий [generator subset](../../tools/sql-gen/src/Parser/grammar/sql_subset.pp2) поддерживает `LIMIT`; сценарий ограниченного списка проверен отдельной PostgreSQL fixture. Каталог сохраняет три явных SQL constants в `CatalogRepository`: фиксированный LIMIT 21, keyset `id < :before`, ORDER BY id DESC и lookup по primary key. Собственная schema каталога и строковые literals не входят в текущий API profile генератора; граница описана в [контракте LIMIT](../design/sql-gen-product.md#ограниченная-select-выборка). Handler показывает 20 строк, дополнительная определяет ссылку следующей страницы. [SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) по-прежнему получает массив через storage и `fetchAll()`, в том числе для `fetchOne()`. Общая потоковая DB API и outer JOIN с известным ограничением nullable inference этому сценарию не нужны.
 
 После того как список, карточка и download работают, в той же итерации фиксируются простые воспроизводимые замеры:
 
@@ -113,7 +113,7 @@
 - Такая проверка не означает доказанную безвредность PDF. Необходимость антивируса или иной проверки зависит от модели эксплуатации и выбирается отдельно; файл не исполняется приложением и изначально выдаётся как вложение.
 - Storage расположен вне `public`. Имена клиента не используются для путей; попытки traversal и управляющие символы не влияют на filesystem или headers.
 - Download использует заранее проверенную запись, открывает допустимый storage key и передаёт поток. Размер памяти не растёт пропорционально полному размеру файла. Поведение при недоступном/повреждённом файле определено и диагностируется без раскрытия пути.
-- Ограниченная память проверяется на всём пути, а не только в handler: SAPI/FPM и RR отдельно. Каталог явно выбирает `RoadRunnerServiceProvider(chunkSize: 8192)` для seekable regular files. Default остальных профилей остаётся 0 с материализацией body; streaming path bundled библиотеки не поддерживает non-seekable body и informational 1xx. В дополнительном API [HttpLoggingMiddleware](../../src/Platform/Http/Middleware/HttpLoggingMiddleware.php) читает оставшееся содержимое body до EOF без восстановления позиции; его нельзя переносить в файловую композицию без исправления этого поведения.
+- Ограниченная память проверяется на всём пути, а не только в handler: SAPI/FPM и RR отдельно. Каталог явно выбирает `RoadRunnerServiceProvider(chunkSize: 8192)` для seekable regular files. Default остальных профилей остаётся 0 с материализацией body; streaming path bundled библиотеки не поддерживает non-seekable body и informational 1xx. [HttpLoggingMiddleware](../../src/Platform/Http/Middleware/HttpLoggingMiddleware.php) пишет метаданные ответа без чтения body и сохраняет позицию потока; файловая выдача с подключённым логированием проверена на обоих runtime.
 - Определение размера, headers и логирование не должны перечитывать всё содержимое на каждом скачивании. Измерение с разными размерами файла должно выявлять такие затраты; размер chunk, буферы сервера и память worker учитываются в end-to-end результате.
 - `Content-Type`, `Content-Disposition` и политика кеша задаются явно. Поддержка Range не обещается автоматически; её необходимость и HTTP-поведение определяются отдельно.
 

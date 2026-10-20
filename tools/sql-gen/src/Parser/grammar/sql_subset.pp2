@@ -9,6 +9,7 @@
 %token T_WHERE       (?i:where)(?![a-zA-Z0-9_])
 %token T_ORDER       (?i:order)(?![a-zA-Z0-9_])
 %token T_BY          (?i:by)(?![a-zA-Z0-9_])
+%token T_LIMIT       (?i:limit)(?![a-zA-Z0-9_])
 %token T_AS          (?i:as)(?![a-zA-Z0-9_])
 %token T_AND         (?i:and)(?![a-zA-Z0-9_])
 %token T_OR          (?i:or)(?![a-zA-Z0-9_])
@@ -30,6 +31,7 @@
 %token T_DELETE      (?i:delete)(?![a-zA-Z0-9_])
 %token T_EXCLUDED    (?i:excluded)(?![a-zA-Z0-9_])
 %token T_IDENT       [a-zA-Z_][a-zA-Z0-9_]*
+%token T_INTEGER     [0-9]+(?![a-zA-Z0-9_])
 %token T_COLON       :
 %token T_COMMA       ,
 %token T_DOT         \.
@@ -45,7 +47,7 @@
 %skip  T_WS          \s+
 
 #Query: SelectStmt() | InsertStmt() | UpdateStmt() | DeleteStmt();
-#SelectStmt: <T_SELECT> SelectList() <T_FROM> TableRef() JoinClause()* WhereClause()? OrderByClause()? <T_SEMICOLON>?;
+#SelectStmt: <T_SELECT> SelectList() <T_FROM> TableRef() JoinClause()* WhereClause()? OrderByClause()? LimitClause()? <T_SEMICOLON>?;
 #InsertStmt: <T_INSERT> <T_INTO> <T_IDENT> <T_LPAREN> IdentList() <T_RPAREN> <T_VALUES> <T_LPAREN> PlaceholderList() <T_RPAREN> ConflictClause()? ReturningClause()? <T_SEMICOLON>?;
 #DeleteStmt: <T_DELETE> <T_FROM> <T_IDENT> WhereClause() <T_SEMICOLON>?;
 #UpdateStmt: <T_UPDATE> <T_IDENT> <T_SET> UpdateAssignments() WhereClause()? ReturningClause()? <T_SEMICOLON>?;
@@ -69,9 +71,10 @@
 #WhereClause: <T_WHERE> ComparisonExpr() ((<T_AND> | <T_OR>) ComparisonExpr())*;
 #OrderByClause: <T_ORDER> <T_BY> OrderItem() (<T_COMMA> OrderItem())*;
 #OrderItem: ColumnRef() ((<T_ASC>) | (<T_DESC>))?;
+#LimitClause: <T_LIMIT> (<T_INTEGER> | Placeholder());
 #ComparisonExpr: Operand() CompareOp() Operand();
 #Operand: ColumnRef() | Placeholder();
-#Placeholder: <T_COLON> <T_IDENT>;
+#Placeholder: <T_COLON> (<T_IDENT> | <T_LIMIT>);
 #CompareOp: <T_EQ> | <T_LE> | <T_GE> | <T_LT> | <T_GT>;
 #IdentList: <T_IDENT> (<T_COMMA> <T_IDENT>)*;
 #PlaceholderList: Placeholder() (<T_COMMA> Placeholder())*;

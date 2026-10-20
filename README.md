@@ -1,6 +1,6 @@
 # Зерно
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-18.
+Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
 [![CI](https://github.com/ilachev/zerno/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/zerno/actions/workflows/ci.yml)
 
@@ -24,6 +24,8 @@
 ## Текущее состояние
 
 Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Общий [ErrorResponse](docs/architecture/request-lifecycle.md#представление-http-ошибок) позволяет выбрать представление routing/exception ошибок: JSON по умолчанию, собственный HTML через одну привязку. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
+
+Общий [AttachmentResponse](docs/architecture/request-lifecycle.md#файловый-attachment-и-владение-потоком) создаёт файловый ответ без чтения тела; подключённое HTTP-логирование сохраняет поток и пишет только метаданные ответа. [SQL-генератор](docs/design/sql-gen-product.md#ограниченная-select-выборка) поддерживает явные `LIMIT 21` и `LIMIT :limit` для ограниченной выборки.
 
 Первый сквозной пример — [публичный каталог документов](examples/document-catalog/README.md): HTML-список с ограниченной пагинацией, карточка и потоковое скачивание PDF. Он имеет собственные маршруты, явный SQL, миграцию и PHP-шаблоны; подключается отдельной конфигурацией без JavaScript, сессий и установки пакетов. Текущий приоритет — общие возможности ядра, выявленные этим примером; редактор и публикационный workflow отложены. Очередь core-задач описана в [roadmap](docs/project/roadmap.md).
 

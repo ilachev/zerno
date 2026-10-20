@@ -20,5 +20,6 @@ final readonly class SelectQuery implements SqlQuery
         public array $where,
         public array $whereOperators,
         public array $orderBy,
+        public int|SelectPlaceholder|null $limit = null,
     ) {}
 }

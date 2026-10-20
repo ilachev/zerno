@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Check;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SqlGen\Check\PostgreSqlStatementCompiler;
 use SqlGen\Model\DatabaseSchema;
@@ -17,6 +18,106 @@ use SqlGen\Type\PhpTypeFactory;
 
 final class PostgreSqlStatementCompilerTest extends TestCase
 {
+    #[DataProvider('literalLimits')]
+    public function testCompilesLiteralLimitWithWhereAndOrderBy(string $literal, string $expectedLiteral): void
+    {
+        $compiled = (new PostgreSqlStatementCompiler())->compile(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions WHERE id < :before_id ORDER BY id DESC LIMIT ' . $literal . ';',
+                parameters: [new SqlParameter('before_id')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'BIGINT', PhpTypeFactory::fromNativeType('int'), false),
+                ]),
+            ]),
+        );
+
+        self::assertSame('SELECT id FROM sessions WHERE id < $1 ORDER BY id DESC LIMIT ' . $expectedLiteral, $compiled->sql);
+        self::assertSame(['bigint'], $compiled->parameterTypes);
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function literalLimits(): iterable
+    {
+        yield 'list' => ['21', '21'];
+        yield 'empty' => ['0', '0'];
+        yield 'leading zeroes' => ['00021', '21'];
+        yield 'platform maximum' => [(string) PHP_INT_MAX, (string) PHP_INT_MAX];
+    }
+
+    public function testCompilesLimitParameterAtItsStatementParameterIndex(): void
+    {
+        $compiled = (new PostgreSqlStatementCompiler())->compile(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions WHERE id < :before_id ORDER BY id DESC LIMIT :limit;',
+                parameters: [new SqlParameter('limit'), new SqlParameter('before_id')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                ]),
+            ]),
+        );
+
+        self::assertSame('SELECT id FROM sessions WHERE id < $2 ORDER BY id DESC LIMIT $1', $compiled->sql);
+        self::assertSame(['bigint', 'text'], $compiled->parameterTypes);
+    }
+
+    #[DataProvider('reusedLimitTypes')]
+    public function testCompilesRepeatedLimitParameterWithOnePlaceholder(string $sqlType, string $expectedType): void
+    {
+        $compiled = (new PostgreSqlStatementCompiler())->compile(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::One,
+                sql: 'SELECT id FROM sessions WHERE id < :limit ORDER BY id DESC LIMIT :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', $sqlType, PhpTypeFactory::fromNativeType('int'), true),
+                ]),
+            ]),
+        );
+
+        self::assertSame('SELECT id FROM sessions WHERE id < $1 ORDER BY id DESC LIMIT $1', $compiled->sql);
+        self::assertSame([$expectedType], $compiled->parameterTypes);
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function reusedLimitTypes(): iterable
+    {
+        yield 'integer' => ['INTEGER', 'integer'];
+        yield 'serial' => ['SERIAL', 'integer'];
+        yield 'bigint' => ['BIGINT', 'bigint'];
+        yield 'bigserial' => ['BIGSERIAL', 'bigint'];
+    }
+
+    public function testCompilesLimitOnlyParameterWithoutWhere(): void
+    {
+        $compiled = (new PostgreSqlStatementCompiler())->compile(
+            new SqlStatement(
+                name: 'ListSessions',
+                resultKind: SqlResultKind::Many,
+                sql: 'SELECT id FROM sessions LIMIT :limit;',
+                parameters: [new SqlParameter('limit')],
+            ),
+            new DatabaseSchema([
+                'sessions' => new SchemaTable('sessions', [
+                    'id' => new SchemaColumn('id', 'TEXT', PhpTypeFactory::fromNativeType('string'), false),
+                ]),
+            ]),
+        );
+
+        self::assertSame('SELECT id FROM sessions LIMIT $1', $compiled->sql);
+        self::assertSame(['bigint'], $compiled->parameterTypes);
+    }
+
     public function testCompilesNamedParametersIntoPreparedStatementTemplate(): void
     {
         $compiler = new PostgreSqlStatementCompiler();
