@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Platform\Runtime;
 
 use App\Platform\Runtime\App;
+use App\Platform\Storage\PostgreSqlStorageConfig;
 use App\Platform\Storage\Storage;
-use App\Platform\Storage\StorageException;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -16,12 +16,12 @@ final class CoreApplicationTest extends TestCase
 {
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
-    public function testExplicitRoutesDoNotLoadOptionalIntegrations(): void
+    public function testExplicitRoutesDoNotLoadNonHttpServices(): void
     {
         $symbolsBefore = [...get_declared_classes(), ...get_declared_interfaces()];
         $guard = static function (string $class): void {
-            if (self::isOptionalIntegration($class)) {
-                throw new \RuntimeException('Core requested an optional integration: ' . $class);
+            if (self::isOutsideHttpCore($class)) {
+                throw new \RuntimeException('Core requested a service outside HTTP core: ' . $class);
             }
         };
         spl_autoload_register($guard, true, true);
@@ -49,7 +49,7 @@ final class CoreApplicationTest extends TestCase
             }
 
             $newSymbols = array_diff([...get_declared_classes(), ...get_declared_interfaces()], $symbolsBefore);
-            self::assertSame([], array_values(array_filter($newSymbols, self::isOptionalIntegration(...))));
+            self::assertSame([], array_values(array_filter($newSymbols, self::isOutsideHttpCore(...))));
         } finally {
             spl_autoload_unregister($guard);
         }
@@ -57,36 +57,27 @@ final class CoreApplicationTest extends TestCase
 
     public function testStorageIsAvailableWithoutOpeningItForHttpRequests(): void
     {
-        $previousEngine = getenv('STORAGE_ENGINE');
-        putenv('STORAGE_ENGINE=core-test-unavailable');
+        $app = new App($this->configPath());
+        $app->getContainer()->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
+            throw new \LogicException('Database configuration was resolved.');
+        });
+        self::assertTrue($app->getContainer()->has(Storage::class));
+        self::assertSame(200, $app->handle(new ServerRequest('GET', '/health'))->getStatusCode());
 
-        try {
-            $app = new App($this->configPath());
-            self::assertTrue($app->getContainer()->has(Storage::class));
-            $response = $app->handle(new ServerRequest('GET', '/health'));
-            self::assertSame(200, $response->getStatusCode());
-
-            $this->expectException(StorageException::class);
-            $this->expectExceptionMessage('Unsupported storage engine: core-test-unavailable');
-            $app->getContainer()->get(Storage::class);
-        } finally {
-            putenv($previousEngine === false ? 'STORAGE_ENGINE' : 'STORAGE_ENGINE=' . $previousEngine);
-        }
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Database configuration was resolved.');
+        $app->getContainer()->get(Storage::class);
     }
 
-    private static function isOptionalIntegration(string $class): bool
+    private static function isOutsideHttpCore(string $class): bool
     {
         foreach ([
             'Spiral\\',
             'Google\\',
-            'IP2Location\\',
-            'App\Capabilities\\',
             'App\Generated\\',
-            'App\Platform\Cache\\',
-            'App\Platform\Hydration\\',
-            'App\Platform\Http\Endpoint\\',
-            'App\Platform\Http\GeneratedOperationManifestProvider',
-            'App\Platform\Routing\Generator\GeneratedOperationRouteProvider',
+            'Nette\\',
+            'Phplrt\\',
+            'Typhoon\\',
         ] as $prefix) {
             if (str_starts_with($class, $prefix)) {
                 return true;

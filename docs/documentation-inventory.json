@@ -17,7 +17,7 @@
         "bootstrap.php",
         "tools/project.php",
         "config/core.php",
-        "config/container.php",
+        "config/core-roadrunner.php",
         ".github/workflows"
       ]
     },
@@ -76,7 +76,7 @@
       "source_paths": [
         "AGENTS.md",
         "config/core.php",
-        "config/container.php",
+        "config/core-roadrunner.php",
         "bootstrap.php",
         "tools/project.php"
       ]
@@ -94,7 +94,7 @@
       "source_paths": [
         "AGENTS.md",
         "config/core.php",
-        "config/container.php",
+        "config/core-roadrunner.php",
         "src/Platform/Runtime",
         "src/Platform/Storage",
         "tools/project.php"
@@ -104,18 +104,17 @@
       "id": "product-vision",
       "path": "docs/project/vision.md",
       "kind": "design",
-      "status": "accepted-plan",
-      "summary": "Принятые границы и собственная модель автономного PHP HTTP/PDO-ядра: обычный PHP, явная композиция, видимый SQL.",
+      "status": "current",
+      "summary": "Конкретный состав универсального HTTP/PDO-ядра и правило включения новых функций; удалённые подсистемы не сохраняются как optional.",
       "read_when": [
         "Выбор направления",
         "Определение core или прикладной политики"
       ],
       "source_paths": [
         "config/core.php",
-        "config/container.php",
+        "config/core-roadrunner.php",
         "third_party/manifest.json",
-        "src/Platform",
-        "src/Capabilities"
+        "src/Platform"
       ]
     },
     {
@@ -123,7 +122,7 @@
       "path": "docs/project/roadmap.md",
       "kind": "roadmap",
       "status": "accepted-plan",
-      "summary": "Очередь подтверждённых core-потребностей по собственной модели: HTTP, файлы, SQL, ввод и подключаемые механизмы; редактор отложен.",
+      "summary": "Три ближайшие core-задачи: единичное чтение, миграции и разбор входных данных; критерии готовности.",
       "read_when": [
         "Планирование следующей итерации",
         "Проверка завершённости этапа"
@@ -131,18 +130,16 @@
       "source_paths": [
         "config/core.php",
         "src/Platform",
-        "src/Capabilities",
         "tools/project.php",
-        "load-tests/scenarios",
         "tests/Integration"
       ]
     },
     {
       "id": "catalog-example-design",
       "path": "docs/project/document-catalog-example.md",
-      "kind": "design",
-      "status": "accepted-plan",
-      "summary": "Публичный каталог как проверочный потребитель ядра; отложенный дизайн редактора, upload, публикации и аудита.",
+      "kind": "architecture",
+      "status": "current",
+      "summary": "Публичный каталог как действующий потребитель ядра: явный SQL с partial index, прикладные модели и private file storage.",
       "read_when": [
         "Разработка первого сквозного примера",
         "Границы файлов, прав и публикации"
@@ -166,7 +163,6 @@
       "source_paths": [
         "config/core.php",
         "config/core-roadrunner.php",
-        "config/container.php",
         "src/Platform/Runtime",
         "src/Platform/DI",
         "src/Platform/Storage"
@@ -184,7 +180,7 @@
       ],
       "source_paths": [
         "config/core.php",
-        "config/container.php",
+        "config/core-roadrunner.php",
         "src/Platform/Http/Middleware",
         "src/Platform/Http/ErrorResponse.php",
         "src/Platform/Http/JsonResponse.php",
@@ -193,8 +189,6 @@
         "tests/Unit/Platform/Http/Middleware",
         "tests/Unit/Examples/DocumentCatalog/CompositionTest.php",
         "src/Platform/Runtime",
-        "src/Capabilities/Session/Transport/Http",
-        "src/Capabilities/ApiStats/Transport/Http",
         "src/Platform/Http/AttachmentResponse.php",
         "examples/document-catalog/src/DownloadHandler.php",
         "tests/Unit/Platform/Http/AttachmentResponseTest.php"
@@ -205,16 +199,15 @@
       "path": "docs/reusable-blocks.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Границы core, optional и приложения, подключение и фактическая стоимость блоков.",
+      "summary": "Конкретные механизмы ядра и граница прикладной политики, подключение и затраты.",
       "read_when": [
         "Добавление компонента",
         "Определение обязательности функции"
       ],
       "source_paths": [
         "src/Platform",
-        "src/Capabilities",
         "config/core.php",
-        "config/container.php"
+        "config/core-roadrunner.php"
       ]
     },
     {
@@ -233,25 +226,7 @@
         "third_party/manifest.json",
         "tools/check-third-party.php",
         "tools/project.php",
-        ".gitattributes",
-        "codegen"
-      ]
-    },
-    {
-      "id": "protobuf-codegen-architecture",
-      "path": "docs/architecture/protobuf-and-codegen.md",
-      "kind": "architecture",
-      "status": "current",
-      "summary": "Текущий необязательный protobuf API-контур: inputs, profiles, generated artifacts и runtime.",
-      "read_when": [
-        "Изменение .proto или generated endpoint flow"
-      ],
-      "source_paths": [
-        "protos/proto/app/v1",
-        "codegen/Protobuf",
-        "tools/protoc-php-gen",
-        "config/container.php",
-        "src/Platform/DI/ServiceProviders/RoutingServiceProvider.php"
+        ".gitattributes"
       ]
     },
     {
@@ -305,56 +280,9 @@
         "tools/sql-gen/tests",
         "tests/Fixtures/SqlLimit",
         "tests/Integration/Storage/SqlLimitTest.php",
-        "codegen/Sql",
         "sql",
         "gen/Generated/Sql",
         "src/Platform/Storage/Sql"
-      ]
-    },
-    {
-      "id": "protobuf-generator-design",
-      "path": "docs/design/protoc-php-gen-product.md",
-      "kind": "design",
-      "status": "current",
-      "summary": "Текущий контракт модулей protobuf plugin и не включённые в него предложения.",
-      "read_when": [
-        "Планирование protobuf tooling"
-      ],
-      "source_paths": [
-        "tools/protoc-php-gen/src",
-        "tools/protoc-php-gen/tests",
-        "codegen/Protobuf"
-      ]
-    },
-    {
-      "id": "protobuf-generator-guidelines",
-      "path": "docs/design/protoc-php-gen-guidelines.md",
-      "kind": "instructions",
-      "status": "current",
-      "summary": "Правила изменения generic protobuf plugin и его project profile.",
-      "read_when": [
-        "Изменение tools/protoc-php-gen или codegen/Protobuf"
-      ],
-      "source_paths": [
-        "tools/protoc-php-gen",
-        "codegen/Protobuf",
-        "codegen/protoc-php-gen-bootstrap.php"
-      ]
-    },
-    {
-      "id": "http-client-design",
-      "path": "docs/design/http-client-product.md",
-      "kind": "design",
-      "status": "current",
-      "summary": "Контракт исходящего HTTP, deadlines, retries/idempotency, transports и ограничения.",
-      "read_when": [
-        "Использование или изменение исходящего HTTP"
-      ],
-      "source_paths": [
-        "src/Platform/Http/Client",
-        "src/Platform/Runtime/Deadline.php",
-        "config/http.php",
-        "tests/Unit/Platform/Http/Client"
       ]
     },
     {
@@ -369,25 +297,7 @@
       "source_paths": [
         "tools/sql-gen/bin",
         "tools/sql-gen/src",
-        "codegen/sql-gen-bootstrap.php",
         "third_party/codegen/sql/manifest.json",
-        "tools/project.php"
-      ]
-    },
-    {
-      "id": "protobuf-tool-guide",
-      "path": "tools/protoc-php-gen/README.md",
-      "kind": "tool-guide",
-      "status": "current",
-      "summary": "Команды, параметры и отдельная поставка protobuf plugin.",
-      "read_when": [
-        "Запуск protobuf generation или tool checks"
-      ],
-      "source_paths": [
-        "tools/protoc-php-gen/bin",
-        "tools/protoc-php-gen/src",
-        "codegen/protoc-php-gen-bootstrap.php",
-        "third_party/codegen/protobuf/manifest.json",
         "tools/project.php"
       ]
     },
@@ -437,8 +347,8 @@
         "src/Platform/Http/Middleware/HttpLoggingMiddleware.php",
         "src/Platform/Storage/Sql/SqlExecutor.php",
         "src/Platform/Storage/Migration/MigrationService.php",
-        "src/Platform/Http/Client/HttpRequestOptions.php",
-        "tools/sql-gen/src/Parser/grammar/sql_subset.pp2"
+        "tools/sql-gen/src/Parser/grammar/sql_subset.pp2",
+        "docs/history/2026-10-20-core-scope.json"
       ]
     },
     {
@@ -531,6 +441,23 @@
         "load-tests/files",
         "docs/history/2026-10-18-file-responses.json"
       ]
+    },
+    {
+      "id": "core-scope-cleanup",
+      "path": "docs/history/2026-10-20-core-scope.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Удаление лишних подсистем API-шаблона, границы несовместимости, стоимость и проверки конкретного ядра.",
+      "read_when": [
+        "Проверка состава и истории удаления API"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-core-scope.json",
+        "config/core.php",
+        "config/core-roadrunner.php",
+        "third_party/manifest.json",
+        "tools/sql-gen"
+      ]
     }
   ],
   "artifacts": [
@@ -547,20 +474,6 @@
       "source_paths": [
         "tools/check-docs.php",
         "docs/development/documentation.md"
-      ]
-    },
-    {
-      "id": "api-openapi",
-      "path": "docs/api.swagger.json",
-      "kind": "reference",
-      "status": "current",
-      "summary": "Generated OpenAPI только для необязательного protobuf API, не HTML-ядра.",
-      "read_when": [
-        "Чтение контрактов текущего API"
-      ],
-      "source_paths": [
-        "protos/proto/app/v1",
-        "tools/project.php"
       ]
     },
     {
@@ -621,6 +534,19 @@
         "load-tests/files",
         "tools/http-fixtures"
       ]
+    },
+    {
+      "id": "core-scope-cleanup-data",
+      "path": "docs/history/2026-10-20-core-scope.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Доочисточная Git-версия, удалённые пути и пакеты, измеренные размеры исходников и результаты проверок.",
+      "read_when": [
+        "Проверка точных границ очистки"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-core-scope.md"
+      ]
     }
   ],
   "exclusions": [
@@ -635,18 +561,6 @@
     {
       "path": "gen/**",
       "reason": "Generated PHP, не собственные руководства; меняется через generators."
-    },
-    {
-      "path": "protos/gen/**",
-      "reason": "Generated protobuf SDK, не собственные руководства; меняется через protoc."
-    },
-    {
-      "path": "protos/proto/google/**",
-      "reason": "Сторонние contract sources, не собственные руководства."
-    },
-    {
-      "path": "protos/proto/protoc-gen-openapiv2/**",
-      "reason": "Сторонние contract sources, не собственные руководства."
     },
     {
       "path": "var/**",

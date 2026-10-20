@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Platform\DI\ServiceProviders;
 
-use App\Platform\Config\ProjectPath;
 use App\Platform\DI\Container;
 use App\Platform\DI\ContainerHandlerFactory;
 use App\Platform\DI\ServiceProvider;
 use App\Platform\Http\ErrorResponse;
 use App\Platform\Http\Handler\HandlerFactoryInterface;
-use App\Platform\Http\HttpRuntimeConfig;
 use App\Platform\Http\JsonResponse;
 use App\Platform\Logging\Logger;
 use App\Platform\Logging\ReadableOutputLogger;
@@ -43,16 +41,6 @@ final readonly class CoreServiceProvider implements ServiceProvider
         $container->bind(RequestContextFactory::class, RequestContextFactory::class);
         $container->bind(JsonResponse::class, JsonResponse::class);
         $container->bind(ErrorResponse::class, JsonResponse::class);
-
-        $container->set(
-            HttpRuntimeConfig::class,
-            static function (): HttpRuntimeConfig {
-                /** @var HttpRuntimeConfig $config */
-                $config = require ProjectPath::getConfigPath('http.php');
-
-                return $config;
-            },
-        );
 
         // Handler factory
         $container->bind(HandlerFactoryInterface::class, ContainerHandlerFactory::class);

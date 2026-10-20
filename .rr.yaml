@@ -2,40 +2,14 @@ version: '3'
 
 server:
   command: "php public/index.php"
+  env:
+    APP_CONFIG: config/core-roadrunner.php
 
 http:
-  address: 0.0.0.0:8080
-  middleware: [ "http_metrics" ]
+  address: 127.0.0.1:8080
   pool:
-    allocate_timeout: 10s
-    num_workers: 3
+    num_workers: 1
 
-rpc:
-  listen: tcp://127.0.0.1:6001
-
-# do not use development mode in production
 logs:
-  level: debug
-  mode: development
-
-status:
-  address: 127.0.0.1:2114
-
-metrics:
-  address: 127.0.0.1:2112
-
-kv:
-  # Конфигурация для кеша в памяти (для разработки)
-  local-memory:
-    driver: memory
-    config:
-      interval: 60 # Очистка устаревших записей каждые 60 секунд
-
-  # Конфигурация для Redis
-  redis:
-    driver: redis
-    config:
-      addrs:
-        - "127.0.0.1:6379"
-      db: 0 # Номер базы данных Redis
-      password: "" # Оставьте пустым, если авторизация не требуется
+  level: error
+  mode: production

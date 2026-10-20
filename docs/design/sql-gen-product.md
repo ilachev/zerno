@@ -4,13 +4,13 @@
 
 ## Роль в «Зерне»
 
-`sql-gen` создаёт typed PHP queries и rows вокруг явного SQL. Он дополняет PDO storage ядра и не зависит от protobuf-профиля. Приложение может использовать PDO без запуска генератора во время обработки запросов.
+`sql-gen` создаёт typed PHP queries и rows вокруг явного SQL. Он дополняет PDO storage ядра. Приложение может использовать PDO без запуска генератора во время обработки запросов.
 
 Источники для генерации:
 
 - [sql/schema.sql](../../sql/schema.sql) — типы колонок и ограничения для анализа;
 - [sql/queries](../../sql/queries) — именованные SQL-запросы;
-- [codegen/Sql/BaseApiTemplateSqlGenerationProfile.php](../../codegen/Sql/BaseApiTemplateSqlGenerationProfile.php) — внешний project profile.
+- runtime namespace App\Platform\Storage\Sql, переданный runner напрямую; project-profile обёртка удалена.
 
 `sql/schema.sql` не заменяет runtime migrations. При изменении persistence нужно отдельно согласовать schema source, миграции и фактическую PostgreSQL schema.
 
@@ -19,12 +19,11 @@
 Именованный запрос объявляется заголовком:
 
 ```sql
--- name: RefreshSession :one
-UPDATE sessions
-SET expires_at = :expires_at,
-    updated_at = :updated_at
-WHERE id = :id AND expires_at >= :now
-RETURNING *;
+-- name: FindPublished :one
+SELECT id, title, description, published_at, storage_key, original_name, file_size
+FROM catalog_documents
+WHERE status = :status AND id = :id
+LIMIT 1;
 ```
 
 Реализованы result kinds `:one`, `:many`, `:exec` и именованные placeholders `:param`.
@@ -37,7 +36,7 @@ RETURNING *;
 
 Отдельные `*Params` и `*Queries` facade сейчас не генерируются. Это были варианты дизайна, а не действующий API.
 
-Примеры результата: `gen/Generated/Sql/Session/RefreshSessionQuery.php`, `SessionRow.php` и `gen/Generated/Sql/ApiStats/InsertApiStatRow.php`. Generated-файлы не редактируют вручную.
+Примеры результата: gen/Generated/Sql/Catalog/FindPublishedQuery.php и CatalogRow.php. Generated-файлы не редактируют вручную.
 
 ## Реализованные parser и type model
 
@@ -91,7 +90,7 @@ LIMIT 21;
 
 Syntax errors от parser-а получают формы `LIMIT ALL`, `LIMIT NULL`, signed/decimal/exponent/quoted values, column references, expressions, casts, parentheses, повторный или неверно расположенный LIMIT, `OFFSET`/comma pagination и LIMIT у INSERT/UPDATE/DELETE. Числовой literal добавлен только в LIMIT; WHERE literals этим расширением не поддержаны.
 
-Прямой SQL [каталога](../../examples/document-catalog/src/CatalogRepository.php) сохранён: его schema отсутствует в основном API profile, а `status = 'published'` требует string literal вне текущей grammar. [Fixture](../../tests/Fixtures/SqlLimit/queries/catalog.sql) проверяет те же поля, published-фильтр, cursor и порядок с `status = :status`; расширять schema/profile API и expression parser ради переноса примера не требуется.
+[Каталог](../../examples/document-catalog/src/CatalogRepository.php) сохраняет прямой SQL с `status = 'published'`: такой literal в WHERE ещё не поддержан grammar. Замена на status parameter меняет доступность partial index в generic prepared plans, поэтому ради подключения инструмента запросы приложения не переписываются. [Основные SQL inputs](../../sql/queries/catalog.sql) и [LIMIT fixture](../../tests/Fixtures/SqlLimit/queries/catalog.sql) показывают соответствующие поля/порядок с параметром status; это проверочные примеры генератора, не SQL-источник приложения. Прикладной DDL/partial index определён migration каталога, schema input служит типизации.
 
 LIMIT ограничивает число **возвращённых** БД строк, не число просмотренных кандидатов или bytes одной строки. Фильтры, размер полей и индексы остаются ответственностью приложения. Индекс `(status, id DESC)` даёт проверочному запросу упорядоченный доступ; без подходящего плана даже `LIMIT 21` может потребовать сортировку/чтение большого объёма.
 
@@ -128,7 +127,7 @@ php tests/Fixtures/SqlLimit/measure.php --rows=50000
 
 Пики сняты до JSON encoding/EXPLAIN и после загрузки классов; счётчики PHP не включают всю native память libpq, RSS процесса или память PostgreSQL. Это ограниченная проверка объёма чтения результата, а не доказательство ускорения или устойчивости долгоживущего worker. Большие поля всё ещё требуют прикладных ограничений. Без LIMIT исходный массив результата растёт вместе с количеством совпадений.
 
-## Runtime и реальные потребители
+## Runtime и применение
 
 [SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) исполняет query через `Storage`, а typed rows создаются через `DatabaseRow::fromDatabaseRow`. `:one` выбирает первый результат либо возвращает null; сам по себе этот marker не доказывает уникальность строки в БД. Транзакции предоставляет `Storage::transaction`.
 
@@ -136,7 +135,7 @@ php tests/Fixtures/SqlLimit/measure.php --rows=50000
 
 Runtime contract FQCN и naming вынесены в `SqlGenerationProfile`. CLI поддерживает `--runtime-namespace` для default profile либо `--bootstrap` + `--profile-class` для внешнего profile; явно выбранный profile определяет contracts сам.
 
-Session и ApiStats уже используют generated SQL через ручные repositories. Для Session реализованы поиск, upsert, удаление и `RefreshSession` через `UPDATE ... RETURNING`. Это действующие потребители, а не первый запланированный MVP.
+Основные inputs генерируют ListPublished/ListPublishedBefore/FindPublished как проверочный пример typed contracts. PostgreSQL integration fixture исполняет generated queries через реальный SqlExecutor и проверяет rows/params. Каталог использует прямой Storage SQL; удалённые API repositories больше не являются потребителями. Подключение генератора к приложению должно сохранять его SQL и планы, а не требовать переписывания запросов ради инструмента.
 
 ## Действующие проверки
 

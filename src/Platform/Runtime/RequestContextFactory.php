@@ -10,13 +10,12 @@ final readonly class RequestContextFactory
         private RequestIdGenerator $requestIdGenerator,
     ) {}
 
-    public function create(float $timeoutSeconds, ?string $requestId = null): RequestContext
+    public function create(?string $requestId = null): RequestContext
     {
         return new RequestContext(
             requestId: $requestId !== null && $requestId !== ''
                 ? $requestId
                 : $this->requestIdGenerator->generate(),
-            deadline: Deadline::fromSeconds($timeoutSeconds),
         );
     }
 }

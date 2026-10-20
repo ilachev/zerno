@@ -10,6 +10,7 @@ use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Logging\Logger;
 use App\Platform\Runtime\App;
+use App\Platform\Storage\PostgreSqlStorageConfig;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -25,19 +26,15 @@ final class CompositionTest extends TestCase
     #[DataProvider('provideRequestsWithoutStorageCases')]
     public function testRequestsWithoutStorage(string $method, string $path, int $status, string $contentType): void
     {
-        $previous = getenv('STORAGE_ENGINE');
-        putenv('STORAGE_ENGINE=catalog-test-unavailable');
+        $app = new App(\dirname(__DIR__, 4) . '/examples/document-catalog/config.php');
+        $app->getContainer()->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
+            throw new \LogicException('Database configuration must not be resolved.');
+        });
+        $response = $app->handle(new ServerRequest($method, $path));
 
-        try {
-            $app = new App(\dirname(__DIR__, 4) . '/examples/document-catalog/config.php');
-            $response = $app->handle(new ServerRequest($method, $path));
-
-            self::assertSame($status, $response->getStatusCode());
-            self::assertSame($contentType, $response->getHeaderLine('Content-Type'));
-            self::assertFalse($response->hasHeader('Set-Cookie'));
-        } finally {
-            putenv($previous === false ? 'STORAGE_ENGINE' : 'STORAGE_ENGINE=' . $previous);
-        }
+        self::assertSame($status, $response->getStatusCode());
+        self::assertSame($contentType, $response->getHeaderLine('Content-Type'));
+        self::assertFalse($response->hasHeader('Set-Cookie'));
     }
 
     /** @return iterable<string, array{string, string, int, string}> */
@@ -54,8 +51,6 @@ final class CompositionTest extends TestCase
     #[PreserveGlobalState(false)]
     public function testHtmlErrorsUseTheCorePipelineWithoutLoadingJsonResponse(): void
     {
-        $previous = getenv('STORAGE_ENGINE');
-        putenv('STORAGE_ENGINE=catalog-private-unavailable');
         $guard = static function (string $class): void {
             if ($class === 'App\Platform\Http\JsonResponse') {
                 throw new \LogicException('HTML errors must not construct JSON responses.');
@@ -68,6 +63,9 @@ final class CompositionTest extends TestCase
             $configure = require \dirname(__DIR__, 4) . '/examples/document-catalog/config.php';
             $container = new DIContainer();
             $configure($container);
+            $container->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
+                throw new \RuntimeException('catalog-private-unavailable');
+            });
             $logger = new TestLogger();
             $container->set(Logger::class, static fn(): Logger => $logger);
             $handler = $container->get(RequestHandler::class);
@@ -106,7 +104,6 @@ final class CompositionTest extends TestCase
             self::assertSame($expected, $container->get(ErrorHandlerMiddleware::class)->process(new ServerRequest('GET', '/application'), $application));
         } finally {
             spl_autoload_unregister($guard);
-            putenv($previous === false ? 'STORAGE_ENGINE' : 'STORAGE_ENGINE=' . $previous);
         }
     }
 }

@@ -12,8 +12,7 @@ function projectCommand(string $command, array $arguments = []): void
         '--output-dir=gen/Generated/Sql',
         '--namespace=App\Generated\Sql',
         '--schema=sql/schema.sql',
-        '--bootstrap=codegen/sql-gen-bootstrap.php',
-        '--profile-class=ProjectCodegen\Sql\BaseApiTemplateSqlGenerationProfile',
+        '--runtime-namespace=App\Platform\Storage\Sql',
     ];
 
     switch ($command) {
@@ -23,7 +22,7 @@ function projectCommand(string $command, array $arguments = []): void
 
                 verify                 Integrity, documentation, style, analysis, SQL synchronization and unit tests
                 verify:integration     PostgreSQL SQL validation and integration tests
-                verify:full            All root, SQL-generator, protobuf-generator and PostgreSQL checks
+                verify:full            All root, SQL-generator and PostgreSQL checks
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
                 http:check             Check real PHP-FPM/RoadRunner HTTP behavior; forwards runtime options
@@ -34,25 +33,17 @@ function projectCommand(string $command, array $arguments = []): void
                 test:full              Unit and PostgreSQL integration tests
                 sql:gen | sql:check    Generate or check typed SQL artifacts
                 sql:check:pg           Validate SQL against PostgreSQL using TEST_DB_* settings
-                proto:gen:sdk          Generate the PHP protobuf SDK; requires protoc
-                proto:gen:endpoints    Generate endpoint and operation registry classes; requires protoc
-                proto:gen:docs         Generate OpenAPI; requires protoc and protoc-gen-openapiv2
-                proto:gen:all          Generate SDK, endpoints and OpenAPI
                 tools:sql:check        Run style, PHPStan and tests for tools/sql-gen
-                tools:proto:check      Run style, PHPStan and tests for tools/protoc-php-gen
-                tools:<sql|proto>:<lint|fixcs|phpstan|test>
+                tools:sql:<lint|fixcs|phpstan|test>
                 migrate                Run migrations; accepts action and application configuration
-                cache:clear            Clear the optional API cache
-                services:start         Start Docker services and migrate the API database
+                services:start         Start the PostgreSQL development service without running migrations
                 services:stop | services:status
-                run                    Start services and the API RoadRunner runtime
+                run                    Start the HTTP/PDO core through RoadRunner
                 perf:prepare           Create an isolated PostgreSQL baseline fixture; uses TEST_DB_*
                 perf:baseline          Run the JSON or SELECT k6 baseline; uses BASE_URL and CASE
                 perf:catalog           Run the public catalog HTML k6 scenario; uses BASE_URL and CASE
                 perf:cleanup <schema>  Remove a baseline fixture created by perf:prepare
-                perf:test [scenario]   Run a legacy k6 scenario
-                perf:test:all          Run all k6 scenarios
-                build [version]        Create a runtime-only tar.gz and OpenAPI sidecar in dist/
+                build [version]        Create a runtime tar.gz in dist/
 
                 Bundled PHP dependencies and quality tools are used directly; no installation step.
 
@@ -68,7 +59,7 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'verify:full':
-            projectSequence(['verify', 'tools:sql:check', 'tools:proto:check', 'verify:integration']);
+            projectSequence(['verify', 'tools:sql:check', 'verify:integration']);
 
             return;
         case 'test:full':
@@ -137,49 +128,12 @@ function projectCommand(string $command, array $arguments = []): void
             ], $root, $environment);
 
             return;
-        case 'proto:gen:sdk':
-            projectRequireExecutable('protoc');
-            projectRemoveDirectory($root . '/protos/gen');
-            projectDirectory($root . '/protos/gen');
-            projectRun([
-                'protoc', '-I=protos/proto', '--php_out=protos/gen', '--php_opt=aggregate_metadata',
-                ...projectProtoFiles(true), ...$arguments,
-            ], $root);
-
-            return;
-        case 'proto:gen:endpoints':
-            projectRequireExecutable('protoc');
-            projectRemoveDirectory($root . '/gen/Generated/Endpoint');
-            projectRemoveDirectory($root . '/gen/Generated/OperationManifest');
-            projectRun([
-                'protoc', '-I=protos/proto',
-                '--plugin=protoc-gen-php-endpoint=' . $root . '/tools/protoc-php-gen/bin/protoc-php-gen.php',
-                '--php-endpoint_out=namespace=App\Generated\Endpoint,output_dir=gen,source_root=src,bootstrap=codegen/protoc-php-gen-bootstrap.php,endpoint_profile_class=ProjectCodegen\Protobuf\BaseApiTemplateEndpointProfile,generate_endpoints=true,generate_endpoint_validation=true,generate_operation_manifest=true:.',
-                ...projectProtoFiles(), ...$arguments,
-            ], $root);
-
-            return;
-        case 'proto:gen:docs':
-            projectRequireExecutable('protoc');
-            projectRequireExecutable('protoc-gen-openapiv2');
-            projectRun([
-                'protoc', '-I=protos/proto', '--openapiv2_out=logtostderr=true:docs',
-                '--openapiv2_opt=json_names_for_fields=true,allow_merge=true,merge_file_name=api',
-                ...projectProtoFiles(), ...$arguments,
-            ], $root);
-
-            return;
-        case 'proto:gen:all':
-            projectSequence(['proto:gen:sdk', 'proto:gen:docs', 'proto:gen:endpoints']);
-
-            return;
         case 'migrate':
-        case 'cache:clear':
-            projectRun([PHP_BINARY, $root . '/bin/' . ($command === 'migrate' ? 'migrate.php' : 'cache-clear.php'), ...$arguments], $root);
+            projectRun([PHP_BINARY, $root . '/bin/migrate.php', ...$arguments], $root);
 
             return;
         case 'services:start':
-            projectRun(['docker', 'compose', 'up', '-d'], $root);
+            projectRun(['docker', 'compose', 'up', '-d', '--pull', 'never'], $root);
             for ($attempt = 0;; ++$attempt) {
                 try {
                     projectRun(['docker', 'compose', 'exec', '-T', 'db-postgres', 'pg_isready', '-U', 'app'], $root);
@@ -191,7 +145,6 @@ function projectCommand(string $command, array $arguments = []): void
                     usleep(1_000_000);
                 }
             }
-            projectCommand('migrate');
 
             return;
         case 'services:stop':
@@ -200,7 +153,7 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'run':
-            projectCommand('services:start');
+            projectRequireExecutable('rr');
             projectRun(['rr', 'serve', '-c', '.rr.yaml', ...$arguments], $root);
 
             return;
@@ -216,16 +169,6 @@ function projectCommand(string $command, array $arguments = []): void
             projectRun(['k6', 'run', '--no-usage-report', $root . '/load-tests/' . $scenario . '/scenario.js', ...$arguments], $root);
 
             return;
-        case 'perf:test':
-            projectRun(['k6', 'run', 'load-tests/scenarios/' . ($arguments[0] ?? 'home.js'), ...array_slice($arguments, 1)], $root);
-
-            return;
-        case 'perf:test:all':
-            foreach (glob($root . '/load-tests/scenarios/*.js') ?: [] as $file) {
-                projectRun(['k6', 'run', $file, ...$arguments], $root);
-            }
-
-            return;
         case 'build':
             projectCommand('third-party:check');
             projectBuild($arguments[0] ?? 'dev');
@@ -234,7 +177,7 @@ function projectCommand(string $command, array $arguments = []): void
     }
 
     $parts = explode(':', $command);
-    if (count($parts) === 3 && $parts[0] === 'tools' && in_array($parts[1], ['sql', 'proto'], true)) {
+    if (count($parts) === 3 && $parts[0] === 'tools' && $parts[1] === 'sql') {
         $tool = $parts[1];
         $operation = $parts[2];
         if ($operation === 'check') {
@@ -242,7 +185,7 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         }
-        $directory = $root . '/tools/' . ($tool === 'sql' ? 'sql-gen' : 'protoc-php-gen');
+        $directory = $root . '/tools/sql-gen';
         $executable = match ($operation) {
             'lint', 'fixcs' => ['php-cs-fixer.php', 'fix', ...($operation === 'lint' ? ['--dry-run'] : [])],
             'phpstan' => ['phpstan.php', 'analyse', '--no-progress', '--memory-limit=256M', '--autoload-file=' . $directory . '/tests/bootstrap.php'],
@@ -302,24 +245,6 @@ function projectTestEnvironment(): array
     }
 
     return $environment;
-}
-
-/** @return list<string> */
-function projectProtoFiles(bool $includeImports = false): array
-{
-    $patterns = ['protos/proto/app/v1/*.proto'];
-    if ($includeImports) {
-        $patterns[] = 'protos/proto/google/api/*.proto';
-        $patterns[] = 'protos/proto/protoc-gen-openapiv2/options/*.proto';
-    }
-    $files = [];
-    foreach ($patterns as $pattern) {
-        foreach (glob(dirname(__DIR__) . '/' . $pattern) ?: [] as $file) {
-            $files[] = substr($file, strlen(dirname(__DIR__)) + 1);
-        }
-    }
-
-    return $files;
 }
 
 function projectDirectory(string $directory): void
@@ -401,10 +326,10 @@ function projectBuild(string $version): void
     try {
         $archive = new PharData($tarPath);
         foreach ([
-            'bootstrap.php', 'bootstrap', 'src', 'gen', 'protos', 'config', 'public', 'bin',
-            'third_party/runtime', 'db/geoip', 'docs', 'README.md',
+            'bootstrap.php', 'bootstrap', 'src', 'gen', 'config', 'public', 'bin',
+            'third_party/runtime', 'docs', 'README.md',
             'examples/document-catalog',
-            '.rr.yaml', '.rr.core.yaml',
+            '.rr.yaml',
         ] as $relative) {
             $path = $root . '/' . $relative;
             if (!file_exists($path)) {
@@ -459,11 +384,7 @@ function projectBuild(string $version): void
         if (!rename($tarPath . '.gz', $output)) {
             throw new RuntimeException('Could not publish release archive: ' . $output);
         }
-        $openApi = $root . '/dist/zerno-openapi-' . $version . '.json';
-        if (!copy($root . '/docs/api.swagger.json', $openApi)) {
-            throw new RuntimeException('Could not copy OpenAPI release sidecar.');
-        }
-        fwrite(STDOUT, $output . "\n" . $openApi . "\n");
+        fwrite(STDOUT, $output . "\n");
     } finally {
         projectRemoveDirectory($temporary);
     }

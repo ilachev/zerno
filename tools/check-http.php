@@ -467,7 +467,7 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
     $port = wirePort();
     $log = $temporary . '/' . $runtime . '-' . $errorFormat . '.log';
     $config = $temporary . '/' . $runtime . '-' . $errorFormat . ($runtime === 'fpm' ? '.conf' : '.yaml');
-    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'STORAGE_ENGINE' => 'wire-unavailable', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat, 'WIRE_FILE_DIRECTORY' => $temporary, 'WIRE_HTTP_LOGGING' => '1'];
+    $environment = ['APP_CONFIG' => $root . '/tools/http-fixtures/' . ($runtime === 'fpm' ? 'config.php' : 'roadrunner.php'), 'DB_HOST' => '127.0.0.1', 'DB_PORT' => '1', 'ENVIRONMENT' => 'testing', 'WIRE_ERROR_FORMAT' => $errorFormat, 'WIRE_FILE_DIRECTORY' => $temporary, 'WIRE_HTTP_LOGGING' => '1'];
     if ($runtime === 'fpm') {
         $contents = "[global]\ndaemonize = no\nerror_log = {$log}\npid = {$temporary}/fpm.pid\n[wire]\nlisten = 127.0.0.1:{$port}\npm = static\npm.max_children = 1\nclear_env = no\ncatch_workers_output = yes\nchdir = {$root}\nsecurity.limit_extensions = .php\nphp_admin_value[memory_limit] = 32M\n";
         $command = [$binary, '-F', '-y', $config];

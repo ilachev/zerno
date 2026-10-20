@@ -1,6 +1,6 @@
 # Проверка HTTP и малый performance baseline
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-18.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
 Здесь два отдельных действия: проверка HTTP на настоящих adapters и небольшой воспроизводимый замер JSON/SELECT. Они запускаются явно, не входят в default `verify` и не устанавливают зависимости. Общие команды и тестовая БД описаны в [инфраструктуре](./infrastructure-and-testing.md), границы измерений — в [принципах](../project/principles.md) и [roadmap](../project/roadmap.md).
 
@@ -17,7 +17,7 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 [`tools/check-http.php`](../../tools/check-http.php) запускает собственные процессы на временных loopback-портах. Для FPM клиент говорит непосредственно по FastCGI, для RR — по HTTP. Конфигурации и логи временные; tool останавливает созданные им процессы и убирает временный каталог. Он не останавливает чужие серверы.
 
-Сейчас выполняются по 47 случаев с default JSON и с HTML-представлением ошибок: 94 для каждого runtime, 188 при выборе обоих. Каждый профиль включает реальный HttpLoggingMiddleware; RR fixture явно выбирает chunk 8192. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный storage engine: БД, Session и ApiStats не включаются. Это проверки корректности, без измерения ускорения.
+Сейчас выполняются по 47 случаев с default JSON и с HTML-представлением ошибок: 94 для каждого runtime, 188 при выборе обоих. Каждый профиль включает реальный HttpLoggingMiddleware; RR fixture явно выбирает chunk 8192. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный адрес PostgreSQL (`127.0.0.1:1`): HTTP-сценарии должны проходить без открытия БД. Это проверки корректности, без измерения ускорения.
 
 Дополнительные 20 случаев на профиль проверяют GET/HEAD attachment для 0, 8191, 8192, 8193, 1 MiB и 16 MiB + 17 байт и четыре повторных больших GET/HEAD в одном worker. Проверяются длина, SHA-256, ASCII/UTF-8 Content-Disposition, no-store/nosniff и отсутствие session. Server memory_limit — 32M; после прогрева retained PHP allocation не должна вырасти больше чем на 2 MiB. Это проверка выбранного seekable-file path, а не универсальный memory budget: клиент отдельно буферизует body с ограничением 32 MiB, и этот предел не является RSS или peak server memory.
 
@@ -27,7 +27,7 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 Нужны PHP 8.5 с `pdo_pgsql` и OPcache, PHP-FPM, `rr`, Caddy, k6 и доступная отдельная PostgreSQL test database. Это требования платформы; команды проекта не создают сервер БД и не скачивают executables или пакеты. Запускайте процессы обычным пользователем из корня checkout.
 
-Две конфигурации расширяют минимальный core: [`config.php`](../../load-tests/baseline/config.php) для SAPI/FPM и [`roadrunner.php`](../../load-tests/baseline/roadrunner.php) с обычным RR provider. Capabilities и API migrations не подключаются.
+Две конфигурации расширяют минимальный core: [`config.php`](../../load-tests/baseline/config.php) для SAPI/FPM и [`roadrunner.php`](../../load-tests/baseline/roadrunner.php) с обычным RR provider. Прикладные миграции не запускаются при старте HTTP.
 
 | Сценарий | Работа приложения | Точный ответ |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 [`database.php`](../../load-tests/baseline/database.php) создаёт случайную схему `zerno_baseline_<24 hex>`, таблицу `baseline_records` с 10 000 детерминированных записей, выполняет `ANALYZE` и сохраняет `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`. Подготовка проверяет индексный lookup с одной строкой. Результат содержит schema, размер fixture и план, без пароля; приложение миграции не запускает.
 
-SQL/request равен 0/1 **прикладных SELECT по устройству handlers**, а не по внешнему SQL tracer. Эта величина исключает соединение, `SET search_path` и prepare. FPM создаёт PDO/statement и пишет сообщение о создании storage на каждом SELECT-request; RR сохраняет их в worker. Обычные logger implementations двух профилей тоже различаются. Эти затраты остаются частью end-to-end профиля, их не выравнивают искусственными persistent connections или заменой logger.
+SQL/request равен 0/1 **прикладных SELECT по устройству handlers**, а не по внешнему SQL tracer. Эта величина исключает соединение, `SET search_path` и prepare. FPM создаёт PDO/statement на каждом SELECT-request; RR сохраняет их в worker. Обычные logger implementations двух профилей тоже различаются. Эти затраты остаются частью end-to-end профиля, их не выравнивают искусственными persistent connections или заменой logger.
 
 ## Подготовить одну изолированную схему
 
@@ -62,7 +62,6 @@ php tools/project.php perf:prepare > var/baseline-fixture.json
 
 ```bash
 cat >> var/baseline.env <<'ENV'
-export STORAGE_ENGINE=pgsql
 export DB_HOST="$TEST_DB_HOST"
 export DB_PORT="$TEST_DB_PORT"
 export DB_NAME="$TEST_DB_NAME"

@@ -13,9 +13,6 @@ return [
         'Google\\Protobuf\\' => [
             __DIR__ . '/packages/google/protobuf/src/Google/Protobuf',
         ],
-        'IP2Location\\' => [
-            __DIR__ . '/packages/ip2location/ip2location-php/src',
-        ],
         'Nyholm\\Psr7\\' => [
             __DIR__ . '/packages/nyholm/psr7/src',
         ],
@@ -25,9 +22,6 @@ return [
         ],
         'Psr\\Log\\' => [
             __DIR__ . '/packages/psr/log/src',
-        ],
-        'Psr\\SimpleCache\\' => [
-            __DIR__ . '/packages/psr/simple-cache/src',
         ],
         'RoadRunner\\' => [
             __DIR__ . '/packages/roadrunner-php/roadrunner-api-dto/generated/RoadRunner',
@@ -40,9 +34,6 @@ return [
         ],
         'Spiral\\RoadRunner\\Http\\' => [
             __DIR__ . '/packages/spiral/roadrunner-http/src',
-        ],
-        'Spiral\\RoadRunner\\KeyValue\\' => [
-            __DIR__ . '/packages/spiral/roadrunner-kv/src',
         ],
         'Symfony\\Polyfill\\Php83\\' => [
             __DIR__ . '/packages/symfony/polyfill-php83',

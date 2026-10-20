@@ -2,71 +2,39 @@
 
 Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-## Минимальный контекст
+«Зерно» — универсальная автономная PHP HTTP/PDO-основа. [AGENTS.md](../AGENTS.md) задаёт правила работы, [принципы](project/principles.md) — три совместных критерия, [граница продукта](project/vision.md) — конкретный состав. План не устанавливает наличие функции.
 
-«Зерно» (`zerno`) — небольшое универсальное автономное PHP HTTP/PDO-ядро для разработчиков веб-приложений. Разработчики муниципальных и государственных сайтов — одна из приоритетных аудиторий, которая не ограничивает назначение ядра. Продуктовая цель описана в [видении](project/vision.md), принятые направления — в [roadmap](project/roadmap.md). [Публичный каталог](../examples/document-catalog/README.md) уже собирает HTML-список, карточку и PDF download; формы, полноценный вход и редактор остаются планом.
+## Текущий состав
 
-Сейчас развиваем core-функции. Каталог — проверочный потребитель: его редактор и публикационный workflow отложены. Общий [ErrorResponse](architecture/request-lifecycle.md#представление-http-ошибок) позволяет выбрать JSON/HTML для routing и исключений без замены pipeline. [AttachmentResponse и прозрачная диагностика](architecture/request-lifecycle.md#файловый-attachment-и-владение-потоком) проверены на файловом потребителе; [SQL generator](design/sql-gen-product.md#ограниченная-select-выборка) поддерживает явный LIMIT для ограниченных SELECT-результатов. Следующие задачи — контракты чтения и надёжность БД, затем ввод/валидация по roadmap. Html, FileStore и HTML Errors остаются реализациями примера; не считать их готовыми API Platform и не расширять прикладной функционал ради продолжения roadmap.
+HTTP/маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation, SAPI/FPM и RoadRunner. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
 
-API развивается по [собственной модели](project/vision.md#собственная-модель-разработки): обычный PHP, явная композиция, видимый SQL и автономная поставка. Не превращать roadmap в воспроизведение чужого API или набора подсистем; необычность решения должна приносить конкретную пользу по трём принципам.
+Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/protobuf API/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. PHP зависимости и quality/codegen tools включены; package installation/download отсутствуют на всех путях.
 
-БД входит в основу: PDO, параметры SQL, транзакции, миграции и типизированные generated queries. Репозиторий содержит фиксированные сторонние исходники и инструменты; установка пакетов через Composer, npm или Task не требуется ни для разработки, ни для сборки. PHP, расширения, PostgreSQL и выбранные server/compiler executables остаются требованиями платформы.
+## Начать задачу
 
-## Перед первой правкой
+1. Прочитать AGENTS и принципы, проверить git status и фактический код/тесты.
+2. Найти документ-владелец через [индекс](README.md) и [инвентарь](documentation-inventory.json).
+3. Реализовать минимальный контракт для конкретного потребителя, сохраняя SQL и время жизни ресурсов явными.
+4. Обновить текущую документацию и выполнить verify. Для БД — PostgreSQL integration; для генератора — tools:sql:check; для transport — реальные HTTP checks.
 
-1. Прочитать [AGENTS.md](../AGENTS.md): язык общения, код, проверки, БД и generated/vendor boundaries.
-2. Прочитать [принципы развития](project/principles.md): простота, полезная функциональность и производительность — совместные обязательные критерии; затем проверить рабочее дерево и фактические исходники области задачи.
-3. Прочитать [обзор архитектуры](architecture/overview.md) и нужный документ из таблицы ниже. Не загружать всю документацию без необходимости.
-4. Различать реализованное поведение, принятое направление, предложение и открытый вопрос. Исторический аудит не устанавливает текущий контракт.
-5. После правки обновить документы, которыми затронутое поведение описывается, и выполнить требуемые проверки.
+| Задача | Документ | Код |
+| --- | --- | --- |
+| HTTP, runtime, routing, DI | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, config/core-roadrunner.php, src/Platform |
+| SQL, миграции, генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
+| Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
+| FPM/RR, файлы и измерения | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |
+| Поставка | [Автономность](design/autonomous-core.md), [third-party](../third_party/README.md) | bootstrap.php, third_party/manifest.json |
+| Каталог | [Запуск](../examples/document-catalog/README.md), [прикладные границы](project/document-catalog-example.md) | examples/document-catalog |
+| Направление и документация | [Roadmap](project/roadmap.md), [maintenance](development/documentation.md) | Документ-владелец факта |
 
-## Композиции приложения
+## Композиции и ограничения
 
-| Профиль | Композиция | Запуск и поведение |
-|---|---|---|
-| Минимальный HTTP/PDO | `config/core.php`, `config/routes.php` | `public/http.php` через PHP/SAPI/FPM; явные GET/HEAD `/health`, без открытия БД и включения capabilities |
-| Минимальный с RR | `config/core-roadrunner.php` | `.rr.core.yaml`, общий handler и отдельный worker loop |
-| Необязательный protobuf API | `config/container.php` | По умолчанию `public/index.php` / `.rr.yaml`; generated routes, Session, ApiStats, GeoIP и cache integrations |
-| Публичный пример | `examples/document-catalog/config.php`, `roadrunner.php` | Собственные SQL/миграция/шаблоны; RR явно включает chunk 8192, GET/HEAD каталог без сессий |
+config/core.php — общий HTTP/PDO pipeline. config/core-roadrunner.php добавляет серверный адаптер; public/index.php и .rr.yaml по умолчанию выбирают его. public/http.php использует core.php. Каталог выбирает свои маршруты, HTML Errors, миграции и RR chunk 8192. Каталог использует прямой SQL; sql/queries/catalog.sql — отдельный пример для генератора.
 
-`App` реализует общий `RequestHandler`; он не запускает RoadRunner. Middleware выбирает конфигурация. Наличие optional-пакета в поставке не означает его выполнение при минимальном HTTP-запросе.
+/health не разрешает PostgreSqlStorageConfig/Storage. HttpLogging не читает тело. SAPI/RR закрывают body после отправки, включая HEAD/ошибки. Прямой App::handle не отправляет и не закрывает response. Default RR chunk 0 материализует тело; ограниченная память проверена для seekable-file пути с 8192, не для произвольного потока.
 
-## Чтение по задаче
+PostgreSQL — единственная БД приложения. SQLiteStorage находится только в tests/Fixtures для автономных migration unit tests, не в поставке. Integration bootstrap не создаёт общий App, API-таблицы или глобальную схему: тесты сами владеют случайными схемами TEST_DB_*.
 
-| Задача | Документы | Начать проверку исходников с |
-|---|---|---|
-| Runtime, HTTP, маршруты, DI | [Обзор](architecture/overview.md), [жизненный цикл](architecture/request-lifecycle.md) | `config/core.php`, `config/container.php`, `src/Platform/Runtime`, `src/Platform/Routing`, `src/Platform/DI` |
-| Реальные FPM/RR и производительность | [HTTP и baseline](development/http-and-baseline.md), [начальный отчёт](history/2026-10-17-core-http-baseline.md) | `tools/check-http.php`, `tools/http-fixtures`, `load-tests/baseline` |
-| Граница core / optional / приложение | [Карта блоков](reusable-blocks.md), [видение](project/vision.md) | Providers выбранной композиции |
-| SQL и миграции | [SQL-дизайн](design/sql-gen-product.md), [SQL tool](../tools/sql-gen/README.md), [проверки](development/infrastructure-and-testing.md) | `src/Platform/Storage`, `sql`, `codegen/Sql`, `tools/sql-gen` |
-| Protobuf API и генерация | [Текущий контур](architecture/protobuf-and-codegen.md), [правила генератора](design/protoc-php-gen-guidelines.md), [tool README](../tools/protoc-php-gen/README.md) | `protos/proto/app/v1`, `codegen/Protobuf`, `tools/protoc-php-gen` |
-| Исходящий HTTP | [HTTP client](design/http-client-product.md) | `src/Platform/Http/Client`, `src/Platform/Runtime/Deadline.php`, `config/http.php` |
-| Session, статистика, cache | [Жизненный цикл](architecture/request-lifecycle.md), [карта блоков](reusable-blocks.md) | `src/Capabilities`, `src/Platform/Cache`, API providers |
-| Поставка, сборка и инструменты | [Автономность](design/autonomous-core.md), [проверки](development/infrastructure-and-testing.md) | `bootstrap.php`, `bootstrap`, `third_party/manifest.json`, `tools/project.php` |
-| Новая функциональность | [Roadmap](project/roadmap.md), [проект каталога](project/document-catalog-example.md) | Сначала текущая реализация, затем минимальный сквозной сценарий |
-| HTML и файлы каталога | [Запуск примера](../examples/document-catalog/README.md), [проверки и замеры](history/2026-10-17-public-catalog.md) | `examples/document-catalog`, `tests/Integration/Examples`, `load-tests/catalog` |
-| Обновление знаний | [Правила документации](development/documentation.md), [инвентарь](documentation-inventory.json) | Документ-владелец факта и связанные `source_paths` |
+Bundled RoadRunner HTTP требует protobuf/DTO runtime; собственных .proto, SDK, endpoints и protobuf generator в проекте нет. Исторические отчёты описывают прошлые версии; удалённые исходники доступны через Git, как объясняет [очистка состава](history/2026-10-20-core-scope.md).
 
-## Источники истины
-
-| Вопрос | Источник |
-|---|---|
-| Как агент работает с репозиторием | `AGENTS.md`; `CLAUDE.md` только подключает его |
-| Что исполняется сейчас | Код, конфигурация и соответствующие тесты; architecture-документы объясняют их |
-| Как оценивать решения и компромиссы | `docs/project/principles.md` |
-| Что строим и в каком порядке | `docs/project/vision.md`, `docs/project/roadmap.md` |
-| Что генерируется | SQL/protobuf inputs и generator profile; generated output не редактируется вручную |
-| Какие зависимости поставляются | `third_party/manifest.json` и manifests distributions |
-| Какие команды доступны | `php tools/project.php help` и код runner |
-| Что проверялось раньше | Только явно датированные исторические отчёты с границами проверки |
-
-## Проверки
-
-```bash
-php tools/project.php docs:check
-php tools/project.php verify
-```
-
-`verify` не требует внешних сервисов. При изменении БД выполнить реальные PostgreSQL checks через `verify:integration`; при изменении генератора — его `tools:sql:check` или `tools:proto:check`. Полный набор — `verify:full`. Подготовка окружения и `TEST_DB_*` описаны в [инфраструктуре](development/infrastructure-and-testing.md).
-
-Не делать вывод о безопасности, производительности или готовности к эксплуатации по наличию блока или успешному unit test. Известные ограничения и проверяемые результаты читать в документе соответствующей области. Полной системы credentials/permissions/CSRF/audit пока нет. Начальный FPM/RR baseline охватывает только JSON и indexed SELECT; он не выбирает основной runtime и не проверяет длительную устойчивость worker.
+Числовые бюджеты и основной runtime не выбраны. Не объявлять production readiness, отсутствие утечек или ускорение по короткому тесту. Механизм входа/сессий/CSRF/прав не реализован; не приписывать его ядру.

@@ -18,9 +18,7 @@ $libraries = require __DIR__ . '/third_party/runtime/autoload.php';
 Autoloader::register(
     [
         'App\Generated\\' => [__DIR__ . '/gen/Generated'],
-        'App\\' => [__DIR__ . '/src', __DIR__ . '/protos/gen/App'],
-        'Google\Api\\' => [__DIR__ . '/protos/gen/Google/Api'],
-        'GPBMetadata\Google\Api\\' => [__DIR__ . '/protos/gen/GPBMetadata/Google/Api'],
+        'App\\' => [__DIR__ . '/src'],
         ...$libraries['prefixes'],
     ],
     $libraries['classmap'],

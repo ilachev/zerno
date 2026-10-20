@@ -8,9 +8,9 @@ use App\Platform\Storage\Migration\Migration;
 use App\Platform\Storage\Migration\MigrationLoader;
 use App\Platform\Storage\Migration\MigrationRepository;
 use App\Platform\Storage\Migration\MigrationService;
-use App\Platform\Storage\SQLiteStorage;
 use App\Platform\Storage\StorageException;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixtures\SQLiteStorage;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class MigrationServiceTest extends TestCase

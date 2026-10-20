@@ -1,6 +1,6 @@
 # Правила документации и инвентаризации
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
 Документация хранится рядом с кодом и должна быть пригодна для человека и агента без истории чата. Стартовая карта — [docs/README](../README.md), обязательные правила работы — [AGENTS.md](../../AGENTS.md), машиночитаемая карта — [documentation-inventory.json](../documentation-inventory.json).
 
@@ -15,7 +15,7 @@
 | Общие приоритеты, последовательность и критерии результатов | `docs/project/roadmap.md` |
 | Текущие связи модулей и профили | `docs/architecture/overview.md` |
 | Выполнение HTTP-запроса | `docs/architecture/request-lifecycle.md` |
-| Граница core / optional / application | `docs/reusable-blocks.md` |
+| Граница ядра и приложения | `docs/reusable-blocks.md` |
 | Bootstrap, distributions и packaging | `docs/design/autonomous-core.md` |
 | Поведение и ограничения компонента | Соответствующий architecture/design документ и tool README |
 | Окружения и проверки | `docs/development/infrastructure-and-testing.md` |
@@ -60,7 +60,7 @@
 
 Использовать обычный Markdown, небольшие разделы и относительные ссылки на документы и исходники. Не публиковать `/Users/...`, пути другого checkout или ссылки на несуществующие будущие файлы. Будущие имена писать как code literals. Команды должны запускаться из корня, если явно не указан иной каталог. Секреты и реальные credentials в примеры не включать.
 
-Ссылки на внешние спецификации вести к первоисточнику. Не добавлять сеть или package manager ради проверки Markdown. Generated OpenAPI меняется генератором; upstream notices не редактируются как документация проекта.
+Ссылки на внешние спецификации вести к первоисточнику. Не добавлять сеть или package manager ради проверки Markdown. Generated PHP меняется через SQL inputs и генератор; upstream notices не редактируются как документация проекта.
 
 ## Автоматическая проверка
 

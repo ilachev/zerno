@@ -6,13 +6,7 @@
     "required_extensions": [
       "pdo"
     ],
-    "postgresql_extension": "pdo_pgsql",
-    "optional_capability_extensions": {
-      "ip2location": [
-        "bcmath",
-        "curl"
-      ]
-    }
+    "postgresql_extension": "pdo_pgsql"
   },
   "packages": [
     {
@@ -43,37 +37,6 @@
       },
       "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
       "path": "packages/google/protobuf"
-    },
-    {
-      "name": "ip2location/ip2location-php",
-      "version": "9.8.1",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/chrislim2888/IP2Location-PHP-Module.git",
-        "reference": "e18e5372cfa4b57f33d2dc8c15d24cee1ee6d1ce"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/chrislim2888/IP2Location-PHP-Module/zipball/e18e5372cfa4b57f33d2dc8c15d24cee1ee6d1ce",
-        "reference": "e18e5372cfa4b57f33d2dc8c15d24cee1ee6d1ce",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "ext-bcmath": "*",
-        "ext-curl": "*",
-        "ext-json": "*",
-        "php": ">=7.2"
-      },
-      "autoload": {
-        "psr-4": {
-          "IP2Location\\": "src"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/ip2location/ip2location-php"
     },
     {
       "name": "nyholm/psr7",
@@ -189,34 +152,6 @@
       },
       "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
       "path": "packages/psr/log"
-    },
-    {
-      "name": "psr/simple-cache",
-      "version": "3.0.0",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/php-fig/simple-cache.git",
-        "reference": "764e0b3939f5ca87cb904f570ef9be2d78a07865"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865",
-        "reference": "764e0b3939f5ca87cb904f570ef9be2d78a07865",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "php": ">=8.0.0"
-      },
-      "autoload": {
-        "psr-4": {
-          "Psr\\SimpleCache\\": "src/"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/psr/simple-cache"
     },
     {
       "name": "roadrunner-php/roadrunner-api-dto",
@@ -336,39 +271,6 @@
       "path": "packages/spiral/roadrunner-http"
     },
     {
-      "name": "spiral/roadrunner-kv",
-      "version": "v4.3.1",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/roadrunner-php/kv.git",
-        "reference": "0db13f212c64463bd26cf71e28d0a8bdf997a4a0"
-      },
-      "dist": {
-        "type": "zip",
-        "url": "https://api.github.com/repos/roadrunner-php/kv/zipball/0db13f212c64463bd26cf71e28d0a8bdf997a4a0",
-        "reference": "0db13f212c64463bd26cf71e28d0a8bdf997a4a0",
-        "shasum": ""
-      },
-      "license": [
-        "MIT"
-      ],
-      "require": {
-        "ext-json": "*",
-        "php": ">=8.1",
-        "psr/simple-cache": "2 - 3",
-        "roadrunner-php/roadrunner-api-dto": "^1.0",
-        "spiral/goridge": "^4.2",
-        "spiral/roadrunner": "^2023.1 || ^2024.1 || ^2025.1"
-      },
-      "autoload": {
-        "psr-4": {
-          "Spiral\\RoadRunner\\KeyValue\\": "src"
-        }
-      },
-      "imported_from": "existing installation; upstream references recorded, not independently re-authenticated",
-      "path": "packages/spiral/roadrunner-kv"
-    },
-    {
       "name": "spiral/roadrunner-worker",
       "version": "v3.6.2",
       "source": {
@@ -447,7 +349,7 @@
     }
   ],
   "files": {
-    "autoload.php": "ce7fd82d1bcb1099b9655bacec781652920d7807376866d0d1e3272f84f705d1",
+    "autoload.php": "ecabe61e7429cc285f91b576a81332ac3e4bd7a026e8ab139aa0395d832241f4",
     "packages/google/protobuf/LICENSE": "2d4cfcfdf007905742e8021124697f2e19e5e0853dd7722d324d954ddf1971f7",
     "packages/google/protobuf/README.md": "ae4b7704158130c1ce525c092758a367c3b4485fc489d80b53422d5d3a96514c",
     "packages/google/protobuf/composer.json": "bae03843c1c865a328c456633bc095d4233b0568e80e267275a26f1005bc95e0",
@@ -583,38 +485,6 @@
     "packages/google/protobuf/src/Google/Protobuf/UInt64Value.php": "3183a0fdd49c820646adadca10998cc681c2e026bbf78eea13c240409a1e53f0",
     "packages/google/protobuf/src/Google/Protobuf/Value.php": "b89550d31c4a475ef3b4304e68bab1fe448bbb3967b46ecd395a56c1acc3d2cc",
     "packages/google/protobuf/src/phpdoc.dist.xml": "5b171f7dc219e03f139ac01cb2651a64cc726bee1a99fb84954907296969fec7",
-    "packages/ip2location/ip2location-php/.github/workflows/test.yml": "5978632c14c46a617a6064124dd4e3b0543d52e7d5a36bef36b0257b14415280",
-    "packages/ip2location/ip2location-php/.readthedocs.yaml": "53413bb457738fa58cca1f9c6e37d266e3b3317413cad5096367b016aa872e97",
-    "packages/ip2location/ip2location-php/LICENSE.TXT": "7e99dd69a436459cbb5123583337e00d93224c0302ec436a0e012a91adb9707a",
-    "packages/ip2location/ip2location-php/README.md": "a0e0f2cc2862a5bdd29869903c8e03dd30fcd8402572dab6910d58d7758f6023",
-    "packages/ip2location/ip2location-php/composer.json": "24bb88654005e08c6a2aad6d77a1d86d0e7c8cd9bce5352139e9b00ebf63da19",
-    "packages/ip2location/ip2location-php/data/IP2LOCATION-COUNTRY-INFORMATION-BASIC.CSV": "83f0606b5b86aa7457eedb25a95cba0dd77848df6b1791baeff0a1017731be70",
-    "packages/ip2location/ip2location-php/data/IP2LOCATION-ISO3166-2.CSV": "f70e340e4411b2588951a04f981aa29786fbea0af78ed4dccada9017bb74e9ee",
-    "packages/ip2location/ip2location-php/data/IP2LOCATION-LITE-DB1.BIN": "c0aff69f2358690e76315d7547b03ac3fc6a5887112d59b779f8f49d16a38eb1",
-    "packages/ip2location/ip2location-php/data/IP2LOCATION-LITE-DB1.IPV6.BIN": "6b10b56d512be03414f2fbec948b0d9d4e15a88a7c942188e60bd0c93e455466",
-    "packages/ip2location/ip2location-php/docs/Makefile": "e33bf74d59130029ba24168a813112dd923d7044d780ce942db6645d93f56acf",
-    "packages/ip2location/ip2location-php/docs/make.bat": "d2a8ebcce0de81abca77b2cbc26afd00385a61fb624e7060a8e5402fd900a72a",
-    "packages/ip2location/ip2location-php/docs/requirements.txt": "4cfbe30aff26b8ba03086b723326639f5466a57db182c3210e898489aad4238f",
-    "packages/ip2location/ip2location-php/docs/source/code.md": "910f2cda3d9c0c29130c2dcb2eaa86f055dd3eaba98f14a5017415cd8cd5f176",
-    "packages/ip2location/ip2location-php/docs/source/conf.py": "cec561de29775852f96a7a6374256ffc970dcf5f0affd82d7b1ccc3a2de82bc9",
-    "packages/ip2location/ip2location-php/docs/source/images/favicon.ico": "93bf07247367886b91055735ae3f3bb084454e95a44dc589852bbbfe1c40bb4b",
-    "packages/ip2location/ip2location-php/docs/source/images/ipl-logo-square-1200.png": "60b85b85a316a42bbc293f8abb585efcb30fbf3d9817c43ad5533f9bab7cd73f",
-    "packages/ip2location/ip2location-php/docs/source/index.md": "4ba429587369d567f01d0319eef6bca34e95c1ee03a9a8b3cd9a75a80eb710d3",
-    "packages/ip2location/ip2location-php/docs/source/quickstart.md": "cc9927f6308fa0d9b37de7ec16e27b9580853809211c125cff0b3c0d73b8dd64",
-    "packages/ip2location/ip2location-php/examples/example.php": "f55402a72a2e8d4f4d45a9d1438952ddc0bb5405e579e9a4fe3d40db98774457",
-    "packages/ip2location/ip2location-php/ip2location_bin_download.php": "d06112e6118cbf34351111568ba18df4a3e6dde185e2179e1d2eac397209c6ec",
-    "packages/ip2location/ip2location-php/phpunit.xml": "94bbfbaa51310774a934430a4c381dbb1d409af1c57d71eed96da33fbd556653",
-    "packages/ip2location/ip2location-php/src/Country.php": "358210dd593e9452234d6010e06d3b37e79ffe9a9306427114c1be367323523a",
-    "packages/ip2location/ip2location-php/src/Database.php": "e49ad6fc4c7cfa9175a89b2c2dc4adfa7a3223a9543134baf0b6acf9ed9695ec",
-    "packages/ip2location/ip2location-php/src/IpTools.php": "471a5646a852280e35c69aee3b63b606e2ec045cff92565c98f1dffe7083b97e",
-    "packages/ip2location/ip2location-php/src/Region.php": "da2beea3ebc5a6f59517473601e38a78e39ac2d2d11ad4e5cd297cda4c3ceef7",
-    "packages/ip2location/ip2location-php/src/WebService.php": "d99375452a69e949170b64ce6460f5329e9320ba969bdf27ea83dfcaeb398395",
-    "packages/ip2location/ip2location-php/tests/CountryTest.php": "7651d466d430223b1659eaeaaf7a80e9fcd197177233d6f7c024f747f3e2a2f1",
-    "packages/ip2location/ip2location-php/tests/DatabaseTest.php": "be5bd98e9b001cf8e00039b06c527869936aaa3dc1528f874c2cef8a632332fa",
-    "packages/ip2location/ip2location-php/tests/IpToolsTest.php": "d72648bfb1d0d17423df06755fd54b1f62039bef5f6ff002aa1727ec932e7d60",
-    "packages/ip2location/ip2location-php/tests/RegionTest.php": "f228cb4e2a6b7f5227962c6c7331568cd3a46936dafefbd360ee79c0b8f51eeb",
-    "packages/ip2location/ip2location-php/tests/WebServiceTest.php": "3211260f814a2f9e7a944b7b1a1345cbd582d77cf2c10ee4661dbc6deb599060",
-    "packages/ip2location/ip2location-php/tests/bootstrap.php": "b58d4455a77f10d3fb4a2b79e0e68e33a8b561b32e0b01bd9c37808d0f5019b0",
     "packages/nyholm/psr7/CHANGELOG.md": "7634a85805747a91720150e04efdbb3cd80a73ce60ddb28401ed2e54539bfb44",
     "packages/nyholm/psr7/LICENSE": "a683f57e45992c4f0e7394e2f99a7a49bcffee6f973e42c7b5b720af6c8a3f05",
     "packages/nyholm/psr7/README.md": "f364f5d0e0a9c0cc7e64112418b79b92275f7960cbd89a846f66486d95824a0a",
@@ -663,13 +533,6 @@
     "packages/psr/log/src/LoggerInterface.php": "05aecbaded98967719d76a058ea27465ffae03b7800dc36049e1ed23c825e6b3",
     "packages/psr/log/src/LoggerTrait.php": "c854406af9c4706980e93183b5f37fa9cca523df9bb1019a927f8e4713834172",
     "packages/psr/log/src/NullLogger.php": "22fbb348f7b25259ca801f595fc9aa22b9f035a44e7899687bd89bf4070d78c8",
-    "packages/psr/simple-cache/.editorconfig": "22d780a14a3bb595b6d8156202ae9b15025eee2cfefd8ac37a3dffa2ffc95744",
-    "packages/psr/simple-cache/LICENSE.md": "9d7269855b25e36b54461c029260a56c97499a647117ea37f4c5cdfc956a7f8b",
-    "packages/psr/simple-cache/README.md": "3f6ceb3d1fa73168b7fe2239f303bdd38c190d44e41c12f07fcc4934462c828b",
-    "packages/psr/simple-cache/composer.json": "522318184b43cf837cbfc517a49abbed881d331464946c10a316919f1b66c198",
-    "packages/psr/simple-cache/src/CacheException.php": "9b92f4ad92711668a09e4c475f024b23d0d0b8a687908eb59996c61a5ee24e28",
-    "packages/psr/simple-cache/src/CacheInterface.php": "3210f4d4838fe90b204bdffe60aafe7789dc8684b43d2b0c93ea348ad8af94d5",
-    "packages/psr/simple-cache/src/InvalidArgumentException.php": "5f45f9c49e02676e2fb03f60386fb292bbf03062890b4bf40c948e90187fcad9",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/modules.xml": "d3e2af6cfdd3677bfe5c1c22a0c89fc495299d35db969df850367744f685c92e",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/php.xml": "6247d1c27d460e9157c34acc7768cbd49a92a2bf95390a12bee8b13a6063276f",
     "packages/roadrunner-php/roadrunner-api-dto/.idea/roadrunner-api.iml": "02019c718d06ae09955140c6454f50cadefdbe2035eff02ebbd11d30da81ac75",
@@ -1621,29 +1484,6 @@
     "packages/spiral/roadrunner-http/src/PSR7Worker.php": "1a24da35a9cbec6bb2abb889542dabb7346d72fa6f9b9e5b8a74bf0af6eebf11",
     "packages/spiral/roadrunner-http/src/PSR7WorkerInterface.php": "729388a27faabc003137c51a48a9bdbfb02cbcf5be04862fb280cec7016e06a0",
     "packages/spiral/roadrunner-http/src/Request.php": "467f685483636a2cc4b2aca6983f90ad584e8900a625287cc1755c485afd618a",
-    "packages/spiral/roadrunner-kv/LICENSE": "c20baf77c987828298a817cd1a23187185a8954efa5e782fc2b1c1e41b232d1a",
-    "packages/spiral/roadrunner-kv/README.md": "d66ba1f17ba7b867c9d7daf52d5eebc7d2f4424130411fff37ffa051c099df0e",
-    "packages/spiral/roadrunner-kv/composer.json": "dbfe774e866d42b5d2515f078afd7f55b8b4c7520ddc2fecb3a693ed110c39d4",
-    "packages/spiral/roadrunner-kv/resources/.phpstorm.meta.php": "ebb32dc3b9a931e01464648c4d3fc17e2309d6e9237f5ad84b623d9769094acd",
-    "packages/spiral/roadrunner-kv/resources/stubs/igbinary.phpstub": "33ea2e30ef74af98cc124ff338242b8c524cd3e3d4533db76b42060ee3783921",
-    "packages/spiral/roadrunner-kv/src/AsyncCache.php": "97150764fe4305e47ff44758e7d1634ac36ba44e609e63df428f7e533156477c",
-    "packages/spiral/roadrunner-kv/src/AsyncStorageInterface.php": "977b442c5ddef69781b3aa7c24add5aa4539d8150698891fa0b6181f5cc34a76",
-    "packages/spiral/roadrunner-kv/src/Cache.php": "4060b56d88976d1e7e6908ad4c52e37daee05759249219cd6862570555c685d5",
-    "packages/spiral/roadrunner-kv/src/Exception/InvalidArgumentException.php": "a230566b38ab52704b73bb6afba5ca225b58a041689370f4ef2f981ecb937c0d",
-    "packages/spiral/roadrunner-kv/src/Exception/KeyValueException.php": "b91e99fff68c4028ffa59fa4c075605fc2932f2ae88c5d1d612b8dcc445db29c",
-    "packages/spiral/roadrunner-kv/src/Exception/NotImplementedException.php": "12472e8daa75b875ec0d238a1e818e2ea0a023764868ea87088d0c5d4f30aaf5",
-    "packages/spiral/roadrunner-kv/src/Exception/SerializationException.php": "99fb466b22488994d0542c63f2279084cc9205ee9699a6049be929afdf9c37c1",
-    "packages/spiral/roadrunner-kv/src/Exception/StorageException.php": "baaa79cc4889b3c3862908ccbfe813ec828675179d5ce4cd7931c51be7fc644f",
-    "packages/spiral/roadrunner-kv/src/Factory.php": "ef6ddbc6ce6807c2122b7b14317cc62ef444b6d41367ac051570634a8f3a9737",
-    "packages/spiral/roadrunner-kv/src/FactoryInterface.php": "83045d2655e2edb3d71a3b4559808f26c60e1fd0f4bd14736419b1a34bd46b4c",
-    "packages/spiral/roadrunner-kv/src/Serializer/DefaultSerializer.php": "742233e9d398911ef5dd81c39cbbbac0c019ce082882353e07f844e55b7be7d1",
-    "packages/spiral/roadrunner-kv/src/Serializer/IgbinarySerializer.php": "e1d30442df6318ea6585636d21e709fe3fb2784a8417b11dc43d7b39c5c72977",
-    "packages/spiral/roadrunner-kv/src/Serializer/SerializerAwareInterface.php": "9154a12e848e215725b4f057c31569b4d1d7e9b8ba7e407ca4f0240e01090b61",
-    "packages/spiral/roadrunner-kv/src/Serializer/SerializerAwareTrait.php": "4d7c323b12cc8743d8eee2a56d8eed46b54628a89efff1f0d62af3f02883d54a",
-    "packages/spiral/roadrunner-kv/src/Serializer/SerializerInterface.php": "dcf384557be4a45cf66824d17fe184d015afc066edf009d15764b8b29beb850c",
-    "packages/spiral/roadrunner-kv/src/Serializer/SodiumSerializer.php": "9c64e706346b0e2d9c3c886cd54a99cf3bd021c561b3333312425c4dcc10bd90",
-    "packages/spiral/roadrunner-kv/src/StorageInterface.php": "de55ef4e2016d37963255c365193e358093df579f6a641690336732567f38fac",
-    "packages/spiral/roadrunner-kv/src/TtlAwareCacheInterface.php": "881d43c1cf26c7bc1c27573845f706de30f7fecae8be4fa774cfb33f0df1a5ad",
     "packages/spiral/roadrunner-worker/LICENSE": "0474e29e21700ee7c3d4acd068dca7f51ecb97f03b14c01fe24198978246164b",
     "packages/spiral/roadrunner-worker/README.md": "a968c02cc472d17ea82f600cb97d668c5bc55debe4c086eea5318db3099ddeb3",
     "packages/spiral/roadrunner-worker/composer.json": "d031d19ac8525c2087d5321a07e9c0d74715e28f126576ebca4aae019c1c5486",
@@ -1687,5 +1527,11 @@
     "packages/symfony/polyfill-php83/bootstrap81.php": "7e4f864396c6f4124c46aa1dd7341c889ac067d010408ef7f4ff8c79e2e4af65",
     "packages/symfony/polyfill-php83/composer.json": "06fa868d6ffe7965e5aacec69da00cf458dfa7e0fe7667c4123db0d4b669771d",
     "patches/roadrunner-worker-version.patch": "da2158cf684ba172ba2bf43d24aa18c3e4df7e45a73c8e182ebb909d23a0da58"
-  }
+  },
+  "adaptations": [
+    {
+      "date": "2026-10-20",
+      "reason": "Remove GeoIP and KV/cache packages from the product scope. Full upstream trees of retained packages are preserved; protobuf and API DTO remain required by the pinned RoadRunner HTTP package."
+    }
+  ]
 }

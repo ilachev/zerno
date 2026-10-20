@@ -82,7 +82,6 @@ final class PostgreSqlTestDatabase
         }
 
         return [
-            'STORAGE_ENGINE' => 'pgsql',
             'DB_HOST' => $this->host,
             'DB_PORT' => (string) $this->port,
             'DB_NAME' => $this->database,

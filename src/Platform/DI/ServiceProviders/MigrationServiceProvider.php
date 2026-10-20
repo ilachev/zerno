@@ -11,14 +11,13 @@ use App\Platform\Storage\Migration\MigrationLoader;
 use App\Platform\Storage\Migration\MigrationRepository;
 use App\Platform\Storage\Migration\MigrationService;
 use App\Platform\Storage\Storage;
-use App\Platform\Storage\StorageConfig;
 
 /**
  * @implements ServiceProvider<object>
  */
 final readonly class MigrationServiceProvider implements ServiceProvider
 {
-    public function __construct(private ?string $migrationsPath = null) {}
+    public function __construct(private string $migrationsPath) {}
 
     public function register(Container $container): void
     {
@@ -27,13 +26,10 @@ final readonly class MigrationServiceProvider implements ServiceProvider
         $container->set(
             MigrationLoader::class,
             static function (Container $container) use ($migrationsPath): MigrationLoader {
-                /** @var StorageConfig $storageConfig */
-                $storageConfig = $container->get(StorageConfig::class);
-
                 /** @var Logger $logger */
                 $logger = $container->get(Logger::class);
 
-                return new MigrationLoader($migrationsPath ?? $storageConfig->getMigrationsPath(), $logger);
+                return new MigrationLoader($migrationsPath, $logger);
             },
         );
 

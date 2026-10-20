@@ -1,66 +1,41 @@
-# Автономная поставка PHP-ядра
+# Автономная поставка
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-17.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-Runtime, генерация, проверки и сборка используют включённые в репозиторий PHP-исходники и инструменты. Проектных Composer manifests, установки пакетов и Composer ClassLoader нет. Сторонний код сохранён фиксированными distributions с происхождением и hashes. Смысл автономности и границы продукта определены в [видении](../project/vision.md).
+Runtime, генерация, проверки и сборка не устанавливают пакеты и не скачивают dependencies. PHP, расширения, PostgreSQL, выбранный HTTP executable и инструменты стенда — внешняя платформа. [Конкретный состав](../project/vision.md) не содержит optional-подсистем старого API.
 
-## Контуры поставки
+## Distributions
 
-| Контур | Назначение и источник загрузки |
-|---|---|
-| [Bootstrap приложения](../../bootstrap.php), [Autoloader](../../bootstrap/Autoloader.php) | Проверка PHP/PDO; PSR-4 prefixes, classmap и function files без Composer |
-| [Runtime distribution](../../third_party/runtime/manifest.json) | Сторонние runtime packages и их локальная карта загрузки |
-| [SQL distribution](../../third_party/codegen/sql/manifest.json) | Зависимости SQL-генератора; отдельный bootstrap и процесс |
-| [Protobuf distribution](../../third_party/codegen/protobuf/manifest.json) | Зависимости protobuf-генератора; отдельный bootstrap и процесс |
-| [Quality tools](../../third_party/tools/manifest.json) | Standalone PHPStan, PHPUnit и PHP-CS-Fixer PHAR с provenance |
-| [Индекс distributions](../../third_party/manifest.json) | Актуальный состав и пути manifests |
-| [PHP runner](../../tools/project.php) | Проверки, генерация, services и packaging; Task — optional aliases |
+| Контур | Источники | Когда используется |
+| --- | --- | --- |
+| Runtime | third_party/runtime | bootstrap приложения |
+| SQL generator | third_party/codegen/sql | Отдельный процесс sql-gen/sql-check |
+| Quality | third_party/tools | PHPStan, PHPUnit, PHP-CS-Fixer PHAR launchers |
 
-Оригинальные upstream `composer.json` внутри package snapshots оставлены как метаданные происхождения. Проект не исполняет их как инструкции установки. Наличие сторонней библиотеки в runtime distribution не включает её автоматически в минимальный request pipeline.
+[Главный manifest](../../third_party/manifest.json) содержит hashes distribution manifests; каждый manifest перечисляет файлы и SHA256. [Checker](../../tools/check-third-party.php) проверяет также незаявленные файлы и symlinks без сети. Runtime bootstrap не загружает generator/quality libraries.
 
-## Загрузка и изоляция
+Сторонние package trees фиксированы с version/ref/license и исходными notices. Provenance описывает локальный импорт прежнего установленного snapshot; hashes подтверждают локальную целостность, не повторную аутентификацию издателя. Исходные composer metadata внутри upstream packages сохранены как происхождение, не как вход installer.
 
-`bootstrap.php` подключает локальный autoloader и runtime distribution. `public/http.php`, `public/index.php` и CLI используют этот bootstrap. `tests/bootstrap.php` добавляет тестовые namespaces и dev bootstrap для типов PHPUnit. Обычный HTTP-запрос не подключает инструменты качества.
+## Потребители runtime libraries
 
-SQL и protobuf generators выполняются отдельными процессами со своими bootstrap-файлами и закреплёнными версиями библиотек. Это необходимо, поскольку runtime и генераторы могут использовать разные версии одинаковых namespaces. Не смешивать их autoload maps в одном приложении. Конкретные пути и процессы заданы в `tools/project.php`, `codegen/sql-gen-bootstrap.php` и `codegen/protoc-php-gen-bootstrap.php`.
+Nyholm PSR-7 и PSR HTTP contracts обслуживают оба транспорта; psr/log — logging/tests; Goridge, RR worker/HTTP и polyfill входят в текущую RR-поставку. Зафиксированный RR HTTP требует roadrunner-api-dto и Google protobuf. Эти транспортные исходники сохраняются полными, хотя приложение не предоставляет собственного protobuf API. GeoIP, psr/simple-cache и RR KV удалены; protobuf generator distribution удалён целиком.
 
-Автономная загрузка поддерживает function/bootstrap files и ресурсы пакетов, а не только классы. При обновлении distribution сохранять необходимые grammar files, function files и notices.
+Общая autoload map регистрируется при bootstrap и имеет стоимость. Удаление исходников не объявляется доказанным ускорением HTTP. Изменения состава записаны в [истории очистки](../history/2026-10-20-core-scope.md).
 
-## Целостность, происхождение и изменения
+Bundled RR worker Version.php содержит единственную зафиксированную адаптацию: pinned compatibility metapackage version читается без installed registry. Patch, upstream hash и итоговые hashes остаются в runtime manifest. Это не версия executable rr. Других incidental edits bundled files не делать.
+
+## SQL и сборка
+
+SQL inputs — sql/schema.sql и sql/queries/catalog.sql, runtime namespace задаётся аргументом runner, engine — tools/sql-gen. Generated artifacts не редактируются вручную. Nette/Phplrt/Typhoon нужны codegen-процессу, не HTTP. Собственных .proto/SDK/OpenAPI и protoc compiler requirements больше нет.
 
 ```bash
 php tools/project.php third-party:check
-```
-
-Проверка читает manifests, сверяет SHA-256 файлов и отвергает незаявленные файлы и symlinks внутри distributions. Она работает локально, без сети. `.gitattributes` сохраняет точные байты bundled files при Git checkout.
-
-Hash подтверждает соответствие локальному снимку, но сам по себе не аутентифицирует upstream. Для импортированных source trees manifests фиксируют происхождение из ранее установленного окружения и upstream refs без обещания повторной криптографической проверки. Для PHAR сохранены официальные URLs, опубликованные SHA-256 и сведения о проверке подписей в `provenance.json`; разные инструменты имеют разный объём доказательств.
-
-Адаптация `Spiral\RoadRunner\Version::current()` возвращает закреплённую compatibility metapackage version вместо чтения registry установленных пакетов. Patch и исходный hash записаны в runtime manifest. Это не версия исполняемого `rr`.
-
-Обновление стороннего кода — отдельное проверяемое изменение: зафиксировать источник, версию/ref, необходимые зависимости и ресурсы, notices, локальные patches, карту загрузки и новые hashes; затем проверить все затронутые контуры. Не менять hashes только ради устранения ошибки integrity. Политика распространения собственного кода остаётся открытым вопросом: root `LICENSE` пока отсутствует; лицензии upstream и условия включённой GeoIP-базы требуют отдельного учёта.
-
-## Платформа
-
-PHP и расширения, PostgreSQL, выбранный HTTP-сервер и compilers являются требованиями окружения, а не скачиваемыми PHP-зависимостями. Точный список и команды: [README](../../README.md), [инфраструктура и проверки](../development/infrastructure-and-testing.md).
-
-Минимальное приложение работает через SAPI/FPM или RoadRunner. Необязательные protobuf/GeoIP/cache integrations имеют дополнительные требования; генерация protobuf требует `protoc`, OpenAPI — `protoc-gen-openapiv2`. Default `verify` не требует этих компиляторов, внешней БД или Docker. Команды проекта не устанавливают платформу автоматически.
-
-## Проверка и runtime-архив
-
-```bash
-php tools/project.php docs:check
-php tools/project.php verify
 php tools/project.php verify:full
 php tools/project.php build local
 ```
 
-`verify:full` требует настроенной PostgreSQL test database. Runtime-архив в `dist/` содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с manifests/notices, документацию и opt-in пример `examples/document-catalog`. Его namespace регистрирует только собственный bootstrap при выборе конфигурации, основной bootstrap не подключает приложение каталога. Generators, quality tools, load tests и тесты в архив не включаются; команды разработки из документации рассчитаны на исходный checkout. OpenAPI sidecar берётся из committed `docs/api.swagger.json` и относится только к optional API.
+Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR и каталог с migration/seed. SQL generator, quality PHARs, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
 
-Сборщик проверяет third-party integrity перед упаковкой; он не регенерирует protobuf и не скачивает зависимости. Побайтовая стабильность aggregate metadata SDK не гарантируется текущим `protoc`; это не мешает отдельно проверять смысл дескрипторов и синхронизацию остальных артефактов.
+CLI migration в распакованном архиве: php bin/migrate.php migrate [application-config]. Core default — config/core.php и пустой src/Migrations; каталог передаёт свой config. БД не создаётся автоматически, HTTP startup не выполняет DDL.
 
-## История и дальнейшие задачи
-
-[Сохранённый аудит](../history/2026-10-17-autonomy-audit.md) содержит исходную инвентаризацию, этапы удаления Composer и границы выполненных offline/FPM/RR проверок. Его [JSON snapshot](../history/dependency-inventory-2026-10-17.json) описывает прежний установленный граф, не нынешнюю поставку.
-
-Текущая автономная поставка уже реализована. Сравнительная производительность runtime, воспроизводимая методика обновлений и эксплуатационные процедуры развиваются по [roadmap](../project/roadmap.md); прежние результаты smoke tests не заменяют эти задачи.
+CI/release запускают полный gate и build, не регенерируют артефакты при запросе и не устанавливают PHP packages. Реальные HTTP/load checks выполняются явно на установленной платформе. Удаление API-миграций из дерева не удаляет таблицы существующих пользовательских БД; никакой автоматической destructive migration не добавлено.

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Platform\Http\Middleware;
 
-use App\Platform\Http\HttpRuntimeConfig;
 use App\Platform\Http\Middleware;
 use App\Platform\Http\RequestContextAttributes;
 use App\Platform\Http\RequestHandler;
@@ -18,7 +17,6 @@ final readonly class RequestContextMiddleware implements Middleware
 {
     public function __construct(
         private Logger $logger,
-        private HttpRuntimeConfig $config,
         private RequestContextFactory $requestContextFactory,
     ) {}
 
@@ -28,7 +26,6 @@ final readonly class RequestContextMiddleware implements Middleware
     ): ResponseInterface {
         $startTime = hrtime(true);
         $context = $this->requestContextFactory->create(
-            timeoutSeconds: $this->config->requestTimeoutSeconds,
             requestId: $request->getHeaderLine('X-Request-ID'),
         );
 

@@ -1,20 +1,18 @@
 # Included third-party code and tools
 
-Type: `operations`. Status: `current`. Reviewed: 2026-10-17.
+Type: `operations`. Status: `current`. Reviewed: 2026-10-20.
 
-This directory contains fixed, offline distributions. No dependency resolution or installation runs during application startup, generation, verification or packaging.
+This directory contains three fixed offline distributions. Application startup, generation, verification and packaging do not resolve, install or download packages.
 
-- `runtime/`: the application libraries, their original notices and a local autoload map.
-- `codegen/sql/` and `codegen/protobuf/`: separate generator library graphs. They run in separate PHP processes because some package versions differ.
-- `tools/`: standalone, versioned quality tools with their upstream notices and artifact verification records.
-- `manifest.json`: the distribution index. Each distribution manifest records package versions, upstream references, local adaptations and SHA-256 hashes of all included files.
+- `runtime/`: application and transport libraries, upstream notices and the local autoload map.
+- `codegen/sql/`: SQL generator libraries, loaded only in its isolated PHP process.
+- `tools/`: standalone versioned quality tools, upstream notices and artifact verification records.
+- [manifest.json](manifest.json): the index; distribution manifests record package versions, references, adaptations and SHA-256 hashes of all included files.
 
-Run `php tools/check-third-party.php` to verify the index and all distribution files. Verification does not download anything. Hashes establish integrity against this checkout's recorded inventory; imported library files were copied from the existing installation and have not been independently authenticated against their upstream Git archives. Tool artifact verification is recorded separately in their provenance metadata.
+The pinned RoadRunner HTTP transport requires `roadrunner-api-dto` and `google/protobuf`. Their complete upstream sources remain in runtime; the application protobuf API, contracts, SDK and generator have been removed. GeoIP, PSR simple-cache and RoadRunner KV packages are removed entirely. The runtime adaptation in [roadrunner-worker-version.patch](runtime/patches/roadrunner-worker-version.patch) replaces an installed-package registry query with the pinned PHP compatibility metapackage version; this is not the executable version.
 
-Original upstream package metadata, including dependency declarations, is retained as source material. It is not used to install or load packages. Updates require reviewing the selected versions, licenses, resource files, autoload maps and adaptations, then updating the inventory and running the complete verification gate.
+Run `php tools/project.php third-party:check` to verify all included files without network access. Hashes establish integrity against this checkout's inventory. Imported library files were copied from the prior installation and were not independently authenticated against upstream Git archives; tool artifact verification is recorded separately in provenance metadata.
 
-The runtime adaptation in `runtime/patches/roadrunner-worker-version.patch` replaces a query to an installed-package registry with the pinned RoadRunner compatibility metapackage version. That value describes PHP package compatibility; it does not identify the installed RoadRunner executable.
+Original upstream metadata, including dependency declarations, is retained as source material. It does not install or load packages. Updates require review of versions, licenses, resource files, autoload maps and adaptations, refreshed inventories and the full verification gate. Do not edit or selectively trim upstream classes incidentally.
 
-PHP, its extensions, PostgreSQL and optional server/compiler executables remain platform requirements. Their versions are independent of these PHP library inventories.
-
-Delivery architecture: [autonomous core](../docs/design/autonomous-core.md). Repository documentation: [index](../docs/README.md).
+PHP, extensions, PostgreSQL and HTTP/development executables are separate platform requirements. Runtime archives include only the runtime distribution. See [delivery architecture](../docs/design/autonomous-core.md), [testing](../docs/development/infrastructure-and-testing.md) and the [documentation index](../docs/README.md).

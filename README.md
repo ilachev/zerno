@@ -1,124 +1,63 @@
-# Зерно
+# Зерно · Zerno
 
 Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-[![CI](https://github.com/ilachev/zerno/actions/workflows/ci.yml/badge.svg)](https://github.com/ilachev/zerno/actions/workflows/ci.yml)
+Небольшая автономная PHP-основа для сайтов и веб-приложений: HTTP, явные маршруты и обработчики, PostgreSQL/PDO и SQL. Разработчики муниципальных и государственных сайтов — приоритетная аудитория; назначение ядра универсальное.
 
-**Зерно (`zerno`) — небольшое автономное веб-ядро на PHP.** Основа, из которой разработчик собирает серверный сайт или веб-приложение: явные HTTP-маршруты, обработчики, PDO, подготовленные SQL-запросы, транзакции и миграции.
+Цели — простота использования и сопровождения, полезная функциональность и измеряемая эффективность. [Принципы](docs/project/principles.md) применяются совместно. Исполнение остаётся обычным PHP: маршрут → handler → SQL/поток → response.
 
-Ядро универсально. При развитии проекта особое внимание уделяется потребностям муниципальных и государственных организаций: понятному устройству, контролируемой поставке и возможности сопровождать сайты в собственной инфраструктуре. Страницы, предметная модель, роли и редакционные процессы определяет приложение.
+## Конкретный состав
 
-## Принципы
+- PSR-7 request/response, маршруты, middleware и явная композиция через конструкторы и PHP-конфигурацию.
+- JSON/прикладные HTML-ошибки через ErrorResponse; файловый AttachmentResponse с безопасными заголовками.
+- Request ID, время обработки и логирование метаданных без чтения тела ответа.
+- PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции.
+- SQL-генератор: типизированные queries/rows, явный LIMIT, проверки PostgreSQL. Генератор не загружается при запросе.
+- Два способа исполнения одного RequestHandler: PHP/SAPI/FPM и RoadRunner.
 
-**Максимальная простота + максимальная полезная функциональность + максимальная производительность.** Оцениваем путь разработчика и сопровождение, законченные веб-сценарии и фактическую стоимость всего запроса. Правила выбора решений и компромиссов закреплены в [принципах развития](docs/project/principles.md).
+Сессии, GeoIP/fingerprints, ApiStats, cache-модули, protobuf API/генератор, hydration/mapping и исходящий HTTP-клиент удалены. Папки optional, совместимых заглушек и старого API-профиля нет. [Граница продукта](docs/project/vision.md) описывает правило включения новых возможностей; [история очистки](docs/history/2026-10-20-core-scope.md) — удалённый состав и несовместимость.
 
-Свой подход «Зерна» — обычный PHP, явная сборка приложения, видимый SQL и автономная поставка. Разработчик сохраняет контроль над тем, что исполняется при запросе; новые возможности оцениваются по этому [ориентиру](docs/project/vision.md#собственная-модель-разработки) и проверяемой пользе.
+## Запуск
 
-- **Автономная поставка.** Сторонние PHP-исходники, зависимости генераторов и закреплённые инструменты качества включены в репозиторий. Для запуска, разработки, генерации, проверок и сборки нет шага установки пакетов. Composer, npm и Task не требуются.
-- **Явная композиция.** Минимальное HTTP/PDO-приложение подключает необходимую основу; сессии, статистика, protobuf API и runtime integrations выбираются конфигурацией.
-- **БД входит в основу.** SQL остаётся исходником запросов; PDO, параметры, транзакции, миграции и типизированная генерация доступны из коробки.
-- **Производительность через измерения.** Цель — небольшие накладные расходы PHP. Начальный [FPM/RoadRunner baseline](docs/history/2026-10-17-core-http-baseline.md) ограничен JSON и indexed SELECT; выбор основного runtime остаётся открытым. Дальнейшие сценарии и критерии описаны в [roadmap](docs/project/roadmap.md).
-
-Автономность означает отсутствие установки зависимостей проекта, а включённый сторонний код остаётся сторонним. PHP, расширения, СУБД и выбранный сервер являются требованиями платформы. Состав distributions, notices и происхождение файлов описаны в [архитектуре поставки](docs/design/autonomous-core.md).
-
-## Текущее состояние
-
-Работают минимальная HTTP/PDO-композиция, локальный bootstrap, PHP/SAPI и RoadRunner adapters, явные маршруты, SQL execution и миграции. Общий [ErrorResponse](docs/architecture/request-lifecycle.md#представление-http-ошибок) позволяет выбрать представление routing/exception ошибок: JSON по умолчанию, собственный HTML через одну привязку. Отдельный protobuf API-профиль сохраняет generated endpoints, OpenAPI, сессии, GeoIP, кеш и статистику API.
-
-Общий [AttachmentResponse](docs/architecture/request-lifecycle.md#файловый-attachment-и-владение-потоком) создаёт файловый ответ без чтения тела; подключённое HTTP-логирование сохраняет поток и пишет только метаданные ответа. [SQL-генератор](docs/design/sql-gen-product.md#ограниченная-select-выборка) поддерживает явные `LIMIT 21` и `LIMIT :limit` для ограниченной выборки.
-
-Первый сквозной пример — [публичный каталог документов](examples/document-catalog/README.md): HTML-список с ограниченной пагинацией, карточка и потоковое скачивание PDF. Он имеет собственные маршруты, явный SQL, миграцию и PHP-шаблоны; подключается отдельной конфигурацией без JavaScript, сессий и установки пакетов. Текущий приоритет — общие возможности ядра, выявленные этим примером; редактор и публикационный workflow отложены. Очередь core-задач описана в [roadmap](docs/project/roadmap.md).
-
-## Быстрый старт
-
-Для минимального запуска нужны PHP 8.5+ и PDO. Все команды выполняются из корня репозитория.
+Требуются PHP 8.5+ и PDO; для работы с БД — pdo_pgsql и PostgreSQL. PHP-исходники и инструменты уже поставляются: установка пакетов не нужна.
 
 ```bash
-git clone https://github.com/ilachev/zerno.git
-cd zerno
-
 php -S 127.0.0.1:8080 -t public public/http.php
 ```
 
-Открыть [локальный health endpoint](http://127.0.0.1:8080/health). GET возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Этот запрос не открывает соединение с БД, не создаёт сессию и не запускает API-статистику, GeoIP или protobuf discovery.
+[GET /health](http://127.0.0.1:8080/health) возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Запрос не открывает БД и не создаёт cookies. Встроенный PHP-сервер предназначен для локальной разработки; обычная SAPI/FPM точка входа — public/http.php.
 
-`public/http.php` служит и front controller для PHP-FPM. Требования к веб-серверу и конфигурации описаны в [инфраструктуре](docs/development/infrastructure-and-testing.md). Ту же минимальную композицию можно запустить через установленный RoadRunner:
-
-```bash
-rr serve -c .rr.core.yaml
-```
-
-Примеры используют один порт; серверы запускаются по очереди.
-
-## Работа с БД
-
-Целевой движок — PostgreSQL с расширением `pdo_pgsql`. Подключение настраивается через `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` и необязательный `DB_SCHEMA`. В минимальной композиции storage создаётся при запросе `Storage` или `SqlExecutor` обработчиком. Существующий SQLite adapter остаётся дополнительным вариантом и не заменяет PostgreSQL-проверки.
-
-Миграции приложения находятся в `src/Migrations`, namespace `App\Migrations`; ядро не запускает их при HTTP-запросе:
+Для RoadRunner с установленным executable:
 
 ```bash
-php tools/project.php migrate migrate config/core.php
-php tools/project.php migrate rollback config/core.php
+php tools/project.php run
 ```
 
-Текущий `rollback` откатывает все загруженные выполненные миграции. Подробности движков, схем и CLI — в [инфраструктуре и проверках](docs/development/infrastructure-and-testing.md).
+[.rr.yaml](.rr.yaml) и [config/core-roadrunner.php](config/core-roadrunner.php) запускают то же ядро. APP_CONFIG явно выбирает конфигурацию приложения; старого config/container.php больше нет. Примеры применения — [обычные маршруты](config/routes.php) и [каталог документов](examples/document-catalog/README.md).
 
-## Разработка, проверки и сборка
+## База данных и генерация
+
+[config/storage.php](config/storage.php) читает DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD и DB_SCHEMA. Поддерживается PostgreSQL; выбора STORAGE_ENGINE нет. Соединение открывается при разрешении Storage. HTTP startup никогда не запускает миграции.
+
+```bash
+php tools/project.php migrate migrate
+php tools/project.php sql:gen
+```
+
+По умолчанию миграции ядра ищутся в пустом прикладном src/Migrations. Для каталога передайте examples/document-catalog/config.php вторым аргументом после migrate. [SQL inputs](sql/queries/catalog.sql) и [schema source](sql/schema.sql) дают отдельный проверочный пример генератора на структуре каталога. Приложение сохраняет прямой SQL с published literal; runtime DDL находится в его миграции. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
+
+## Проверки и поставка
 
 ```bash
 php tools/project.php help
-php tools/project.php docs:check
 php tools/project.php verify
-
-# Focused unit test; PHPUnit arguments are forwarded directly.
-php tools/project.php test tests/Unit/Platform/Runtime/AppTest.php
-
-# Generate or check typed SQL.
-php tools/project.php sql:gen
-php tools/project.php sql:check
-
-# Full checks require a separately prepared PostgreSQL test database.
-TEST_DB_HOST=127.0.0.1 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:full
-
-# Runtime archive and optional API reference in dist/.
+php tools/project.php verify:full
+php tools/project.php http:check
 php tools/project.php build local
 ```
 
-`verify` проверяет bundled integrity, документацию, стиль, PHPStan, синхронизацию SQL и root unit tests без внешних сервисов. `verify:full` добавляет gates обоих генераторов и PostgreSQL SQL/integration checks. Для инструментов качества нужны расширения PHP, включая DOM/XML, XMLWriter, mbstring и tokenizer; упаковка использует Phar и zlib.
+verify не требует внешних сервисов. verify:full добавляет SQL-tool checks и настоящую PostgreSQL test database через отдельные TEST_DB_*; http:check запускает FPM/RR явно. [Инфраструктура и тестирование](docs/development/infrastructure-and-testing.md) описывают платформу и изоляцию. Runtime-архив содержит готовый код и SQL-artifacts, исключая инструменты генерации, качества и тесты.
 
-Реальные FPM/RR проверяются отдельно: `php tools/project.php http:check`. Команды `perf:prepare`, `perf:baseline` и `perf:cleanup` воспроизводят малый JSON/SELECT baseline на установленной платформе. Требования и полный порядок запуска — в [HTTP и baseline guide](docs/development/http-and-baseline.md).
+Внутри bundled RoadRunner HTTP остаются требуемые им protobuf/DTO libraries. Это зависимость транспорта, а не API приложения. Происхождение, notices и hashes описаны в [поставке](docs/design/autonomous-core.md).
 
-`TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`, `TEST_DB_USER` и `TEST_DB_PASSWORD` задают тестовую БД независимо от application `DB_*`. Defaults runner: `localhost:5432/app_test`, пользователь `app`, пароль `password`. БД создаётся заранее; каждый integration run создаёт и удаляет собственную случайную схему.
-
-Сборка создаёт `dist/zerno-local.tar.gz` и `dist/zerno-openapi-local.json`. Runtime-архив содержит приложение, конфигурацию, committed generated artifacts, entrypoints, bootstrap, runtime distribution с notices/manifests, документацию и явно подключаемый `examples/document-catalog`. Тесты, load tests, инструменты качества и generator distributions остаются в исходном репозитории. OpenAPI sidecar берётся из `docs/api.swagger.json` и относится к необязательному protobuf API.
-
-CI и release workflow выполняют `verify:full` и сборку. Протоколы не регенерируются в CI; это явная команда разработки. Сборка не устанавливает пакеты. Task остаётся необязательной обёрткой над PHP runner.
-
-## Необязательный protobuf API
-
-API-композиция находится в `config/container.php`, использует `public/index.php` и `.rr.yaml`. Сессии, GeoIP, кеш и API-статистика включены в этом профиле; ему нужны соответствующие сервисы и расширения, включая `bcmath` и `curl`.
-
-```bash
-# Existing Compose services and API migrations.
-php tools/project.php services:start
-
-# Compose creates app; create app_test once for integration checks.
-docker compose exec db-postgres createdb -U app app_test
-
-rr serve -c .rr.yaml
-
-# Regeneration requires protoc and protoc-gen-openapiv2.
-php tools/project.php proto:gen:all
-
-php tools/project.php services:stop
-```
-
-Docker Compose, RoadRunner, `protoc` и `protoc-gen-openapiv2` — платформенные инструменты соответствующего профиля; команды проекта их не скачивают. Исходящий HTTP-клиент использует расширение `curl`. Карта входов, выходов и границы protobuf находятся в [документации API-контура](docs/architecture/protobuf-and-codegen.md).
-
-## Документация
-
-- [Карта документации](docs/README.md) — текущая архитектура, направления, компоненты и история.
-- [Назначение проекта](docs/project/vision.md) и [roadmap](docs/project/roadmap.md) — границы, последовательность и критерии развития.
-- [Обзор архитектуры](docs/architecture/overview.md) — работающие профили и компоненты.
-- [AGENTS.md](AGENTS.md) и [LLM onboarding](docs/llm-onboarding.md) — правила работы и маршрут чтения для агентов.
-- [Машинный инвентарь](docs/documentation-inventory.json) — документы, статусы и связанные исходники.
+Для агентов: [AGENTS.md](AGENTS.md), [onboarding](docs/llm-onboarding.md), [индекс документации](docs/README.md). Последующие ограниченные задачи — в [roadmap](docs/project/roadmap.md). Лицензия и политика публичных релизов собственного кода пока не определены.

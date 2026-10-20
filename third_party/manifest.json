@@ -14,31 +14,27 @@
       "mbstring",
       "tokenizer",
       "xml",
-      "xmlwriter"
+      "xmlwriter",
+      "pdo_sqlite"
     ],
-    "optional_executables": [
-      "rr",
-      "protoc",
-      "protoc-gen-openapiv2",
-      "docker",
-      "k6"
-    ]
+    "executables": {
+      "http": "PHP SAPI/FPM or rr",
+      "development": [
+        "docker",
+        "k6"
+      ]
+    }
   },
   "distributions": [
     {
       "name": "runtime",
       "manifest": "runtime/manifest.json",
-      "sha256": "bcce621cbe9a20f8023155ca9130a0344c1c00fcd0cf6db1fe53203559c11477"
+      "sha256": "5344c51769ead8d930409e65964f8508e638c4451682015341647328b5bc50c3"
     },
     {
       "name": "codegen/sql",
       "manifest": "codegen/sql/manifest.json",
       "sha256": "c4646676d240bfce25e385d691d70ca24d26010e5641352829916244c8b98e25"
-    },
-    {
-      "name": "codegen/protobuf",
-      "manifest": "codegen/protobuf/manifest.json",
-      "sha256": "1129f68befb6d254420b1c3dcad1a2010f5f458b6e0882701a7e67e0464dac8f"
     },
     {
       "name": "tools",

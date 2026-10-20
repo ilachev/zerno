@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Platform\Routing;
 
-use App\Platform\Routing\Generator\RouteProvider;
-
 final readonly class RouteDefinition implements RouteDefinitionInterface
 {
     public function __construct(

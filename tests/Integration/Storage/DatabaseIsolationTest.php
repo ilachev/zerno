@@ -5,22 +5,11 @@ declare(strict_types=1);
 namespace Tests\Integration\Storage;
 
 use App\Platform\Storage\PostgreSQLStorage;
-use App\Platform\Storage\Storage;
-use Tests\Integration\IntegrationTestCase;
+use PHPUnit\Framework\TestCase;
 use Tests\Integration\PostgreSqlTestDatabase;
 
-final class DatabaseIsolationTest extends IntegrationTestCase
+final class DatabaseIsolationTest extends TestCase
 {
-    public function testApplicationUsesOnlyItsGeneratedSchema(): void
-    {
-        $storage = $this->container->get(Storage::class);
-        $rows = $storage->query('SELECT current_schema() AS schema');
-
-        self::assertCount(1, $rows);
-        self::assertIsString($rows[0]['schema']);
-        self::assertMatchesRegularExpression('/\Aphpunit_[a-f0-9]{24}\z/', $rows[0]['schema']);
-    }
-
     public function testCleanupPreservesPublicDataAndOtherRuns(): void
     {
         $first = PostgreSqlTestDatabase::fromEnvironment();

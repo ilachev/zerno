@@ -1,69 +1,27 @@
 # Карта блоков и границ
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-18.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-Этот документ отвечает, где должна жить функциональность и как она подключается. Общие цели и порядок оценки решений заданы в [принципах проекта](project/principles.md); здесь описаны границы компонентов. Композиции и точки входа находятся в [обзоре архитектуры](architecture/overview.md), будущие результаты — в [roadmap](project/roadmap.md).
+Текущая область продукта определена [видением](project/vision.md). Здесь нет уровня optional capabilities: реализованные механизмы имеют конкретную роль, приложение задаёт их использование обычной композицией.
 
-## Критерий включения
+| Код | Ответственность | Потребитель |
+| --- | --- | --- |
+| Platform/Runtime | App, request ID, SAPI emitter/factory и RR loop | Точки входа и реальные HTTP fixtures |
+| Platform/Http | RequestHandler/Middleware, ErrorResponse/JSON, AttachmentResponse, metadata logging | Ядро и каталог |
+| Platform/Routing | Явные RouteEntry, static provider, method/path dispatch | config/routes.php и маршруты каталога |
+| Platform/DI | Конструкторы, factories/bindings и время жизни instances | config/core.php |
+| Platform/Storage | PostgreSQL PDO, SQL contracts/executor, транзакции/миграции | Каталог и PostgreSQL regression tests |
+| Platform/Logging | Вывод metadata, обычный и RR logger | RequestContext/HttpLogging и ошибки |
+| tools/sql-gen | Parser, inference, typed PHP generation, PostgreSQL checker | sql/queries/catalog.sql и SQL regression fixture |
 
-Блок ядра нужен для обычного веб-приложения, имеет небольшой понятный контракт и не навязывает предметную модель. Optional-компонент подключается явно и сохраняет полезность вне одного продукта. Сущности, роли, публикационные процессы и административный интерфейс принадлежат приложению.
+/health и ответы маршрутизатора 404/405 не открывают БД, не создают cookies и не выполняют аналитику посетителя. Middleware выбирается PHP-конфигурацией; добавление HttpLogging не читает body. Регистрация autoload maps/bootstrap files имеет собственную стоимость, поэтому нулевая стоимость загрузки не заявляется.
 
-Граница выбирается по работающему сценарию: какая общая механика ему нужна, какие настройки определяет приложение и какие действия должны выполняться при подключении. Небольшой обязательный pipeline совместим с широким набором подключаемых возможностей. Перенос в optional не означает отказ от законченного пользовательского сценария; готовность проверяется в приложении, которое этот блок использует.
+SAPI/FPM и RR — адаптеры одного приложения. Default RR буферизует body; каталог явно выбирает chunk 8192 для seekable файлов. Поток и helper сами по себе не гарантируют ограниченную память: проверяется [полный путь](development/http-and-baseline.md).
 
-Сейчас используется единое дерево исходников `src/Platform`; это логические границы, а не обещание физически отдельных дистрибутивов каждого блока.
+## Граница приложения
 
-## Основа HTTP/PDO
+Каталог содержит Document, статусы публикации, private FileStore, PDF-only, HTML и cache policy. Прямые SQL constants находятся в CatalogRepository; sql/queries/catalog.sql — отдельный пример для генератора с параметром status и соответствующей структурой колонок. Platform не знает таблицу каталога, тип документа или права редактора.
 
-| Блок | Реализованная роль | Граница |
-|---|---|---|
-| `Platform/Runtime` | `App` / общий handler, request context, SAPI adapters; отдельный RR loop | Цикл конкретного сервера не должен определять прикладную логику |
-| `Platform/Http` | Request/response contracts, middleware, JSON responses, выбор представления ошибок через `ErrorResponse` | HTML renderer и его тексты — приложение; API/protobuf adapters и исходящий клиент используются по потребности |
-| `Platform/Routing` | Dispatch, route result, явные маршруты; support generated routes | Минимальное ядро использует `StaticRouteProvider`; generated discovery включается API provider |
-| `Platform/DI` | Контейнер, явные factories/bindings, providers | Нет неявного поиска generated endpoints; `has()` проверяет регистрацию без autoload |
-| `Platform/Storage` | PDO adapters, SQL executor, параметры, транзакции, миграции | Доступен из ядра лениво; PostgreSQL — целевой движок, SQL остаётся явным |
-| `Platform/Logging` | Logging contract и реализации | Минимальный output logger и RR logger выбираются композицией |
+Helper нужен, когда убирает повторяемую механику из существующего сценария. Наличие библиотечного API не обязывает каждый handler проходить через repository, mapper, domain service или другую иерархию. Авторизация/сессии/аналитика и редактор не спрятаны в отключённом профиле — их реализации в поставке нет.
 
-Минимальная композиция не открывает БД для `/health`. Наличие storage provider позволяет обработчику запросить SQL executor; миграции запускаются отдельной CLI-командой. Политика данных и таблицы приложения не принадлежат платформе.
-
-## Подключаемые блоки
-
-| Блок | Текущая возможность | Ограничение / назначение |
-|---|---|---|
-| `Platform/Runtime/RoadRunnerRuntime` и RR provider | Worker loop и server services | Дополнительный runtime; не обязательный путь для FPM/SAPI |
-| `Platform/Cache` | Scoped cache, tags/invalidation и RR KV integration с fallback | Capability получает `ScopedCacheFactory` / `ScopedCache`; `CacheService` — backend contract. Локальный fallback не обещает общий кеш workers и не является готовым HTTP page cache |
-| `Platform/Http/Client` | Transport separation, request options, deadlines, retry primitives | Точные гарантии и ответственность за idempotency — в [контракте клиента](design/http-client-product.md) |
-| `Platform/Hydration`, `Platform/DataMapping` | Hydration и преобразования DTO | Не включены в минимальную HTTP/PDO-композицию; не заменяют прикладные mapper decisions |
-| `Platform/Console` | Небольшие operational commands | CLI конкретного продукта размещается в приложении |
-| `Capabilities/Session` | Анонимные сессии и восстановление по cookie/bearer token; client/GeoIP enrichment в API | Это lifecycle сессии, а не полный credentials login, permissions или CSRF framework |
-| `Capabilities/ApiStats` | Запись факта API-запроса в storage | Небольшой addon; не полноценная audit trail и не платформа observability |
-| Protobuf adapters и generators | SDK, endpoint contracts/handlers, operation registry, OpenAPI | Необязательный API-контур; обычный HTML-сайт не обязан определять `.proto` |
-
-Сессия восстанавливается только по cookie/bearer token; fingerprint нужен для аналитики. Авторитетная проверка и отзыв читают БД без session cache. Продление использует `UPDATE ... RETURNING` существующей неистёкшей записи. Эти свойства не устанавливают правила входа пользователя и доступа к документам.
-
-## Подключение и стоимость
-
-Для каждого блока различать наличие исходников в поставке, регистрацию autoload, регистрацию сервиса, создание экземпляра и выполнение на запросе. Исключение middleware из массива не доказывает, что его зависимости перестали создаваться или выполнять I/O. Ленивая factory полезна только до первого разрешения сервиса.
-
-Текущий [`bootstrap.php`](../bootstrap.php) регистрирует общую [runtime map](../third_party/runtime/autoload.php), включая function/bootstrap files, для обеих композиций. Отключённые integrations не включаются в core pipeline, но абсолютное отсутствие их стоимости загрузки не заявлено. [`config/core.php`](../config/core.php) не разрешает session/cache/protobuf services и не открывает БД для `/health`; [`config/container.php`](../config/container.php) разрешает SQL-зависимости Session/ApiStats при построении приложения. Эти свойства относятся к конкретным конфигурациям.
-
-Владелец блока указывает способ подключения, дополнительные требования платформы, момент создания ресурсов, время жизни состояния и побочные эффекты. Для новой возможности проверяется весь выбранный путь: добавление backend, enrichment или логирования не должно незаметно менять корректность ответа, требования к данным или объём работы соседних блоков. Утверждения об ограниченной памяти проверяются вместе с middleware и transport, а не только по наличию stream в API.
-
-Для изменения обязательной композиции отдельно фиксируется, какую работу оно добавляет при старте приложения и на обычном запросе. Подключаемая возможность получает проверку сценария с ней и сохранения самостоятельности core без неё. Методика сравнений и основания оптимизаций определяются принципами и roadmap; эта карта не вводит собственных числовых бюджетов или обещания zero overhead.
-
-## Примеры и прикладной код
-
-- `src/Platform/Http/Handler/HealthHandler.php` и `config/routes.php` показывают минимальный обычный HTTP flow.
-- `HealthService.Check` и `SystemService.Describe` показывают optional protobuf flow для GET и POST, а не обязательный контракт всех сайтов.
-- [Каталог документов](../examples/document-catalog/README.md) — проверочный потребитель с работающими публичными списком, карточкой и скачиванием. Его `Document`, SQL, PHP-шаблоны и publication states живут вне `Platform`; редактор и публикационный workflow [отложены](project/document-catalog-example.md).
-
-HTML rendering и read-only файловая выдача проверяются на каталоге, но Html, FileStore и HTML Errors остаются локальным кодом примера. Общий выбор представления routing/exception ошибок уже реализован через [ErrorResponse](architecture/request-lifecycle.md#представление-http-ошибок); каталог подключает его HTML-реализацию без собственного middleware. Общий [AttachmentResponse](architecture/request-lifecycle.md#файловый-attachment-и-владение-потоком) уже собирает headers из готового stream; диагностика не читает body. Файловый доступ и PDF-политика остаются локальными. Следующая SQL-итерация сохраняет явные запросы. Формы, валидация и опциональные механизмы защиты развиваются как нейтральные блоки; прикладной редактор не становится обязательной следующей задачей. Наличие существующих storage/session/cache primitives не означает, что эти сценарии уже собраны и проверены.
-
-## Решение перед добавлением блока
-
-1. Какой законченный сценарий требует изменение, как проверить его результат и почему существующего контракта недостаточно?
-2. Что относится к общему механизму, optional adapter или политике приложения? Какой конфигурационный файл выбирает этот путь?
-3. Какие зависимости создаются при регистрации, при разрешении сервиса и на каждом запросе? Какая работа останется в core без подключения блока?
-4. Как живут соединения, кеши и данные запроса; чем ограничены объём чтения, память и накопление состояния в worker?
-5. Какие проверки подтверждают поведение всей композиции, сохранение простого пути без блока и заявленную стоимость изменения?
-
-Не вводить универсальный CMS/workflow/ORM слой ради одного примера. Расширять основу по результатам реального сценария и поддерживать независимость минимального профиля.
+При изменении контракта указывать шаги разработчика, полезное поведение, стоимость, ресурсы и проверки по [принципам](project/principles.md). Новая функция проходит этот критерий до появления исходников и зависимостей.

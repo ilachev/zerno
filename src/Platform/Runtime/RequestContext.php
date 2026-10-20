@@ -8,6 +8,5 @@ final readonly class RequestContext
 {
     public function __construct(
         public string $requestId,
-        public Deadline $deadline,
     ) {}
 }
