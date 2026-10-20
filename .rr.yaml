@@ -3,7 +3,7 @@ version: '3'
 server:
   command: "php public/index.php"
   env:
-    APP_CONFIG: config/core-roadrunner.php
+    APP_CONFIG: config/core.php
 
 http:
   address: 127.0.0.1:8080

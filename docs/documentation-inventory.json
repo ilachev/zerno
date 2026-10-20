@@ -17,7 +17,7 @@
         "bootstrap.php",
         "tools/project.php",
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         ".github/workflows"
       ]
     },
@@ -78,7 +78,7 @@
       "source_paths": [
         "AGENTS.md",
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "bootstrap.php",
         "tools/project.php",
         "docs/development/coding-guidelines.md",
@@ -98,7 +98,7 @@
       "source_paths": [
         "AGENTS.md",
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "src/Platform/Runtime",
         "src/Platform/Storage",
         "tools/project.php"
@@ -116,7 +116,7 @@
       ],
       "source_paths": [
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "third_party/manifest.json",
         "src/Platform"
       ]
@@ -159,16 +159,15 @@
       "path": "docs/architecture/overview.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Общая текущая архитектура: профили, entrypoints, DI, время жизни, данные и поставка.",
+      "summary": "Явные PHP-функции сборки без контейнера, готовые обработчики в маршрутах, транспорт, lazy PDO и самостоятельный CLI.",
       "read_when": [
         "Изменение runtime",
         "Поиск точки расширения"
       ],
       "source_paths": [
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "src/Platform/Runtime",
-        "src/Platform/DI",
         "src/Platform/Storage"
       ]
     },
@@ -177,14 +176,14 @@
       "path": "docs/architecture/request-lifecycle.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "HTTP pipeline, ErrorResponse, AttachmentResponse, владение streams и прозрачная metadata-диагностика.",
+      "summary": "Готовые handlers, порядок middleware, ErrorResponse/AttachmentResponse, владение streams и время жизни без DI-контейнера.",
       "read_when": [
         "Изменение HTTP pipeline",
         "Анализ состояния worker и запросов"
       ],
       "source_paths": [
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "src/Platform/Http/Middleware",
         "src/Platform/Http/ErrorResponse.php",
         "src/Platform/Http/JsonResponse.php",
@@ -211,7 +210,7 @@
       "source_paths": [
         "src/Platform",
         "config/core.php",
-        "config/core-roadrunner.php"
+        "public/index.php"
       ]
     },
     {
@@ -388,7 +387,8 @@
         "tools/check-http.php",
         "src/Platform/Routing",
         "tests/Unit/Platform/Routing",
-        "docs/history/2026-10-17-core-http-baseline.json"
+        "docs/history/2026-10-17-core-http-baseline.json",
+        "docs/history/2026-10-20-explicit-composition.json"
       ]
     },
     {
@@ -458,7 +458,7 @@
       "source_paths": [
         "docs/history/2026-10-20-core-scope.json",
         "config/core.php",
-        "config/core-roadrunner.php",
+        "public/index.php",
         "third_party/manifest.json",
         "tools/sql-gen"
       ]
@@ -478,8 +478,8 @@
         "docs/project/principles.md",
         "src/Platform/Runtime",
         "src/Platform/Http",
-        "src/Platform/DI",
-        "src/Platform/Storage"
+        "src/Platform/Storage",
+        "examples/document-catalog/application.php"
       ]
     },
     {
@@ -498,8 +498,25 @@
         "docs/development/coding-guidelines.md",
         "config/core.php",
         "src/Platform/Routing/RouteEntry.php",
-        "src/Platform/Http/RouteHandlerResolver.php",
-        "src/Platform/DI/ContainerHandlerFactory.php"
+        "src/Platform/Http/RouteHandlerResolver.php"
+      ]
+    },
+    {
+      "id": "explicit-composition-validation",
+      "path": "docs/history/2026-10-20-explicit-composition.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Удаление DI-контейнера, App/routes/CLI контракты, сохранение lazy PDO, проверки и ограниченное сравнение CLI.",
+      "read_when": [
+        "Проверка границ явной сборки и стоимости изменения"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-explicit-composition.json",
+        "config/core.php",
+        "public/index.php",
+        "examples/document-catalog/application.php",
+        "bin/migrate.php",
+        "src/Platform/Storage/PostgreSQLStorage.php"
       ]
     }
   ],
@@ -589,6 +606,19 @@
       ],
       "source_paths": [
         "docs/history/2026-10-20-core-scope.md"
+      ]
+    },
+    {
+      "id": "explicit-composition-data",
+      "path": "docs/history/2026-10-20-explicit-composition.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Версия до удаления контейнера, breaking contracts, raw CLI samples, исходник probe, hashes и итоговые проверки.",
+      "read_when": [
+        "Анализ измерений и воспроизведение CLI comparison"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-explicit-composition.md"
       ]
     }
   ],

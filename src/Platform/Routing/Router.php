@@ -17,11 +17,10 @@ final class Router implements RouterInterface
     /** @var array<array-key, string> */
     private array $methods = [];
 
-    public function __construct(private readonly RouteDefinitionInterface $routeDefinition)
+    /** @param list<RouteEntry> $routes */
+    public function __construct(array $routes)
     {
-        $collector = new DefaultRouteCollector();
-        $this->routeDefinition->defineRoutes($collector);
-        $this->buildRouteMap($collector->getRoutes());
+        $this->buildRouteMap($routes);
     }
 
     public function dispatch(ServerRequestInterface $request): RouteResult

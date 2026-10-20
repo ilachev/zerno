@@ -9,19 +9,17 @@
 | Композиция | Конфигурация | Маршруты | Pipeline до конечного обработчика |
 |---|---|---|---|
 | Минимальное HTTP/PDO-ядро | [`config/core.php`](../../config/core.php) | Явные [`config/routes.php`](../../config/routes.php) | RequestContext → ErrorHandler → Routing → RouteHandlerResolver |
-| То же ядро в RoadRunner | [`config/core-roadrunner.php`](../../config/core-roadrunner.php) | Те же явные маршруты | Тот же pipeline; добавлена регистрация RR worker и logger |
-| Публичный каталог | [`examples/document-catalog/config.php`](../../examples/document-catalog/config.php), `roadrunner.php` | Собственные GET/HEAD | Общий core pipeline; HTML-представление ошибок |
+| То же ядро в RoadRunner | Та же config/core.php | Те же объекты маршрутов | Транспорт/logger создаёт public/index.php |
+| Публичный каталог | [config.php](../../examples/document-catalog/config.php), [application.php](../../examples/document-catalog/application.php) | Собственные GET/HEAD с готовыми handlers | Те же middleware, прикладной HTML ErrorResponse |
 
-Минимальное ядро обрабатывает `GET /health` и явно зарегистрированный `HEAD /health`; тело ответа обработчика — `{"status":"ok"}`. Оно не подключает capability middleware, protobuf endpoints, GeoIP и RR KV. `Storage` и миграции зарегистрированы, но `/health` не открывает соединение с БД.
+GET/HEAD /health сохраняют JSON {"status":"ok"}. Core HTTP граф не создаёт Storage или migration services. Каталог строит Storage и handlers заранее, но PDO открывается при первой SQL-операции: /health/404/405 не зависят от БД.
 
 Обе точки входа загружают [`bootstrap.php`](../../bootstrap.php) и выбирают конфигурацию через `APP_CONFIG`; абсолютный путь удобнее для независимости от рабочего каталога:
 
 - [`public/http.php`](../../public/http.php): обычный PHP SAPI, включая PHP-FPM; по умолчанию `config/core.php`.
-- [`public/index.php`](../../public/index.php): RoadRunner; по умолчанию `config/core-roadrunner.php`. Для минимального ядра [`.rr.yaml`](../../.rr.yaml) задаёт `config/core-roadrunner.php`.
+- [`public/index.php`](../../public/index.php): RoadRunner; по умолчанию `config/core.php`; [`.rr.yaml`](../../.rr.yaml) задаёт тот же файл.
 
-Выбор транспорта не меняет контракт приложения: [`App`](../../src/Platform/Runtime/App.php) реализует `RequestHandler`. Его конструктор загружает переданный конфигурационный файл, создаёт `DIContainer`, выполняет регистрацию и получает настроенный `RequestHandler`. `handle()` вызывает его; `handleRequest()` оставлен как совместимый вызов того же метода. Конструктор `App` не запускает серверный цикл.
-
-## Преобразование запроса и отправка ответа
+Выбор транспорта не меняет контракт приложения: [App](../../src/Platform/Runtime/App.php) принимает готовый RequestHandler конструктором. Config возвращает Closure(Logger): App; точка входа вызывает её с ReadableOutputLogger или RoadRunnerLogger. App делегирует handle/handleRequest, не читая файлов, не разрешая классов и не запуская server loop. Граф объектов создают обычные new в composition root.
 
 Обычный PHP-путь:
 
@@ -46,7 +44,7 @@ RoadRunner HTTP → PSR7Worker::waitRequest()
 
 [`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при `null` из `waitRequest()`. Ошибки worker не перехватываются этим адаптером. Перед `respond()` runtime заменяет body пустым для HEAD/1xx/204/304, не читая исходный поток; для 1xx/204 удаляет Content-Length. После отправки исходный и временный response streams закрываются в `finally`, включая transport error. Runtime владеет их завершением: handler должен возвращать новый stream для каждого запроса. Прямой `App::handle()` ничего не отправляет и не закрывает.
 
-Преобразование HTTP и отправка делегированы включённому `PSR7Worker`; SAPI emitter здесь не участвует. `RoadRunnerServiceProvider(chunkSize: 8192)` явно включает чтение частями; default `0` сохраняет прежнюю материализацию body строкой. Каталог включает chunk 8192 для seekable regular files, остальные конфигурации остаются с default. Bundled streaming path требует seekable body и не поддерживает informational 1xx; общей поддержки произвольных потоков он не обещает. Проверенные размеры и память описаны в [отчёте каталога](../history/2026-10-17-public-catalog.md).
+Преобразование HTTP и отправка делегированы включённому `PSR7Worker`; SAPI emitter здесь не участвует. `RR_HTTP_CHUNK_SIZE=8192` явно включает чтение частями; default `0` сохраняет прежнюю материализацию body строкой. Каталог включает chunk 8192 для seekable regular files, остальные конфигурации остаются с default. Bundled streaming path требует seekable body и не поддерживает informational 1xx; общей поддержки произвольных потоков он не обещает. Проверенные размеры и память описаны в [отчёте каталога](../history/2026-10-17-public-catalog.md).
 
 ## Общие middleware
 
@@ -67,15 +65,11 @@ RequestContext содержит request ID; неиспользуемый request
 
 [`ErrorResponse`](../../src/Platform/Http/ErrorResponse.php) — один метод `error(Error $error, int $status): ResponseInterface`. Он создаёт ответ с переданным status, заголовками и телом. Core передаёт только публичную ошибку из [`Error`](../../src/Platform/Error/Error.php), без `Throwable`, trace или других внутренних деталей. `RoutingMiddleware` использует его для 404/405 и сам добавляет `Allow` для 405; `ErrorHandlerMiddleware` — для 500. Готовые ответы handlers, включая ошибки, не преобразуются.
 
-По умолчанию [`CoreServiceProvider`](../../src/Platform/DI/ServiceProviders/CoreServiceProvider.php) связывает контракт с [`JsonResponse`](../../src/Platform/Http/JsonResponse.php). Точные JSON bodies остаются прежними. Для другого формата:
-
-1. Реализовать `ErrorResponse` в приложении, возвращая новый response/body для каждого вызова и сохраняя status. Шаблоны, язык сообщений и cache policy выбирает приложение.
-2. После регистрации core и до разрешения `RequestHandler` указать `$container->bind(ErrorResponse::class, MyErrors::class)`. Зависимости renderer задаются обычным конструктором; настройка не требует замены pipeline.
-3. Без контейнера передать тот же объект вторым аргументом `RoutingMiddleware($router, $errors)` и первым аргументом `ErrorHandlerMiddleware($errors, $logger)`.
+В [config/core.php](../../config/core.php) явно создаётся JsonResponse. Для другого формата реализовать ErrorResponse в приложении и передать тот же объект в RoutingMiddleware($router, $errors) и ErrorHandlerMiddleware($errors, $logger). Он возвращает новый response/body для каждого вызова, сохраняя status. Templates, язык сообщений и cache policy выбирает приложение.
 
 Полный потребитель — [`конфигурация каталога`](../../examples/document-catalog/config.php) и его [`Errors`](../../examples/document-catalog/src/Errors.php). Каталог использует общий core pipeline и непосредственно строит HTML, без промежуточного JSON и распознавания `Content-Type`. `Html` и тексты страниц остаются локальными.
 
-Выбор представления выполняется композицией один раз при построении pipeline. В default-профиле разрешается прежний `JsonResponse`; добавлены interface и binding. HTML-профиль разрешает свой renderer и `Html`, шаблоны читаются только при создании страницы. Успешный ответ handler не вызывает `error()`. Формат не выбирается по `Accept`, и дополнительных БД/сетевых обращений механизм не добавляет. Числовая стоимость и ускорение не измерены; сокращение промежуточной работы не объявляется доказанным выигрышем latency.
+Выбор представления выполняется композицией один раз при построении pipeline. Core создаёт JsonResponse; каталог создаёт Errors/Html обычными конструкторами, шаблоны читаются только при создании страницы. Успешный ответ handler не вызывает `error()`. Формат не выбирается по `Accept`, и дополнительных БД/сетевых обращений механизм не добавляет. Числовая стоимость и ускорение не измерены; сокращение промежуточной работы не объявляется доказанным выигрышем latency.
 
 HEAD обрабатывают transport adapters: прямой `App::handle()` возвращает обычный response с телом, emitter/runtime его не читает и не отправляет. Ошибки SAPI request conversion и bootstrap находятся вне этого контракта. Ошибка логирования или создания самого ответа 500 выходит наружу; автоматического запасного renderer нет. Renderer не должен хранить состояние текущего запроса между вызовами.
 
@@ -101,7 +95,7 @@ Helper принимает владение stream при вызове: если 
 
 [`DownloadHandler`](../../examples/document-catalog/src/DownloadHandler.php) — полный потребитель. Document, published lookup, private FileStore, проверка regular file/размера, PDF-only и no-store остаются в приложении. Для HEAD handler проверяет файл, создаёт те же headers и закрывает исходный stream без чтения, возвращая пустой body. Для общего ответа HEAD также подавляет transport; выбирать метод внутри helper не требуется. Range, conditional requests, HTTP cache и upload в контракт не входят. Файл должен оставаться неизменным между проверкой и завершением отправки.
 
-Без вызова helper нет новой регистрации DI, middleware или файлового I/O. При вызове выполняются обработка имени, создание headers/response и передача того же body; цена обработки имени зависит от длины имени, не от размера файла. Размер проверяется приложением. SAPI читает по 8192 байта; RR требует явного `RoadRunnerServiceProvider(chunkSize: 8192)` и seekable файла. Default RR `0` материализует body. Non-seekable body допустим для helper/SAPI при корректном размере и позиции, но bundled RR chunk path безусловно перематывает поток и общей поддержки такого streaming не даёт. Некоторые ошибки последующих чтений bundled RR adapter подавляет; закрытие ресурса не означает гарантированное завершение передачи при изменившемся файле.
+Без вызова helper нет новой регистрации сервисов, middleware или файлового I/O. При вызове выполняются обработка имени, создание headers/response и передача того же body; цена обработки имени зависит от длины имени, не от размера файла. Размер проверяется приложением. SAPI читает по 8192 байта; RR требует явного `RR_HTTP_CHUNK_SIZE=8192` и seekable файла. Default RR `0` материализует body. Non-seekable body допустим для helper/SAPI при корректном размере и позиции, но bundled RR chunk path безусловно перематывает поток и общей поддержки такого streaming не даёт. Некоторые ошибки последующих чтений bundled RR adapter подавляет; закрытие ресурса не означает гарантированное завершение передачи при изменившемся файле.
 
 Проверки с логированием, измеренная стоимость и границы выводов приведены в [отчёте файловой итерации](../history/2026-10-18-file-responses.md).
 
@@ -113,9 +107,9 @@ Helper принимает владение stream при вызове: если 
 
 Если path существует только для других методов, `RouteResult::getAllowedMethods()` возвращает объединение методов всех совпавших маршрутов без дубликатов, в порядке регистрации методов. `RoutingMiddleware` отвечает `405` и `Allow`. Для неизвестного path ответ — `404` без `Allow`. Представление создаёт выбранный `ErrorResponse`; default JSON — `{"error":"Method not allowed"}` / `{"error":"Not found"}`. На этих ветках внутренние middleware и handler не вызываются. Метод `getHandler()` больше не используется для передачи списка разрешённых методов.
 
-Для найденного маршрута [`RoutingMiddleware`](../../src/Platform/Http/Middleware/RoutingMiddleware.php) передаёт дальше attributes `RouteResult::class`, `routeParams`, `handler`. [`RouteHandlerResolver`](../../src/Platform/Http/RouteHandlerResolver.php) передаёт class name в `HandlerFactoryInterface`; `ContainerHandlerFactory` получает экземпляр из DI и вызывает `handle()`.
+Для найденного маршрута [`RoutingMiddleware`](../../src/Platform/Http/Middleware/RoutingMiddleware.php) передаёт дальше attributes `RouteResult::class`, `routeParams`, `handler`. [`RouteHandlerResolver`](../../src/Platform/Http/RouteHandlerResolver.php) проверяет готовый объект RequestHandler и вызывает handle(). Строки имён классов не разрешаются и не конструируются.
 
-В минимальной композиции `StaticRouteProvider` получает записи непосредственно из `config/routes.php`. Автоматический fallback HEAD → GET не используется: HEAD зарегистрирован отдельной записью.
+Router получает список RouteEntry непосредственно из функции сборки; core использует config/routes.php. Автоматический fallback HEAD → GET не используется: HEAD зарегистрирован отдельной записью.
 
 Явная команда `php tools/project.php http:check` проверяет эти ветки и ограниченную матрицу transport behavior через настоящие FPM/RR: HEAD, 204/304, повторные headers/cookies, query и последовательные запросы одного worker. Запуск и границы проверки описаны в [HTTP guide](../development/http-and-baseline.md); в default `verify` серверы не запускаются.
 
@@ -125,6 +119,6 @@ Helper принимает владение stream при вызове: если 
 
 ## Время жизни состояния
 
-[`DIContainer`](../../src/Platform/DI/DIContainer.php) кеширует разрешённые объекты и планы autowiring на время жизни контейнера. Отдельного DI request scope и автоматического reset всех сервисов нет. Request context и routing attributes передаются в конкретном request; хранить их в собственных долгоживущих сервисах без явного управления временем жизни нельзя.
+Объекты создаёт функция сборки; их владельцем является App/pipeline на время запроса SAPI или worker RR. Контейнера, кеша autowiring и автоматического request scope нет. Request context и routing attributes остаются в конкретном request; удерживать их в долгоживущих сервисах нельзя.
 
-При SAPI точка входа создаёт `App` на один PHP-запрос. При RoadRunner один `App`, его PDO-соединение после разрешения и подготовленные SQL statements живут через многие вызовы `handle()`. Регистрация provider сама по себе не означает, что все его сервисы уже созданы; ядро и каталог открывают БД только при запросе Storage.
+При SAPI граф строится на запрос, при RR один раз на worker. Готовые handlers используют общие repository/Storage, его PDO появляется при первой операции и затем переиспользуется вместе с bounded statement cache. Ленивость PDO не означает отсутствия стоимости создания остальных PHP objects.

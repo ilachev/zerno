@@ -19,11 +19,11 @@ These rules apply throughout the repository. Communicate with the user in Russia
 - Develop Zerno's own model of ordinary PHP, explicit composition, visible SQL and autonomous delivery. Do not use Laravel feature parity or API imitation as the product specification. Distinctive design must improve the developer path or measured costs; retain useful standards and bundled components instead of inventing substitutes for novelty alone.
 - Database access is part of the core: PDO, explicit parameterized SQL, transactions and migrations. Do not introduce an ORM to hide SQL.
 - Runtime sources, generator dependencies and PHP quality tools are bundled. Do not add package installation or downloads to runtime, generation, builds or checks. Platform requirements are documented separately.
-- `config/core.php` composes the HTTP/PDO core; `config/core-roadrunner.php` adds its RoadRunner transport. These execute the same application contract. There is no legacy API profile or compatibility configuration. New behavior needs a concrete current consumer before it enters the distribution.
+- Compose dependencies with ordinary PHP constructors and small typed functions. There is no container, autowiring, service locator or service-provider registry; do not replace them with another generic resolver. `config/core.php` returns a `Closure(Logger): App` used by both SAPI/FPM and RoadRunner. Routes receive constructed `RequestHandler` objects. The catalog has an explicit `application.php` composition function; CLI migrations build their own graph from a directory. There is no legacy API profile or compatibility configuration. New behavior needs a concrete current consumer before it enters the distribution.
 - Deliver complete scenarios with small concrete boundaries and explicit resource ownership as described in the coding guidelines. New generation work must include usable generated output, a manual implementation and an end-to-end check; keep business policy and SQL in application code.
 - Keep `App` and the common handler independent of the server loop. Support ordinary PHP/SAPI and the RoadRunner adapter. The pinned RoadRunner HTTP package still requires bundled protobuf/DTO runtime libraries internally; this does not establish an application protobuf API.
 - Keep domain models independent of infrastructure and protocol types where domain separation is needed. Use application/domain services and mappers when actual policy or reuse justifies them. Do not require a full layer hierarchy or wrappers for a straightforward handler with explicit dependencies.
-- Prefer small reusable components with explicit constructors and providers. Add abstractions only when actual use cases justify them; solve root causes rather than narrow workarounds.
+- Prefer small reusable components with explicit constructors and composition functions. Add abstractions only when actual use cases justify them; solve root causes rather than narrow workarounds.
 
 ## Required decision criteria
 
@@ -66,7 +66,7 @@ php tools/project.php verify:full
 - Use prepared parameters, explicit transactions and PostgreSQL-compatible migrations. Reset integration state through isolated schemas and transactions where applicable.
 - Prefer `TEXT` for strings, `JSONB` for structured persisted data, `BIGSERIAL` for generated IDs and `BIGINT` for timestamp fields, including values that may reach `PHP_INT_MAX`.
 - When an existing insert API accepts an ID for a generated primary key, pass `null`. Handle SQL nullability explicitly. Design indexes for actual query patterns, including JSON queries.
-- HTTP startup must not run migrations. In the minimal composition, database connections remain lazy and `/health` must not depend on a connection.
+- HTTP startup must not run migrations. `PostgreSQLStorage` opens PDO on its first SQL operation, transaction or lastInsertId, not during construction. `/health` must not depend on a connection. `bin/migrate.php` accepts a migration directory, loads its source files explicitly and does not construct the HTTP application.
 
 ## Performance and long-running workers
 

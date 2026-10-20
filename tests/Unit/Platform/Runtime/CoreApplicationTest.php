@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Runtime;
 
+use App\Platform\Logging\Logger;
 use App\Platform\Runtime\App;
-use App\Platform\Storage\PostgreSqlStorageConfig;
-use App\Platform\Storage\Storage;
+use App\Platform\Storage\PostgreSQLStorage;
+use App\Platform\Storage\StorageException;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\Platform\Logging\TestLogger;
 
 final class CoreApplicationTest extends TestCase
 {
@@ -27,7 +29,7 @@ final class CoreApplicationTest extends TestCase
         spl_autoload_register($guard, true, true);
 
         try {
-            $app = new App($this->configPath());
+            $app = $this->createApp();
             $response = $app->handle(new ServerRequest('GET', '/health', ['X-Request-ID' => 'core-request']));
             self::assertSame(200, $response->getStatusCode());
             self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
@@ -55,18 +57,13 @@ final class CoreApplicationTest extends TestCase
         }
     }
 
-    public function testStorageIsAvailableWithoutOpeningItForHttpRequests(): void
+    public function testStorageCanBeConstructedWithoutOpeningItForHttpRequests(): void
     {
-        $app = new App($this->configPath());
-        $app->getContainer()->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
-            throw new \LogicException('Database configuration was resolved.');
-        });
-        self::assertTrue($app->getContainer()->has(Storage::class));
-        self::assertSame(200, $app->handle(new ServerRequest('GET', '/health'))->getStatusCode());
+        $storage = new PostgreSQLStorage('/zerno-no-socket-' . bin2hex(random_bytes(12)), 5432, 'unused', 'unused', 'unused');
+        self::assertSame(200, $this->createApp()->handle(new ServerRequest('GET', '/health'))->getStatusCode());
 
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Database configuration was resolved.');
-        $app->getContainer()->get(Storage::class);
+        $this->expectException(StorageException::class);
+        $storage->query('SELECT 1');
     }
 
     private static function isOutsideHttpCore(string $class): bool
@@ -87,8 +84,11 @@ final class CoreApplicationTest extends TestCase
         return false;
     }
 
-    private function configPath(): string
+    private function createApp(): App
     {
-        return \dirname(__DIR__, 4) . '/config/core.php';
+        /** @var \Closure(Logger): App $compose */
+        $compose = require \dirname(__DIR__, 4) . '/config/core.php';
+
+        return $compose(new TestLogger());
     }
 }

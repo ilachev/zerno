@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Routing;
 
+use App\Platform\Http\Handler\HealthHandler;
 use App\Platform\Routing\RouteParameters;
 use App\Platform\Routing\RouteResult;
 use App\Platform\Routing\RouteStatus;
@@ -15,7 +16,7 @@ final class RouteResultTest extends TestCase
     {
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
-            'App\Handler',
+            new HealthHandler(),
             ['id' => '1'],
         );
 
@@ -33,14 +34,14 @@ final class RouteResultTest extends TestCase
 
     public function testGetHandlerReturnsHandler(): void
     {
-        $handler = 'App\Handler';
+        $handler = new HealthHandler();
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
             $handler,
             [],
         );
 
-        self::assertEquals($handler, $routeResult->getHandler());
+        self::assertSame($handler, $routeResult->getHandler());
     }
 
     public function testGetHandlerThrowsExceptionWhenNotFound(): void
@@ -60,7 +61,7 @@ final class RouteResultTest extends TestCase
         $params = ['id' => '1'];
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
-            'App\Handler',
+            new HealthHandler(),
             $params,
         );
 
@@ -71,7 +72,7 @@ final class RouteResultTest extends TestCase
     {
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
-            'App\Handler',
+            new HealthHandler(),
             ['id' => '1'],
         );
 
@@ -85,7 +86,7 @@ final class RouteResultTest extends TestCase
     {
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
-            'App\Handler',
+            new HealthHandler(),
         );
 
         self::assertEquals([], $routeResult->getParams());
@@ -95,7 +96,7 @@ final class RouteResultTest extends TestCase
     {
         $routeResult = new RouteResult(
             RouteStatus::FOUND,
-            'App\Handler',
+            new HealthHandler(),
             [],
         );
 
@@ -127,11 +128,11 @@ final class RouteResultTest extends TestCase
         $routeResult->getHandler();
     }
 
-    public function testExistingConstructorArgumentsKeepEmptyAllowedMethods(): void
+    public function testHandlerAndParametersKeepEmptyAllowedMethods(): void
     {
-        $routeResult = new RouteResult(RouteStatus::FOUND, 'App\Handler', ['id' => '1']);
+        $routeResult = new RouteResult(RouteStatus::FOUND, new HealthHandler(), ['id' => '1']);
 
-        self::assertSame('App\Handler', $routeResult->getHandler());
+        self::assertInstanceOf(HealthHandler::class, $routeResult->getHandler());
         self::assertSame(['id' => '1'], $routeResult->getParams());
         self::assertSame([], $routeResult->getAllowedMethods());
         self::assertSame([], new RouteResult(RouteStatus::NOT_FOUND)->getAllowedMethods());

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Platform\Routing;
 
+use App\Platform\Http\RequestHandler;
+
 final readonly class RouteResult
 {
     private RouteParameters $routeParameters;
@@ -14,7 +16,7 @@ final readonly class RouteResult
      */
     public function __construct(
         private RouteStatus $status,
-        private ?string $handler = null,
+        private ?RequestHandler $handler = null,
         array|RouteParameters $params = [],
         private array $allowedMethods = [],
     ) {
@@ -28,7 +30,7 @@ final readonly class RouteResult
         return $this->status === RouteStatus::FOUND;
     }
 
-    public function getHandler(): string
+    public function getHandler(): RequestHandler
     {
         if (!$this->isFound()) {
             throw RouteException::routeNotFound();

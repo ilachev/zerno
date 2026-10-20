@@ -2,44 +2,46 @@
 
 Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-Проект поставляет конкретный HTTP/PDO-контур, SQL-генератор и проверочный каталог. Унаследованный API и optional capabilities удалены; [границы](../project/vision.md) и [решение об очистке](../history/2026-10-20-core-scope.md) объясняют состав.
+Проект поставляет HTTP/PDO-контур, SQL-генератор и проверочный каталог. [Границы](../project/vision.md), [правила кода](../development/coding-guidelines.md) и [история явной сборки](../history/2026-10-20-explicit-composition.md) объясняют принятый состав. Контейнер, autowiring и providers удалены.
 
-## Композиция и транспорт
+## Композиция
 
-[App](../../src/Platform/Runtime/App.php) создаёт DIContainer из PHP-конфига, получает RequestHandler и делегирует handle(). Server loop в App отсутствует. [Pipeline](../../src/Platform/Http/Middleware/Pipeline.php) выполняется в порядке массива:
+[App](../../src/Platform/Runtime/App.php) получает готовый RequestHandler конструктором и делегирует handle(). Он не читает конфигурацию, не ищет сервисы и не владеет server loop. [Pipeline](../../src/Platform/Http/Middleware/Pipeline.php) исполняет переданные middleware:
 
 ```text
-RequestContext → ErrorHandler → Routing → RouteHandlerResolver → handler
+RequestContext → ErrorHandler → Routing → RouteHandlerResolver → готовый handler
 ```
 
-[config/core.php](../../config/core.php) регистрирует HTTP factories, logger, routing и ленивую работу с PostgreSQL. Явные [GET/HEAD /health](../../config/routes.php) возвращают {"status":"ok"}, без SQL/cookies. [config/core-roadrunner.php](../../config/core-roadrunner.php) добавляет PSR7Worker/logger. [public/http.php](../../public/http.php) использует SAPI/FPM, [public/index.php](../../public/index.php) — RR. Оба выбирают конфигурацию через APP_CONFIG; RR default — core-roadrunner.php и [.rr.yaml](../../.rr.yaml).
+[config/core.php](../../config/core.php) возвращает Closure(Logger): App и явно создаёт pipeline, router, errors и request context через new. [Маршруты](../../config/routes.php) содержат готовый HealthHandler для GET/HEAD /health. [Router](../../src/Platform/Routing/Router.php) получает list<RouteEntry> без providers/collectors и возвращает тот же объект обработчика; class-name lookup отсутствует. RouteHandlerResolver проверяет RequestHandler в attribute и вызывает его.
 
-[Каталог](../../examples/document-catalog/README.md) использует тот же pipeline, собственные routes/миграцию/FileStore и HTML ErrorResponse. Его RR profile задаёт chunk 8192. HttpLogging добавляется явно там, где нужны metadata logs; отдельной session/API-композиции нет.
+[Каталог](../../examples/document-catalog/application.php) — отдельная функция Closure(Logger, Storage, string): App. В одном месте создаются CatalogRepository, Html/Errors, FileStore и List/Detail/Download handlers, затем передаются [функции маршрутов](../../examples/document-catalog/routes.php). [config.php](../../examples/document-catalog/config.php) выбирает DB settings/private directory и вызывает эту сборку. Нет универсального service bag/get/resolve или неявного поиска зависимостей. Простая операция не требует обязательных domain/application/repository слоёв.
 
-## HTTP и ресурсы
+## Транспорт и ресурсы
 
-RequestContext хранит request ID; middleware добавляет X-Request-ID, X-Response-Time и Server-Timing. Неиспользуемые deadline/config timeout удалены. ErrorResponse создаёт routing 404/405 и exception 500: default JSON, HTML через binding. Routing сам добавляет Allow. Полный Throwable пишется в logger, публичный response содержит общую ошибку.
+[public/http.php](../../public/http.php) строит SAPI request, загружает выбранную APP_CONFIG функцию, передаёт ReadableOutputLogger и отправляет response. [public/index.php](../../public/index.php) передаёт RoadRunnerLogger, явно создаёт transport worker и запускает RoadRunnerRuntime с тем же приложением. Default APP_CONFIG для обоих — config/core.php.
 
-AttachmentResponse принимает готовый stream и проверенный размер, нормализует filename и создаёт headers без чтения. HttpLogging пишет status/body_size/body_seekable и сохраняет body/позицию. SAPI/RR владеют закрытием stream после отправки и ошибок, включая HEAD. Прямой App::handle ничего не отправляет/закрывает.
+RoadRunnerRuntime::createWorker(transport, chunkSize) создаёт PSR17/PSR7 adapter и проверяет неотрицательный chunkSize. RR_HTTP_CHUNK_SIZE задаётся в конфигурации server env: default 0 материализует body, каталог/HTTP fixtures выбирают 8192. Проверен seekable regular-file путь; произвольные потоки и некоторые upstream read failures остаются ограничениями. SAPI читает по 8192 bytes.
 
-SAPI читает по 8192 bytes. RR default chunk 0 материализует тело; 8192 проверен для seekable regular files. Некоторые read failures bundled RR подавляет; общей гарантии произвольных потоков/прерывания клиента нет. Подробности — [lifecycle](request-lifecycle.md).
+RequestContext содержит request ID; middleware добавляет X-Request-ID, X-Response-Time и Server-Timing. ErrorResponse передаётся непосредственно ErrorHandlerMiddleware/RoutingMiddleware: default JSON, в каталоге HTML. Приватный Throwable остаётся в logger. HttpLogging добавляется объектом middleware там, где нужен; payload не читает.
 
-## База данных и SQL
+AttachmentResponse принимает stream/размер, создаёт безопасные headers и передаёт тот же body. SAPI/RR закрывают response streams после отправки/ошибки, включая HEAD. App::handle ничего не отправляет и не закрывает. Подробности — [lifecycle](request-lifecycle.md).
 
-StorageServiceProvider создаёт PostgreSQLStorage только при запросе Storage. [config/storage.php](../../config/storage.php) возвращает PostgreSqlStorageConfig из DB_*; выбора движка нет. PDO использует параметры, транзакции и кеш до 100 prepared statements. Query получает fetchAll; fetchOne выбирает первую строку этого массива. LIMIT должен присутствовать в SQL явно.
+## PostgreSQL и CLI
 
-MigrationServiceProvider получает прикладной путь конструктором. Core указывает пустой src/Migrations; каталог — свою migration. HTTP ничего не мигрирует; [bin/migrate.php](../../bin/migrate.php) выполняется отдельно. При чтении migration repository создаётся служебная таблица migrations.
+[config/storage.php](../../config/storage.php) явно создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Конструктор не открывает PDO: первая query/execute/transaction/lastInsertId создаёт соединение и устанавливает quoted search_path. PDO публикуется в объекте после успешной инициализации и используется повторно. Ошибка подключения теперь возникает при первой операции. Кеш native prepared statements ограничен 100 SQL-запросами.
 
-[sql/schema.sql](../../sql/schema.sql) и [sql/queries/catalog.sql](../../sql/queries/catalog.sql) — входы самостоятельного SQL-генератора на примере структуры каталога. Runner явно задаёт --runtime-namespace=App\Platform\Storage\Sql; артефакты находятся в gen/Generated/Sql. CatalogRepository сохраняет прямой SQL с литералом published для partial index и проверяет nullable metadata перед созданием Document; typed queries служат отдельным примером SqlExecutor. Schema input не заменяет DDL migration. Подробности — [SQL-контракт](../design/sql-gen-product.md).
+HTTP core вообще не создаёт Storage. Каталог создаёт его и handlers при сборке; /health/404/405 не выполняют SQL. Это имеет стоимость чтения config/создания PHP objects, но не подключения к БД. Query получает fetchAll, SqlExecutor.fetchOne выбирает первую строку массива; ограничение задаётся явным LIMIT.
 
-## Время жизни и поставка
+[bin/migrate.php](../../bin/migrate.php) получает действие и каталог migrations, проверяет аргументы до соединения и явно создаёт Storage → MigrationRepository/Loader → MigrationService → MigrateCommand. Default directory — пустой src/Migrations; каталог передаёт examples/document-catalog/migrations. Loader подключает PHP-файлы выбранного каталога напрямую, без регистрации application namespace. Только CLI создаёт таблицу migrations; HTTP startup DDL не выполняет.
 
-DI кеширует объекты/планы autowiring. При SAPI App создаётся на запрос, при RR один контейнер/PDO живёт через много handle(). Автоматического request scope/reset всех services нет. Request state передаётся attributes; сервисы не должны удерживать предыдущий request.
+[SQL inputs](../../sql/queries/catalog.sql)/[schema](../../sql/schema.sql) — проверочный пример генератора. Runner передаёт runtime namespace напрямую. Каталог сохраняет SQL constants с published literal для partial index. Generated query execution не загружает codegen libraries; [SQL-контракт](../design/sql-gen-product.md) сохраняет ограничения subset.
 
-Bootstrap регистрирует собственные namespaces и [runtime map](../../third_party/runtime/autoload.php). SQL generator/quality PHARs изолированы от runtime. Нативные PHP/FPM/RR, PostgreSQL и инструменты стенда — требования платформы, а не скачиваемые PHP dependencies. [Поставка](../design/autonomous-core.md) описывает три distributions и транспортные зависимости RR.
+## Время жизни и проверки
 
-[verify](../development/infrastructure-and-testing.md) не требует внешней БД; verify:full добавляет SQL checks и настоящие PostgreSQL integration tests. http:check проверяет реальные FPM/RR отдельно. Числовые бюджеты, основной runtime и длительная устойчивость памяти не устанавливаются короткой проверкой.
+Граф объектов принадлежит функции сборки: SAPI создаёт его на запрос, RR — на worker. Готовые handlers могут разделять repository/storage; request state передаётся attributes. Автоматического service reset нет, requests/bodies не должны удерживаться между вызовами. Ленивость касается PDO, а не наличия графа PHP-объектов.
+
+Runtime/codegen/quality distributions остаются [автономными](../design/autonomous-core.md). verify не требует внешних сервисов; verify:full добавляет SQL tool и реальный PostgreSQL. http:check отдельно проверяет FPM/RR. Для изменения выполнены [проверки и ограниченное сравнение](../history/2026-10-20-explicit-composition.md); основной runtime, production readiness и длительная устойчивость не установлены.
 
 ## Принятое расширение
 
-[Генерация API из protobuf-контракта](../design/protobuf-contract-generation.md) принята после уточнения пользователя: DTO, endpoint contracts, HTTP adapters и явные routes. В текущем коде её нет. Реализация должна использовать общий App/RequestHandler и следовать [правилам кода](../development/coding-guidelines.md); наличие transport protobuf у RR не заменяет этот контур.
+[API из protobuf-контракта](../design/protobuf-contract-generation.md) — DTO, endpoint contracts, HTTP adapters и явные routes. Генератора пока нет. Его output должен принимать ручные реализации и зависимости конструкторами, не возвращая контейнер, autowiring или сервисные registries.

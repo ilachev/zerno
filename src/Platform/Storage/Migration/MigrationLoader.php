@@ -35,8 +35,9 @@ final readonly class MigrationLoader
 
         foreach ($files as $file) {
             $className = $this->getClassNameFromFile($file);
+            require_once $file;
 
-            if (!class_exists($className)) {
+            if (!class_exists($className, false)) {
                 $this->logger->warning("Migration class not found: {$className}");
 
                 continue;

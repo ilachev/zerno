@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Zerno\Baseline;
 
-use App\Platform\Http\Handler\HandlerInterface;
+use App\Platform\Http\RequestHandler;
 use App\Platform\Storage\Storage;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final readonly class JsonHandler implements HandlerInterface
+final readonly class JsonHandler implements RequestHandler
 {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -18,7 +18,7 @@ final readonly class JsonHandler implements HandlerInterface
     }
 }
 
-final readonly class SelectHandler implements HandlerInterface
+final readonly class SelectHandler implements RequestHandler
 {
     public function __construct(
         private Storage $storage,

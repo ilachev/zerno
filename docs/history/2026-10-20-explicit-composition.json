@@ -1,0 +1,211 @@
+{
+  "date": "2026-10-20",
+  "source_revision_before": "e6ae4f66b6940c850454af2c269b01a8965ff274",
+  "runtime_php_files": {
+    "before": 72,
+    "after": 49
+  },
+  "compatibility_changes": [
+    "App receives a ready RequestHandler, not a config path; getContainer removed",
+    "RouteEntry and RouteResult receive RequestHandler objects, not class names",
+    "HTTP config is Closure(Logger):App for both SAPI and RoadRunner",
+    "Migration CLI second argument is a directory; sources loaded explicitly without application autoload",
+    "PostgreSQLStorage construction no longer connects; connection errors occur on the first SQL/transaction/lastInsertId",
+    "RR-specific composition files/providers removed; RR_HTTP_CHUNK_SIZE selects adapter chunking"
+  ],
+  "checks": {
+    "verify_full": {
+      "result": "passed",
+      "root_unit_tests": 200,
+      "root_assertions": 804,
+      "sql_generator_tests": 167,
+      "sql_generator_assertions": 625,
+      "postgresql_integration_tests": 32,
+      "postgresql_assertions": 272,
+      "phpstan_level": 10,
+      "distributions": 3,
+      "bundled_files": 1661
+    },
+    "http_check": {
+      "result": "passed",
+      "cases": 188,
+      "runtimes": [
+        "PHP-FPM",
+        "RoadRunner"
+      ],
+      "renderers": [
+        "JSON",
+        "HTML"
+      ],
+      "includes": "attachments, bounded streaming and successive requests in the same worker"
+    },
+    "runtime_archive_and_source_baseline_smoke": {
+      "result": "passed",
+      "http_cases": 43,
+      "checks": [
+        "default core GET/HEAD/404/405 through SAPI/RR with unavailable DB",
+        "no HTTP startup DDL",
+        "default migration directory and explicit catalog directory without application namespace registration",
+        "catalog migration/seed, list/cursor/detail/private rejection and GET/HEAD PDF through SAPI/RR",
+        "21 generated typed rows with explicit SqlExecutor",
+        "baseline JSON without DB and JSON/SELECT through source SAPI/RR",
+        "invalid CLI action/directory rejected before connection",
+        "CLI rollback/reapply/seed preserves expected migration state",
+        "runtime-only manifest hash and archive boundaries; no container or RR profiles"
+      ]
+    }
+  },
+  "cli_comparison": {
+    "scope": "CLI core composition plus 10000 in-process GET /health calls, no network/DB/SAPI emission; correctness checked for every body, streams closed",
+    "platform": "PHP 8.5.9 (cli) (built: Jul 28 2026 13:06:52) (NTS)",
+    "opcache_enable_cli": false,
+    "source_before": "e6ae4f66b6940c850454af2c269b01a8965ff274",
+    "runs": 7,
+    "warmup": "One discarded process per variant; no artificial request warmup within each measured process",
+    "before": [
+      {
+        "startup_ms": 1.577584,
+        "requests_ms": 51.805542,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 1.834917,
+        "requests_ms": 52.942208,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 1.886041,
+        "requests_ms": 54.055917,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 1.816,
+        "requests_ms": 53.266084,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 1.632125,
+        "requests_ms": 54.570625,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 1.734042,
+        "requests_ms": 52.649708,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      {
+        "startup_ms": 2.026875,
+        "requests_ms": 53.5375,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      }
+    ],
+    "after": [
+      {
+        "startup_ms": 1.045458,
+        "requests_ms": 51.613375,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 1.267,
+        "requests_ms": 52.640959,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 0.99175,
+        "requests_ms": 51.974166,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 1.092375,
+        "requests_ms": 53.251708,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 1.037084,
+        "requests_ms": 51.784708,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 1.479916,
+        "requests_ms": 52.700167,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      },
+      {
+        "startup_ms": 1.034291,
+        "requests_ms": 53.78325,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      }
+    ],
+    "medians": {
+      "before": {
+        "startup_ms": 1.816,
+        "requests_ms": 53.266084,
+        "loaded_classes": 325,
+        "graph_php_bytes": 672768,
+        "after_requests_php_bytes": 961688,
+        "peak_php_bytes": 1048128
+      },
+      "after": {
+        "startup_ms": 1.045458,
+        "requests_ms": 52.640959,
+        "loaded_classes": 316,
+        "graph_php_bytes": 594360,
+        "after_requests_php_bytes": 881064,
+        "peak_php_bytes": 967584
+      }
+    },
+    "limits": "PHP counters are not RSS; timings include fixed correctness checks and body closing. These short CLI runs do not establish FPM/RR throughput, latency or long-running memory stability."
+  },
+  "probe_source": "<?php\n\ndeclare(strict_types=1);\n\n$start = hrtime(true);\nrequire $argv[1] . '/bootstrap.php';\nif ($argv[2] === 'before') {\n    $app = new App\\Platform\\Runtime\\App($argv[1] . '/config/core.php');\n} else {\n    $compose = require $argv[1] . '/config/core.php';\n    $app = $compose(new App\\Platform\\Logging\\ReadableOutputLogger());\n}\n$startupNanoseconds = hrtime(true) - $start;\n$classes = count(get_declared_classes());\n$graphBytes = memory_get_usage();\n$request = new Nyholm\\Psr7\\ServerRequest('GET', '/health', ['X-Request-ID' => 'composition-measure']);\n$start = hrtime(true);\nfor ($i = 0; $i < 10000; ++$i) {\n    $response = $app->handle($request);\n    if ($response->getStatusCode() !== 200 || (string) $response->getBody() !== '{\"status\":\"ok\"}') {\n        throw new RuntimeException('Different measured response.');\n    }\n    $response->getBody()->close();\n    unset($response);\n}\necho json_encode([\n    'startup_ms' => $startupNanoseconds / 1000000,\n    'requests_ms' => (hrtime(true) - $start) / 1000000,\n    'loaded_classes' => $classes,\n    'graph_php_bytes' => $graphBytes,\n    'after_requests_php_bytes' => memory_get_usage(),\n    'peak_php_bytes' => memory_get_peak_usage(),\n], JSON_THROW_ON_ERROR), \"\\n\";\n",
+  "after_source_sha256": {
+    "bootstrap.php": "730449e431cc92edeb9b6a7d3f5d591c2e35298d23a2df06ca95442a7b9fdf7b",
+    "config/core.php": "911e1eb8b66957e5430e5df56c6d0c54f2f5debfe6853a83f7be5a5d5a71de5c",
+    "config/routes.php": "6fd0805ee839a6bfe5d89eb02f17a3571f9dc2ba012d0dd3c7aaf1e019577995",
+    "src/Platform/Runtime/App.php": "86989aa4a2dc4e538111542c189dc6566480a563e4e09ac13c6fe872a2e6f80e",
+    "src/Platform/Routing/Router.php": "45316a01cc115b38924cab7015a8716431b8a988166167e7021402f20b3a46d9",
+    "src/Platform/Http/RouteHandlerResolver.php": "a06fe5b15e5e99c8ccd9f36394056c7fe81faf41d01f294dba0091647aeb6c06",
+    "src/Platform/Http/Middleware/RequestContextMiddleware.php": "7ec0202ff6da62a880ccce8125640113ef1630f74da1a5720f08d2757955fc71"
+  }
+}

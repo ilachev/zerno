@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Runtime;
 
-use App\Platform\Runtime\App;
+use App\Platform\Logging\ReadableOutputLogger;
+use App\Platform\Storage\Migration\MigrationLoader;
+use App\Platform\Storage\Migration\MigrationRepository;
 use App\Platform\Storage\Migration\MigrationService;
 use App\Platform\Storage\Sql\ExecutableQuery;
 use App\Platform\Storage\Sql\SqlExecutor;
@@ -42,14 +44,13 @@ final class CoreApplicationTest extends TestCase
 
     public function testCoreMigrationsDoNotInstallApiApplicationTables(): void
     {
-        $app = new App($this->configPath());
-        $storage = $app->getContainer()->get(Storage::class);
+        $storage = $this->storage();
         self::assertSame([], $storage->query(
             'SELECT tablename FROM pg_tables WHERE schemaname = :schema',
             ['schema' => $this->database->schema],
         ));
 
-        $migrations = $app->getContainer()->get(MigrationService::class);
+        $migrations = new MigrationService($storage, new MigrationRepository($storage), new MigrationLoader(\dirname(__DIR__, 3) . '/src/Migrations', new ReadableOutputLogger()));
         $migrations->loadMigrations();
         $migrations->migrate();
 
@@ -62,9 +63,8 @@ final class CoreApplicationTest extends TestCase
 
     public function testCorePdoSupportsBoundParametersAndTransactionRecovery(): void
     {
-        $app = new App($this->configPath());
-        $storage = $app->getContainer()->get(Storage::class);
-        $executor = $app->getContainer()->get(SqlExecutor::class);
+        $storage = $this->storage();
+        $executor = new SqlExecutor($storage);
         $storage->execute('CREATE TEMP TABLE core_application_records (id INTEGER PRIMARY KEY, value TEXT NOT NULL)');
         $insert = 'INSERT INTO core_application_records (id, value) VALUES (:id, :value)';
         $literal = "A quote ' and ; :placeholder -- remain data";
@@ -113,8 +113,18 @@ final class CoreApplicationTest extends TestCase
         self::assertSame(['id' => 4, 'value' => 'after rollback'], $executor->fetchOne($query));
     }
 
-    private function configPath(): string
+    public function testTransactionCanOpenTheConnectionAndKeepsItsSession(): void
     {
-        return \dirname(__DIR__, 3) . '/config/core.php';
+        $storage = $this->storage();
+        $first = $storage->transaction(static fn(): array => $storage->query('SELECT pg_backend_pid() AS pid'));
+        self::assertSame($first, $storage->query('SELECT pg_backend_pid() AS pid'));
+    }
+
+    private function storage(): Storage
+    {
+        /** @var Storage $storage */
+        $storage = require \dirname(__DIR__, 3) . '/config/storage.php';
+
+        return $storage;
     }
 }

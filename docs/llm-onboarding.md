@@ -19,7 +19,7 @@ HTTP/маршруты/явная композиция, ErrorResponse, Attachment
 
 | Задача | Документ | Код |
 | --- | --- | --- |
-| HTTP, runtime, routing, DI | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, config/core-roadrunner.php, src/Platform |
+| HTTP, runtime, routing, сборка объектов | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, public/index.php, src/Platform |
 | API-контракт и генерация DTO/endpoints | [План protobuf](design/protobuf-contract-generation.md) | Контур пока удалён; реализуется отдельным законченным этапом |
 | SQL, миграции, генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
 | Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
@@ -30,9 +30,11 @@ HTTP/маршруты/явная композиция, ErrorResponse, Attachment
 
 ## Композиции и ограничения
 
-config/core.php — общий HTTP/PDO pipeline. config/core-roadrunner.php добавляет серверный адаптер; public/index.php и .rr.yaml по умолчанию выбирают его. public/http.php использует core.php. Каталог выбирает свои маршруты, HTML Errors, миграции и RR chunk 8192. Каталог использует прямой SQL; sql/queries/catalog.sql — отдельный пример для генератора.
+config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/http.php и public/index.php используют одну APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
 
-/health не разрешает PostgreSqlStorageConfig/Storage. HttpLogging не читает тело. SAPI/RR закрывают body после отправки, включая HEAD/ошибки. Прямой App::handle не отправляет и не закрывает response. Default RR chunk 0 материализует тело; ограниченная память проверена для seekable-file пути с 8192, не для произвольного потока.
+Каталог собирается в examples/document-catalog/application.php из Logger/Storage/private directory; config.php только выбирает эти входы. PostgreSQLStorage лениво открывает PDO при первой операции; handlers/repository строятся заранее без SQL. /health/404/405 не открывают БД. Миграции — отдельный CLI граф с директорией migrations, не HTTP-конфигурацией.
+
+HttpLogging не читает тело. SAPI/RR закрывают body после отправки, включая HEAD/ошибки; App::handle его не закрывает. Каталог сохраняет прямой SQL; sql/queries/catalog.sql — отдельный пример генератора.
 
 PostgreSQL — единственная БД приложения. SQLiteStorage находится только в tests/Fixtures для автономных migration unit tests, не в поставке. Integration bootstrap не создаёт общий App, API-таблицы или глобальную схему: тесты сами владеют случайными схемами TEST_DB_*.
 

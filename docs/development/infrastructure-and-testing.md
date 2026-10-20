@@ -19,19 +19,19 @@
 | services:start | Только PostgreSQL Docker service с --pull never, без миграций |
 | services:stop / services:status | Остановка / статус compose-проекта |
 | run | Только запуск RR core из .rr.yaml; не требует запуска БД для /health |
-| migrate [action] [config] | Явный CLI DDL приложения; default config/core.php |
+| migrate [action] [directory] | Явный CLI DDL; default src/Migrations |
 
 Полный справочник — php tools/project.php help. Нет proto/cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build.
 
 ## База приложения
 
-config/storage.php возвращает PostgreSqlStorageConfig из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. StorageServiceProvider открывает PDO только при разрешении Storage. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
+config/storage.php создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Адаптер открывает PDO только при первой query/execute/transaction/lastInsertId; конструктор не выполняет I/O. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
 
-Core migration path — пустой src/Migrations; пример имеет собственную migration. Явный migrate создаёт служебную таблицу migrations при разрешении repository. Запуск HTTP и services:start не запускают migration автоматически. Существующие пользовательские таблицы старого API не удаляются этой очисткой.
+Core migration path — пустой src/Migrations; пример имеет собственную migration. Явный migrate создаёт служебную таблицу migrations при явном создании MigrationRepository в CLI. Запуск HTTP и services:start не запускают migration автоматически. Существующие пользовательские таблицы старого API не удаляются этой очисткой.
 
 ## Unit и integration profiles
 
-[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; fake production backend не поставляется. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего worker и реальный PSR7Worker.
+[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего worker и реальный PSR7Worker.
 
 [phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом.
 
@@ -49,4 +49,4 @@ php tools/project.php tools:sql:check
 
 [HTTP guide](http-and-baseline.md) описывает реальные listeners, временные ports, контроль body/hash/HEAD и ограничения памяти. Ни наличие StreamInterface, ни один unit test не доказывают bounded memory всего pipeline. Короткие результаты не устанавливают runtime winner или длительную устойчивость.
 
-SQL inputs генератора, реальные миграции, default HTTP/RR и распакованный runtime archive проверяются вместе при изменении состава. Исторические данные предыдущих композиций остаются [историей](../README.md#исторические-материалы); они не являются инструкцией запускать удалённый API.
+SQL inputs генератора, автономная загрузка PHP migrations без application autoload, default HTTP/RR и распакованный runtime archive проверяются вместе при изменении состава. Исторические данные предыдущих композиций остаются [историей](../README.md#исторические-материалы); они не являются инструкцией запускать удалённый API.

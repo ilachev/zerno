@@ -8,13 +8,13 @@ use Examples\DocumentCatalog\DetailHandler;
 use Examples\DocumentCatalog\DownloadHandler;
 use Examples\DocumentCatalog\ListHandler;
 
-return [
-    new RouteEntry('GET', '/health', HealthHandler::class),
-    new RouteEntry('HEAD', '/health', HealthHandler::class),
-    new RouteEntry('GET', '/documents', ListHandler::class),
-    new RouteEntry('HEAD', '/documents', ListHandler::class),
-    new RouteEntry('GET', '/documents/{id}', DetailHandler::class),
-    new RouteEntry('HEAD', '/documents/{id}', DetailHandler::class),
-    new RouteEntry('GET', '/documents/{id}/download', DownloadHandler::class),
-    new RouteEntry('HEAD', '/documents/{id}/download', DownloadHandler::class),
+return static fn(HealthHandler $health, ListHandler $list, DetailHandler $detail, DownloadHandler $download): array => [
+    new RouteEntry('GET', '/health', $health),
+    new RouteEntry('HEAD', '/health', $health),
+    new RouteEntry('GET', '/documents', $list),
+    new RouteEntry('HEAD', '/documents', $list),
+    new RouteEntry('GET', '/documents/{id}', $detail),
+    new RouteEntry('HEAD', '/documents/{id}', $detail),
+    new RouteEntry('GET', '/documents/{id}/download', $download),
+    new RouteEntry('HEAD', '/documents/{id}/download', $download),
 ];

@@ -9,6 +9,8 @@ use App\Platform\Storage\StorageException;
 
 final class SQLiteStorage extends AbstractStorage
 {
+    private \PDO $connection;
+
     /** @var array<string, \PDOStatement> */
     private array $preparedStatements = [];
 
@@ -55,6 +57,11 @@ final class SQLiteStorage extends AbstractStorage
         } catch (\PDOException $e) {
             throw new StorageException($e->getMessage(), 0, $e);
         }
+    }
+
+    protected function connection(): \PDO
+    {
+        return $this->connection;
     }
 
     private function getStatement(string $sql): \PDOStatement

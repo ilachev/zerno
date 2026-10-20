@@ -2,7 +2,7 @@
 
 Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
 
-Каталог — потребитель HTTP/PDO-механизмов. [Запуск и seed](../../examples/document-catalog/README.md) принадлежат примеру; развитие ядра определяется [roadmap](roadmap.md). Редактор, роли, формы публикации и CMS workflow в поставке отсутствуют.
+Каталог — потребитель HTTP/PDO-механизмов. application.php собирает граф обычными конструкторами из Logger/Storage/private directory, routes.php получает готовые handlers; контейнера нет. [Запуск и seed](../../examples/document-catalog/README.md) принадлежат примеру; развитие ядра определяется [roadmap](roadmap.md). Редактор, роли, формы публикации и CMS workflow в поставке отсутствуют.
 
 ## Реализованный поток
 

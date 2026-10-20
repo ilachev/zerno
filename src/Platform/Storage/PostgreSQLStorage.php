@@ -6,6 +6,8 @@ namespace App\Platform\Storage;
 
 final class PostgreSQLStorage extends AbstractStorage
 {
+    private ?\PDO $connection = null;
+
     /** @var array<string, \PDOStatement> */
     private array $preparedStatements = [];
 
@@ -16,10 +18,16 @@ final class PostgreSQLStorage extends AbstractStorage
         private readonly string $username,
         private readonly string $password,
         private readonly ?string $schema = null,
-    ) {
+    ) {}
+
+    protected function connection(): \PDO
+    {
+        if ($this->connection !== null) {
+            return $this->connection;
+        }
         $dsn = "pgsql:host={$this->host};port={$this->port};dbname={$this->dbname}";
 
-        $this->connection = new \PDO(
+        $connection = new \PDO(
             $dsn,
             $this->username,
             $this->password,
@@ -30,10 +38,12 @@ final class PostgreSQLStorage extends AbstractStorage
             ],
         );
 
-        // Set the schema if provided
+        // Publish the connection only after schema initialization succeeds.
         if ($this->schema !== null) {
-            $this->connection->exec('SET search_path TO "' . str_replace('"', '""', $this->schema) . '"');
+            $connection->exec('SET search_path TO "' . str_replace('"', '""', $this->schema) . '"');
         }
+
+        return $this->connection = $connection;
     }
 
     /**
@@ -82,7 +92,7 @@ final class PostgreSQLStorage extends AbstractStorage
 
         if (!isset($this->preparedStatements[$key])) {
             // Create a new statement if not cached
-            $this->preparedStatements[$key] = $this->connection->prepare($sql);
+            $this->preparedStatements[$key] = $this->connection()->prepare($sql);
 
             // Limit cache size to prevent memory leaks
             if (\count($this->preparedStatements) > 100) {

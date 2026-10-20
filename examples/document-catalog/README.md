@@ -21,7 +21,7 @@ export DB_NAME=zerno_catalog DB_USER=zerno_catalog DB_SCHEMA=public
 export DB_PASSWORD
 export CATALOG_FILES_DIR="$PWD/var/document-catalog/files"
 
-php tools/project.php migrate migrate examples/document-catalog/config.php
+php tools/project.php migrate migrate examples/document-catalog/migrations
 php examples/document-catalog/seed.php
 ```
 
@@ -44,7 +44,7 @@ APP_CONFIG="$PWD/examples/document-catalog/config.php" \
 rr serve -w "$PWD" -c examples/document-catalog/rr.yaml
 ```
 
-RR слушает `127.0.0.1:8081`, запускает один PHP worker с CLI OPcache и явно подключает выдачу порциями по 8192 байта. Список доступен по [адресу RR](http://127.0.0.1:8081/documents). `Ctrl+C` останавливает выбранный сервер.
+RR слушает `127.0.0.1:8081`, запускает один PHP worker с CLI OPcache и выбирает RR_HTTP_CHUNK_SIZE=8192 в server env и ту же config.php функцию, что SAPI/FPM. Список доступен по [адресу RR](http://127.0.0.1:8081/documents). `Ctrl+C` останавливает выбранный сервер.
 
 | GET и HEAD | Результат |
 | --- | --- |
@@ -56,7 +56,7 @@ RR слушает `127.0.0.1:8081`, запускает один PHP worker с CL
 
 [CatalogRepository](src/CatalogRepository.php) использует прямой SQL с литералом published и параметром cursor; это сохраняет predicate частичного индекса даже при generic prepared plans. Список делает один ограниченный SQL-запрос с `LIMIT 21`: дополнительная запись определяет наличие следующей страницы. Cursor `before` — каноническая десятичная запись положительного ID в пределах `PHP_INT_MAX`, без знака, пробелов и начальных нулей; некорректный cursor даёт HTML `400`. Неверный ID, отсутствующий или непубличный документ дают одинаковую HTML `404`. Неподдерживаемый метод получает HTML `405` с `Allow`, внутренняя ошибка — HTML `500` без деталей реализации.
 
-[`config.php`](config.php) связывает общий `ErrorResponse` с прикладным [`Errors`](src/Errors.php), используя core pipeline без собственного error middleware. HTML создаётся сразу, без промежуточного JSON; готовые ответы handlers не переписываются. Core `ErrorHandlerMiddleware` пишет полное исключение в выбранный logger, возвращая только публичное сообщение. Контракт, границы и стоимость подключения — в [жизненном цикле HTTP](../../docs/architecture/request-lifecycle.md#представление-http-ошибок).
+[`application.php`](application.php) явно создаёт Html/Errors, repository/files и handlers из Logger/Storage/private directory. Объект [`Errors`](src/Errors.php) передаётся в общий ErrorHandlerMiddleware и RoutingMiddleware; [`config.php`](config.php) выбирает только параметры этой сборки. Контейнера, bindings и class-name lookup нет. HTML создаётся сразу, без промежуточного JSON; готовые ответы handlers не переписываются. Core `ErrorHandlerMiddleware` пишет полное исключение в выбранный logger, возвращая только публичное сообщение. Контракт, границы и стоимость подключения — в [жизненном цикле HTTP](../../docs/architecture/request-lifecycle.md#представление-http-ошибок).
 
 Каталог работает без JavaScript и сессий, не создаёт `Set-Cookie`. HTML и download используют `Cache-Control: no-store`; `/health` сохраняет JSON-контракт ядра. HEAD возвращает метаданные GET без тела. В download он проверяет файл и размер, затем закрывает поток без чтения содержимого.
 
@@ -64,9 +64,9 @@ RR слушает `127.0.0.1:8081`, запускает один PHP worker с CL
 
 Опубликованные данные и файлы предполагаются неизменяемыми; seed создаёт готовые файлы до записи ссылок в БД. При каждом скачивании содержимое не хешируется и не анализируется на безопасность. Контролируемая подготовка PDF, доступность его содержимого и защита storage остаются задачами приложения и оператора. Проверка HTML-страницы не устанавливает доступность самого PDF.
 
-Исходники примера подключаются явно через [bootstrap.php](bootstrap.php) из выбранной конфигурации. Обычный минимальный профиль ядра не регистрирует namespace примера и не выполняет его SQL. Runtime-архив содержит приложение, его миграцию и CLI seed; development tools, тесты и нагрузочные сценарии в него не входят.
+Исходники примера подключаются явно через [bootstrap.php](bootstrap.php) из выбранной конфигурации. Обычное ядро не регистрирует namespace примера и не выполняет его SQL. PostgreSQLStorage создаётся заранее без PDO; handlers/repository/FileStore также не обращаются к данным при сборке. Runtime-архив содержит приложение, его миграцию и CLI seed; development tools, тесты и нагрузочные сценарии в него не входят.
 
-В распакованном runtime-архиве вместо development runner выполняйте `php bin/migrate.php migrate examples/document-catalog/config.php`. Команды seed и запуска серверов остаются теми же; проверки ниже выполняются только из исходного checkout.
+В распакованном runtime-архиве вместо development runner выполняйте `php bin/migrate.php migrate examples/document-catalog/migrations`. Команды seed и запуска серверов остаются теми же; проверки ниже выполняются только из исходного checkout.
 
 Проверки из checkout:
 

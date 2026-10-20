@@ -8,7 +8,7 @@
 
 ## Конкретный состав
 
-- PSR-7 request/response, маршруты, middleware и явная композиция через конструкторы и PHP-конфигурацию.
+- PSR-7 request/response, маршруты, middleware и сборка объектов через обычные PHP-конструкторы и функции. Контейнера и autowiring нет.
 - JSON/прикладные HTML-ошибки через ErrorResponse; файловый AttachmentResponse с безопасными заголовками.
 - Request ID, время обработки и логирование метаданных без чтения тела ответа.
 - PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции.
@@ -35,18 +35,18 @@ php -S 127.0.0.1:8080 -t public public/http.php
 php tools/project.php run
 ```
 
-[.rr.yaml](.rr.yaml) и [config/core-roadrunner.php](config/core-roadrunner.php) запускают то же ядро. APP_CONFIG явно выбирает конфигурацию приложения; старого config/container.php больше нет. Примеры применения — [обычные маршруты](config/routes.php) и [каталог документов](examples/document-catalog/README.md).
+[.rr.yaml](.rr.yaml) запускает ту же [функцию сборки](config/core.php), что SAPI/FPM: `Closure(Logger): App`. Точка входа выбирает logger, функция явно создаёт граф через new. APP_CONFIG задаёт этот файл; отдельных RR service providers/профилей нет. Маршруты хранят готовые RequestHandler objects. Примеры применения — [обычные маршруты](config/routes.php) и [каталог документов](examples/document-catalog/README.md).
 
 ## База данных и генерация
 
-[config/storage.php](config/storage.php) читает DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD и DB_SCHEMA. Поддерживается PostgreSQL; выбора STORAGE_ENGINE нет. Соединение открывается при разрешении Storage. HTTP startup никогда не запускает миграции.
+[config/storage.php](config/storage.php) читает DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD и DB_SCHEMA. Поддерживается PostgreSQL; выбора STORAGE_ENGINE нет. Файл возвращает PostgreSQLStorage, соединение открывается при первой SQL-операции/транзакции, а не при создании объекта. HTTP startup никогда не запускает миграции.
 
 ```bash
 php tools/project.php migrate migrate
 php tools/project.php sql:gen
 ```
 
-По умолчанию миграции ядра ищутся в пустом прикладном src/Migrations. Для каталога передайте examples/document-catalog/config.php вторым аргументом после migrate. [SQL inputs](sql/queries/catalog.sql) и [schema source](sql/schema.sql) дают отдельный проверочный пример генератора на структуре каталога. Приложение сохраняет прямой SQL с published literal; runtime DDL находится в его миграции. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
+По умолчанию миграции ядра ищутся в пустом прикладном src/Migrations. Второй аргумент — каталог миграций: для примера передайте examples/document-catalog/migrations. HTTP-конфигурация CLI больше не передаётся. [SQL inputs](sql/queries/catalog.sql) и [schema source](sql/schema.sql) дают отдельный проверочный пример генератора на структуре каталога. Приложение сохраняет прямой SQL с published literal; runtime DDL находится в его миграции. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
 
 ## Проверки и поставка
 

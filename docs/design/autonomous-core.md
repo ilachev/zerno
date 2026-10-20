@@ -36,6 +36,6 @@ php tools/project.php build local
 
 Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR и каталог с migration/seed. SQL generator, quality PHARs, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
 
-CLI migration в распакованном архиве: php bin/migrate.php migrate [application-config]. Core default — config/core.php и пустой src/Migrations; каталог передаёт свой config. БД не создаётся автоматически, HTTP startup не выполняет DDL.
+CLI migration в распакованном архиве: php bin/migrate.php migrate [migration-directory]. Default — src/Migrations; каталог передаёт examples/document-catalog/migrations. CLI явно собирает Storage/repository/loader/service и подключает файлы директории без HTTP graph. БД не создаётся автоматически, HTTP startup не выполняет DDL.
 
 CI/release запускают полный gate и build, не регенерируют артефакты при запросе и не устанавливают PHP packages. Реальные HTTP/load checks выполняются явно на установленной платформе. Удаление API-миграций из дерева не удаляет таблицы существующих пользовательских БД; никакой автоматической destructive migration не добавлено.

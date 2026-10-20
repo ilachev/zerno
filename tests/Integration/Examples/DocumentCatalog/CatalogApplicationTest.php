@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Examples\DocumentCatalog;
 
+use App\Platform\Logging\Logger;
+use App\Platform\Logging\ReadableOutputLogger;
 use App\Platform\Runtime\App;
+use App\Platform\Storage\Migration\MigrationLoader;
+use App\Platform\Storage\Migration\MigrationRepository;
 use App\Platform\Storage\Migration\MigrationService;
 use App\Platform\Storage\Storage;
 use App\Platform\Storage\StorageException;
@@ -24,8 +28,9 @@ final class CatalogApplicationTest extends TestCase
     /** @var array<string, string|false> */
     private array $environment = [];
 
-    /** @var App<object> */
     private App $app;
+
+    private MigrationService $migrations;
 
     private CatalogRecordingStorage $storage;
 
@@ -52,13 +57,20 @@ final class CatalogApplicationTest extends TestCase
             $this->environment[$name] = getenv($name);
             putenv($name . '=' . $value);
         }
-        $this->app = new App(\dirname(__DIR__, 4) . '/examples/document-catalog/config.php');
-        $container = $this->app->getContainer();
-        $this->storage = new CatalogRecordingStorage($container->get(Storage::class));
-        $container->set(Storage::class, fn(): Storage => $this->storage);
-        $migrations = $container->get(MigrationService::class);
-        $migrations->loadMigrations();
-        $migrations->migrate();
+        /** @var Storage $storage */
+        $storage = require \dirname(__DIR__, 4) . '/config/storage.php';
+        $this->storage = new CatalogRecordingStorage($storage);
+        $logger = new ReadableOutputLogger();
+        $this->migrations = new MigrationService(
+            $this->storage,
+            new MigrationRepository($this->storage),
+            new MigrationLoader(\dirname(__DIR__, 4) . '/examples/document-catalog/migrations', $logger),
+        );
+        $this->migrations->loadMigrations();
+        $this->migrations->migrate();
+        /** @var \Closure(Logger, Storage, string): App $compose */
+        $compose = require \dirname(__DIR__, 4) . '/examples/document-catalog/application.php';
+        $this->app = $compose($logger, $this->storage, $this->directory);
         $this->pdf = self::pdf();
         $this->storage->transaction(function (): void {
             foreach (range(1, 47) as $number) {
@@ -255,8 +267,7 @@ final class CatalogApplicationTest extends TestCase
 
     public function testMigrationsRepeatWithoutApiTablesAndRequirePublishedMetadata(): void
     {
-        $migrations = $this->app->getContainer()->get(MigrationService::class);
-        $migrations->migrate();
+        $this->migrations->migrate();
         $tables = $this->storage->query('SELECT tablename FROM pg_tables WHERE schemaname = :schema ORDER BY tablename', ['schema' => $this->database?->schema]);
         self::assertSame([['tablename' => 'catalog_documents'], ['tablename' => 'migrations']], $tables);
         self::assertCount(1, $this->storage->query('SELECT version FROM migrations'));

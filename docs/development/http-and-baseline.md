@@ -27,11 +27,11 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 Нужны PHP 8.5 с `pdo_pgsql` и OPcache, PHP-FPM, `rr`, Caddy, k6 и доступная отдельная PostgreSQL test database. Это требования платформы; команды проекта не создают сервер БД и не скачивают executables или пакеты. Запускайте процессы обычным пользователем из корня checkout.
 
-Две конфигурации расширяют минимальный core: [`config.php`](../../load-tests/baseline/config.php) для SAPI/FPM и [`roadrunner.php`](../../load-tests/baseline/roadrunner.php) с обычным RR provider. Прикладные миграции не запускаются при старте HTTP.
+Одна [`функция config.php`](../../load-tests/baseline/config.php) явно собирает объекты для SAPI/FPM и RoadRunner; точки входа выбирают logger. Прикладные миграции не запускаются при старте HTTP.
 
 | Сценарий | Работа приложения | Точный ответ |
 | --- | --- | --- |
-| `CASE=json`, `GET /json` | Не разрешает `Storage`, не открывает PDO | `{"id":42,"value":"record-42"}` |
+| `CASE=json`, `GET /json` | Создаёт граф с Storage, но не открывает PDO | `{"id":42,"value":"record-42"}` |
 | `CASE=select`, `GET /select/42` | Один параметризованный lookup по primary key, до одной строки | `{"id":42,"value":"record-42"}` |
 
 [`database.php`](../../load-tests/baseline/database.php) создаёт случайную схему `zerno_baseline_<24 hex>`, таблицу `baseline_records` с 10 000 детерминированных записей, выполняет `ANALYZE` и сохраняет `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`. Подготовка проверяет индексный lookup с одной строкой. Результат содержит schema, размер fixture и план, без пароля; приложение миграции не запускает.
@@ -104,7 +104,7 @@ caddy run --config load-tests/baseline/Caddyfile
 | FPM через Caddy FastCGI | `http://127.0.0.1:18081` | FPM `127.0.0.1:19001` |
 | RR через Caddy HTTP proxy | `http://127.0.0.1:18082` | RR `127.0.0.1:19002` |
 
-Оба профиля используют один PHP worker. [FPM config](../../load-tests/baseline/php-fpm.conf) включает OPcache; [RR config](../../load-tests/baseline/rr.yaml) включает его для CLI и выбирает свой `roadrunner.php` через `APP_CONFIG`. Общий [Caddyfile](../../load-tests/baseline/Caddyfile) использует один front process для двух протоколов backend. OPcache/JIT и прочие настройки унаследованного PHP ini всё равно нужно сохранить в metadata и проверить на сопоставимость.
+Оба профиля используют один PHP worker. [FPM config](../../load-tests/baseline/php-fpm.conf) включает OPcache; [RR config](../../load-tests/baseline/rr.yaml) включает его для CLI и выбирает тот же `config.php` через `APP_CONFIG`. Общий [Caddyfile](../../load-tests/baseline/Caddyfile) использует один front process для двух протоколов backend. OPcache/JIT и прочие настройки унаследованного PHP ini всё равно нужно сохранить в metadata и проверить на сопоставимость.
 
 Все порты loopback. Если они заняты, выберите свободные и согласованно измените локальные sample configs и `BASE_URL`; не останавливайте чужие сервисы. Возможен запуск runtime по очереди с тем же Caddy front. Не запускайте две нагрузки одновременно.
 
@@ -147,7 +147,7 @@ Cleanup проверяет формат имени, baseline marker и прин�
 
 ## Стоимость файлового пути
 
-[`load-tests/files/scenario.js`](../../load-tests/files/scenario.js) выполняет один последовательный GET или HEAD attachment fixture, проверяет headers и точный SHA-256 body. Он требует заранее подготовленные private файлы и сервер с `tools/http-fixtures/config.php` (FPM) или `roadrunner.php` (RR). Это development fixture без БД. `WIRE_FILE_DIRECTORY` задаёт её private directory; `WIRE_HTTP_LOGGING=0` исключает только logging middleware для сопоставимого контрольного запуска (default включает его). Эти переменные не относятся к конфигурации core/каталога.
+[`load-tests/files/scenario.js`](../../load-tests/files/scenario.js) выполняет один последовательный GET или HEAD attachment fixture, проверяет headers и точный SHA-256 body. Он требует заранее подготовленные private файлы и сервер с `tools/http-fixtures/config.php` на FPM/RR; для RR выбрать RR_HTTP_CHUNK_SIZE=8192, как в http:check. Это development fixture без БД. `WIRE_FILE_DIRECTORY` задаёт её private directory; `WIRE_HTTP_LOGGING=0` исключает только logging middleware для сопоставимого контрольного запуска (default включает его). Эти переменные не относятся к конфигурации core/каталога.
 
 Подготовка из корня, без загрузки зависимостей:
 

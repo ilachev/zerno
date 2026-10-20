@@ -35,7 +35,7 @@ function projectCommand(string $command, array $arguments = []): void
                 sql:check:pg           Validate SQL against PostgreSQL using TEST_DB_* settings
                 tools:sql:check        Run style, PHPStan and tests for tools/sql-gen
                 tools:sql:<lint|fixcs|phpstan|test>
-                migrate                Run migrations; accepts action and application configuration
+                migrate                Run migrations; accepts action and migration directory
                 services:start         Start the PostgreSQL development service without running migrations
                 services:stop | services:status
                 run                    Start the HTTP/PDO core through RoadRunner

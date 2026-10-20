@@ -6,6 +6,7 @@
 
 ## Проверенная база
 
+- [Явная сборка без контейнера](../history/2026-10-20-explicit-composition.md): конструкторы, готовые handlers, общий HTTP config для SAPI/RR и lazy PDO.
 - Автономные runtime, SQL codegen и quality tools; проверки и runtime archive без package installation/download.
 - Общие App/RequestHandler, SAPI/FPM/RoadRunner, явные маршруты, 404/405/Allow/HEAD, выбор ErrorResponse.
 - AttachmentResponse, прозрачная metadata-диагностика и завершение streams; [проверки/замер](../history/2026-10-18-file-responses.md) выбранного файлового пути.

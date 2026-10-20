@@ -6,22 +6,23 @@ namespace App\Platform\Storage;
 
 abstract class AbstractStorage implements Storage
 {
-    protected \PDO $connection;
+    abstract protected function connection(): \PDO;
 
     /**
      * @throws \Throwable
      */
     final public function transaction(callable $callback): mixed
     {
-        $this->connection->beginTransaction();
+        $connection = $this->connection();
+        $connection->beginTransaction();
 
         try {
             $result = $callback();
-            $this->connection->commit();
+            $connection->commit();
 
             return $result;
         } catch (\Throwable $e) {
-            $this->connection->rollBack();
+            $connection->rollBack();
 
             throw $e;
         }
@@ -32,7 +33,7 @@ abstract class AbstractStorage implements Storage
      */
     final public function lastInsertId(): string
     {
-        $id = $this->connection->lastInsertId();
+        $id = $this->connection()->lastInsertId();
 
         if ($id === false) {
             throw new StorageException('Failed to get last insert ID');

@@ -3,7 +3,7 @@ version: '3'
 server:
   command: "php -d opcache.enable_cli=1 public/index.php"
   env:
-    APP_CONFIG: load-tests/baseline/roadrunner.php
+    APP_CONFIG: load-tests/baseline/config.php
 
 http:
   address: 127.0.0.1:19002

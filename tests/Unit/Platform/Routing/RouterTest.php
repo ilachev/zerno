@@ -4,25 +4,42 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Platform\Routing;
 
-use App\Platform\Routing\RouteDefinition;
+use App\Platform\Http\RequestHandler;
 use App\Platform\Routing\RouteEntry;
 use App\Platform\Routing\Router;
-use App\Platform\Routing\StaticRouteProvider;
+use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 final class RouterTest extends TestCase
 {
+    /** @var array<string, RequestHandler> */
+    private array $handlers = [];
+
+    private function handler(string $name): RequestHandler
+    {
+        return $this->handlers[$name] ??= new readonly class ($name) implements RequestHandler {
+            public function __construct(private string $name) {}
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new Response(200, [], $this->name);
+            }
+        };
+    }
+
     private Router $router;
 
     protected function setUp(): void
     {
         $this->router = $this->createRouter([
-            new RouteEntry('GET', '/api/test', 'TestHandler'),
-            new RouteEntry('POST', '/api/test', 'TestPostHandler'),
-            new RouteEntry('GET', '/api/users/{id}', 'UserHandler'),
-            new RouteEntry('GET', '/api/posts/{slug}', 'PostHandler'),
+            new RouteEntry('GET', '/api/test', $this->handler('TestHandler')),
+            new RouteEntry('POST', '/api/test', $this->handler('TestPostHandler')),
+            new RouteEntry('GET', '/api/users/{id}', $this->handler('UserHandler')),
+            new RouteEntry('GET', '/api/posts/{slug}', $this->handler('PostHandler')),
         ]);
     }
 
@@ -31,7 +48,7 @@ final class RouterTest extends TestCase
         $result = $this->router->dispatch(new ServerRequest('GET', '/api/test'));
 
         self::assertTrue($result->isFound());
-        self::assertSame('TestHandler', $result->getHandler());
+        self::assertSame($this->handler('TestHandler'), $result->getHandler());
         self::assertSame([], $result->getParams());
     }
 
@@ -41,7 +58,7 @@ final class RouterTest extends TestCase
             $result = $this->router->dispatch(new ServerRequest('GET', $path));
 
             self::assertTrue($result->isFound());
-            self::assertSame('TestHandler', $result->getHandler());
+            self::assertSame($this->handler('TestHandler'), $result->getHandler());
         }
     }
 
@@ -68,44 +85,44 @@ final class RouterTest extends TestCase
         $result = $this->router->dispatch(new ServerRequest('GET', '/api/users/123'));
 
         self::assertTrue($result->isFound());
-        self::assertSame('UserHandler', $result->getHandler());
+        self::assertSame($this->handler('UserHandler'), $result->getHandler());
         self::assertSame(['id' => '123'], $result->getParams());
     }
 
     public function testDispatchWithMultipleParameters(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/api/users/{id}/posts/{postId}', 'UserPostHandler'),
+            new RouteEntry('GET', '/api/users/{id}/posts/{postId}', $this->handler('UserPostHandler')),
         ]);
         $result = $router->dispatch(new ServerRequest('GET', '/api/users/123/posts/456'));
 
         self::assertTrue($result->isFound());
-        self::assertSame('UserPostHandler', $result->getHandler());
+        self::assertSame($this->handler('UserPostHandler'), $result->getHandler());
         self::assertSame(['id' => '123', 'postId' => '456'], $result->getParams());
     }
 
     public function testStaticRouteForAnotherMethodDoesNotBlockParameterizedRoute(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/items/current', 'CurrentItemHandler'),
-            new RouteEntry('POST', '/items/{id}', 'SaveItemHandler'),
+            new RouteEntry('GET', '/items/current', $this->handler('CurrentItemHandler')),
+            new RouteEntry('POST', '/items/{id}', $this->handler('SaveItemHandler')),
         ]);
         $result = $router->dispatch(new ServerRequest('POST', '/items/current'));
 
         self::assertSame(200, $result->getStatusCode());
-        self::assertSame('SaveItemHandler', $result->getHandler());
+        self::assertSame($this->handler('SaveItemHandler'), $result->getHandler());
         self::assertSame(['id' => 'current'], $result->getParams());
     }
 
     public function testStaticRouteTakesPrecedenceForTheSameMethod(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/items/{id}', 'ItemHandler'),
-            new RouteEntry('GET', '/items/current', 'CurrentItemHandler'),
+            new RouteEntry('GET', '/items/{id}', $this->handler('ItemHandler')),
+            new RouteEntry('GET', '/items/current', $this->handler('CurrentItemHandler')),
         ]);
         $result = $router->dispatch(new ServerRequest('GET', '/items/current'));
 
-        self::assertSame('CurrentItemHandler', $result->getHandler());
+        self::assertSame($this->handler('CurrentItemHandler'), $result->getHandler());
         self::assertSame([], $result->getParams());
     }
 
@@ -122,18 +139,18 @@ final class RouterTest extends TestCase
     public function testAllowedMethodsCombineAllMatchingPathsWithoutDuplicates(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/items/new', 'NewItemHandler'),
-            new RouteEntry('POST', '/items/{id}', 'SaveItemHandler'),
-            new RouteEntry('HEAD', '/items/new', 'HeadItemHandler'),
-            new RouteEntry('GET', '/items/{name}', 'ItemHandler'),
-            new RouteEntry('POST', '/items/{id}', 'UpdatedSaveItemHandler'),
+            new RouteEntry('GET', '/items/new', $this->handler('NewItemHandler')),
+            new RouteEntry('POST', '/items/{id}', $this->handler('SaveItemHandler')),
+            new RouteEntry('HEAD', '/items/new', $this->handler('HeadItemHandler')),
+            new RouteEntry('GET', '/items/{name}', $this->handler('ItemHandler')),
+            new RouteEntry('POST', '/items/{id}', $this->handler('UpdatedSaveItemHandler')),
         ]);
         $result = $router->dispatch(new ServerRequest('DELETE', '/items/new'));
 
         self::assertSame(405, $result->getStatusCode());
         self::assertSame(['GET', 'POST', 'HEAD'], $result->getAllowedMethods());
         self::assertSame(
-            'UpdatedSaveItemHandler',
+            $this->handler('UpdatedSaveItemHandler'),
             $router->dispatch(new ServerRequest('POST', '/items/new'))->getHandler(),
         );
     }
@@ -141,11 +158,11 @@ final class RouterTest extends TestCase
     public function testExplicitHeadRouteIsDispatchedWithoutGetFallback(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/health', 'GetHealthHandler'),
-            new RouteEntry('HEAD', '/health', 'HeadHealthHandler'),
+            new RouteEntry('GET', '/health', $this->handler('GetHealthHandler')),
+            new RouteEntry('HEAD', '/health', $this->handler('HeadHealthHandler')),
         ]);
 
-        self::assertSame('HeadHealthHandler', $router->dispatch(new ServerRequest('HEAD', '/health'))->getHandler());
+        self::assertSame($this->handler('HeadHealthHandler'), $router->dispatch(new ServerRequest('HEAD', '/health'))->getHandler());
         $result = $router->dispatch(new ServerRequest('POST', '/health'));
         self::assertSame(['GET', 'HEAD'], $result->getAllowedMethods());
         self::assertSame(405, $this->router->dispatch(new ServerRequest('HEAD', '/api/test'))->getStatusCode());
@@ -154,34 +171,34 @@ final class RouterTest extends TestCase
     public function testParameterizedRouteOrderAndDuplicateReplacementArePreserved(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/items/{id}', 'OriginalItemHandler'),
-            new RouteEntry('GET', '/items/{slug}', 'SlugHandler'),
-            new RouteEntry('GET', '/items/{id}', 'ReplacementItemHandler'),
+            new RouteEntry('GET', '/items/{id}', $this->handler('OriginalItemHandler')),
+            new RouteEntry('GET', '/items/{slug}', $this->handler('SlugHandler')),
+            new RouteEntry('GET', '/items/{id}', $this->handler('ReplacementItemHandler')),
         ]);
         $result = $router->dispatch(new ServerRequest('GET', '/items/42'));
 
-        self::assertSame('ReplacementItemHandler', $result->getHandler());
+        self::assertSame($this->handler('ReplacementItemHandler'), $result->getHandler());
         self::assertSame(['id' => '42'], $result->getParams());
     }
 
     public function testDuplicateStaticRoutesReplaceHandlerWithoutDuplicatingAllowedMethod(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/health', 'OriginalHealthHandler'),
-            new RouteEntry('GET', '/health', 'ReplacementHealthHandler'),
+            new RouteEntry('GET', '/health', $this->handler('OriginalHealthHandler')),
+            new RouteEntry('GET', '/health', $this->handler('ReplacementHealthHandler')),
         ]);
 
-        self::assertSame('ReplacementHealthHandler', $router->dispatch(new ServerRequest('GET', '/health'))->getHandler());
+        self::assertSame($this->handler('ReplacementHealthHandler'), $router->dispatch(new ServerRequest('GET', '/health'))->getHandler());
         self::assertSame(['GET'], $router->dispatch(new ServerRequest('POST', '/health'))->getAllowedMethods());
     }
 
     #[DataProvider('provideLiteralPatternCharactersDoNotBecomeRegexCases')]
     public function testLiteralPatternCharactersDoNotBecomeRegex(string $prefix, string $differentPrefix): void
     {
-        $router = $this->createRouter([new RouteEntry('GET', $prefix . '/{id}', 'FileHandler')]);
+        $router = $this->createRouter([new RouteEntry('GET', $prefix . '/{id}', $this->handler('FileHandler'))]);
         $result = $router->dispatch(new ServerRequest('GET', $prefix . '/42'));
 
-        self::assertSame('FileHandler', $result->getHandler());
+        self::assertSame($this->handler('FileHandler'), $result->getHandler());
         self::assertSame(['id' => '42'], $result->getParams());
         self::assertSame(404, $router->dispatch(new ServerRequest('GET', $differentPrefix . '/42'))->getStatusCode());
     }
@@ -198,10 +215,10 @@ final class RouterTest extends TestCase
 
     public function testLiteralSuffixAfterParameterIsEscaped(): void
     {
-        $router = $this->createRouter([new RouteEntry('GET', '/files/{name}.json', 'JsonFileHandler')]);
+        $router = $this->createRouter([new RouteEntry('GET', '/files/{name}.json', $this->handler('JsonFileHandler'))]);
         $result = $router->dispatch(new ServerRequest('GET', '/files/report.json'));
 
-        self::assertSame('JsonFileHandler', $result->getHandler());
+        self::assertSame($this->handler('JsonFileHandler'), $result->getHandler());
         self::assertSame(['name' => 'report'], $result->getParams());
         self::assertSame(404, $router->dispatch(new ServerRequest('GET', '/files/reportXjson'))->getStatusCode());
     }
@@ -210,21 +227,21 @@ final class RouterTest extends TestCase
     {
         $result = $this->router->dispatch(new ServerRequest('GET', '/api/users/123?next=/posts/456'));
 
-        self::assertSame('UserHandler', $result->getHandler());
+        self::assertSame($this->handler('UserHandler'), $result->getHandler());
         self::assertSame(['id' => '123'], $result->getParams());
-        self::assertSame('TestHandler', $this->router->dispatch(new ServerRequest('GET', '/api/test?key=value'))->getHandler());
+        self::assertSame($this->handler('TestHandler'), $this->router->dispatch(new ServerRequest('GET', '/api/test?key=value'))->getHandler());
     }
 
     public function testRootAndExplicitTrailingSlashRoutesRemainDistinct(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/', 'RootHandler'),
-            new RouteEntry('GET', '/items', 'ItemsHandler'),
-            new RouteEntry('POST', '/items/', 'SaveItemsHandler'),
+            new RouteEntry('GET', '/', $this->handler('RootHandler')),
+            new RouteEntry('GET', '/items', $this->handler('ItemsHandler')),
+            new RouteEntry('POST', '/items/', $this->handler('SaveItemsHandler')),
         ]);
 
-        self::assertSame('RootHandler', $router->dispatch(new ServerRequest('GET', '/'))->getHandler());
-        self::assertSame('SaveItemsHandler', $router->dispatch(new ServerRequest('POST', '/items/'))->getHandler());
+        self::assertSame($this->handler('RootHandler'), $router->dispatch(new ServerRequest('GET', '/'))->getHandler());
+        self::assertSame($this->handler('SaveItemsHandler'), $router->dispatch(new ServerRequest('POST', '/items/'))->getHandler());
         self::assertSame(405, $router->dispatch(new ServerRequest('POST', '/items'))->getStatusCode());
         self::assertSame(['GET', 'POST'], $router->dispatch(new ServerRequest('DELETE', '/items/'))->getAllowedMethods());
     }
@@ -232,8 +249,8 @@ final class RouterTest extends TestCase
     public function testParameterizedTrailingSlashMatchesOnlyItsDeclaredPattern(): void
     {
         $router = $this->createRouter([
-            new RouteEntry('GET', '/items/{id}', 'ItemHandler'),
-            new RouteEntry('POST', '/items/{id}/', 'SaveItemHandler'),
+            new RouteEntry('GET', '/items/{id}', $this->handler('ItemHandler')),
+            new RouteEntry('POST', '/items/{id}/', $this->handler('SaveItemHandler')),
         ]);
 
         self::assertSame(['POST'], $router->dispatch(new ServerRequest('GET', '/items/42/'))->getAllowedMethods());
@@ -247,12 +264,12 @@ final class RouterTest extends TestCase
     public function testExtensionMethodsRemainStrings(string $method): void
     {
         $router = $this->createRouter([
-            new RouteEntry($method, '/custom', 'CustomHandler'),
-            new RouteEntry($method, '/custom/{id}', 'CustomHandler'),
+            new RouteEntry($method, '/custom', $this->handler('CustomHandler')),
+            new RouteEntry($method, '/custom/{id}', $this->handler('CustomHandler')),
         ]);
 
         foreach (['/custom', '/custom/42'] as $path) {
-            self::assertSame('CustomHandler', $router->dispatch(new ServerRequest($method, $path))->getHandler());
+            self::assertSame($this->handler('CustomHandler'), $router->dispatch(new ServerRequest($method, $path))->getHandler());
             $result = $router->dispatch(new ServerRequest('GET', $path));
             self::assertSame(405, $result->getStatusCode());
             self::assertSame([$method], $result->getAllowedMethods());
@@ -271,6 +288,6 @@ final class RouterTest extends TestCase
     /** @param list<RouteEntry> $routes */
     private function createRouter(array $routes): Router
     {
-        return new Router(new RouteDefinition(new StaticRouteProvider($routes)));
+        return new Router($routes);
     }
 }

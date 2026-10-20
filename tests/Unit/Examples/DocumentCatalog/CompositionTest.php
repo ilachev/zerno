@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Examples\DocumentCatalog;
 
-use App\Platform\DI\Container;
-use App\Platform\DI\DIContainer;
 use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
 use App\Platform\Http\RequestHandler;
 use App\Platform\Logging\Logger;
 use App\Platform\Runtime\App;
-use App\Platform\Storage\PostgreSqlStorageConfig;
+use App\Platform\Storage\PostgreSQLStorage;
+use App\Platform\Storage\Storage;
+use Examples\DocumentCatalog\Errors;
+use Examples\DocumentCatalog\Html;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Tests\Fixtures\SQLiteStorage;
 use Tests\Unit\Platform\Logging\TestLogger;
 
 final class CompositionTest extends TestCase
@@ -26,10 +28,10 @@ final class CompositionTest extends TestCase
     #[DataProvider('provideRequestsWithoutStorageCases')]
     public function testRequestsWithoutStorage(string $method, string $path, int $status, string $contentType): void
     {
-        $app = new App(\dirname(__DIR__, 4) . '/examples/document-catalog/config.php');
-        $app->getContainer()->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
-            throw new \LogicException('Database configuration must not be resolved.');
-        });
+        /** @var \Closure(Logger, Storage, string): App $compose */
+        $compose = require \dirname(__DIR__, 4) . '/examples/document-catalog/application.php';
+        $storage = new PostgreSQLStorage('/zerno-no-socket-' . bin2hex(random_bytes(12)), 5432, 'unused', 'unused', 'unused');
+        $app = $compose(new TestLogger(), $storage, '/unused');
         $response = $app->handle(new ServerRequest($method, $path));
 
         self::assertSame($status, $response->getStatusCode());
@@ -59,16 +61,10 @@ final class CompositionTest extends TestCase
         spl_autoload_register($guard, true, true);
 
         try {
-            /** @var \Closure(Container<object>): void $configure */
-            $configure = require \dirname(__DIR__, 4) . '/examples/document-catalog/config.php';
-            $container = new DIContainer();
-            $configure($container);
-            $container->set(PostgreSqlStorageConfig::class, static function (): PostgreSqlStorageConfig {
-                throw new \RuntimeException('catalog-private-unavailable');
-            });
+            /** @var \Closure(Logger, Storage, string): App $compose */
+            $compose = require \dirname(__DIR__, 4) . '/examples/document-catalog/application.php';
             $logger = new TestLogger();
-            $container->set(Logger::class, static fn(): Logger => $logger);
-            $handler = $container->get(RequestHandler::class);
+            $handler = $compose($logger, new SQLiteStorage(':memory:'), '/unused');
 
             foreach ([['GET', '/unknown', 404], ['POST', '/documents', 405], ['GET', '/documents', 500], ['GET', '/health', 200], ['GET', '/unknown', 404]] as $index => [$method, $path, $status]) {
                 $response = $handler->handle(new ServerRequest($method, $path, ['X-Request-ID' => 'catalog-error-' . $index]));
@@ -84,13 +80,13 @@ final class CompositionTest extends TestCase
                     self::assertSame('text/html; charset=utf-8', $response->getHeaderLine('Content-Type'));
                     self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
                     self::assertStringContainsString('<h1>', (string) $response->getBody());
-                    self::assertStringNotContainsString('catalog-private-unavailable', (string) $response->getBody());
+                    self::assertStringNotContainsString('catalog_documents', (string) $response->getBody());
                 }
             }
 
             $errors = array_values(array_filter($logger->logs, static fn(array $log): bool => $log['level'] === 'error'));
             self::assertCount(1, $errors);
-            self::assertStringContainsString('catalog-private-unavailable', $errors[0]['message']);
+            self::assertStringContainsString('catalog_documents', $errors[0]['message']);
 
             $expected = new Response(404, ['Content-Type' => 'application/json', 'X-Application' => 'kept'], '{"application":"not found"}');
             $application = new readonly class ($expected) implements RequestHandler {
@@ -101,7 +97,7 @@ final class CompositionTest extends TestCase
                     return $this->response;
                 }
             };
-            self::assertSame($expected, $container->get(ErrorHandlerMiddleware::class)->process(new ServerRequest('GET', '/application'), $application));
+            self::assertSame($expected, new ErrorHandlerMiddleware(new Errors(new Html()), $logger)->process(new ServerRequest('GET', '/application'), $application));
         } finally {
             spl_autoload_unregister($guard);
         }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Examples\DocumentCatalog;
 
-use App\Platform\Http\Handler\HandlerInterface;
+use App\Platform\Http\RequestHandler;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final readonly class DetailHandler implements HandlerInterface
+final readonly class DetailHandler implements RequestHandler
 {
     public function __construct(
         private CatalogRepository $repository,

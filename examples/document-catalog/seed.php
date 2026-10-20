@@ -3,8 +3,6 @@
 
 declare(strict_types=1);
 
-use App\Platform\DI\Container;
-use App\Platform\DI\DIContainer;
 use App\Platform\Storage\Storage;
 
 require_once __DIR__ . '/bootstrap.php';
@@ -90,11 +88,8 @@ try {
     if (PHP_SAPI !== 'cli') {
         throw new RuntimeException('Run this demo seed from the command line.');
     }
-    $container = new DIContainer();
-    /** @var callable(Container<object>): void $configure */
-    $configure = require __DIR__ . '/config.php';
-    $configure($container);
-    $storage = $container->get(Storage::class);
+    /** @var Storage $storage */
+    $storage = require __DIR__ . '/../../config/storage.php';
     $directory = catalogDemoDirectory();
     // Completed files precede the transaction; a failed insert can only leave unreferenced demo files.
     $rows = [];

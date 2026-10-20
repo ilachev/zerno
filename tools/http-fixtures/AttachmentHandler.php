@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Project\HttpFixtures;
 
 use App\Platform\Http\AttachmentResponse;
-use App\Platform\Http\Handler\HandlerInterface;
+use App\Platform\Http\RequestHandler;
 use App\Platform\Routing\RouteResult;
 use Nyholm\Psr7\Stream;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final readonly class AttachmentHandler implements HandlerInterface
+final readonly class AttachmentHandler implements RequestHandler
 {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {

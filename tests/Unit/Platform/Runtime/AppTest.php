@@ -8,18 +8,15 @@ use App\Platform\Http\RequestHandler;
 use App\Platform\Runtime\App;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
-use Spiral\RoadRunner\Http\PSR7Worker;
-use Spiral\RoadRunner\Worker;
 use Tests\Unit\Platform\Runtime\Fixtures\RequestTrace;
 
 final class AppTest extends TestCase
 {
     public function testHandlesRequestsWithoutWorkerServices(): void
     {
-        $app = new App(__DIR__ . '/Fixtures/application.php');
+        $trace = new RequestTrace();
+        $app = $this->createApp($trace);
         self::assertInstanceOf(RequestHandler::class, $app);
-        self::assertFalse($app->getContainer()->has(Worker::class));
-        self::assertFalse($app->getContainer()->has(PSR7Worker::class));
 
         $response = $app->handle(new ServerRequest('GET', '/example', ['X-Test-Value' => 'standalone']));
 
@@ -29,19 +26,10 @@ final class AppTest extends TestCase
         self::assertSame(['inner', 'outer'], $response->getHeader('X-Middleware'));
     }
 
-    public function testDoesNotResolveRegisteredWorkerFactories(): void
-    {
-        $app = new App(__DIR__ . '/Fixtures/application-with-worker-traps.php');
-
-        $response = $app->handleRequest(new ServerRequest('GET', '/example', ['X-Test-Value' => 'without-transport']));
-
-        self::assertSame(202, $response->getStatusCode());
-        self::assertSame('without-transport:outer:inner', (string) $response->getBody());
-    }
-
     public function testPreservesMiddlewareOrderAcrossRequestsAndBothHandlerMethods(): void
     {
-        $app = new App(__DIR__ . '/Fixtures/application.php');
+        $trace = new RequestTrace();
+        $app = $this->createApp($trace);
         $firstRequest = new ServerRequest('GET', '/first', ['X-Test-Value' => 'first']);
         $secondRequest = new ServerRequest('GET', '/second', ['X-Test-Value' => 'second']);
 
@@ -63,6 +51,14 @@ final class AppTest extends TestCase
             'handler:second',
             'inner:exit:second',
             'outer:exit:second',
-        ], $app->getContainer()->get(RequestTrace::class)->events);
+        ], $trace->events);
+    }
+
+    private function createApp(RequestTrace $trace): App
+    {
+        /** @var \Closure(RequestTrace): RequestHandler $compose */
+        $compose = require __DIR__ . '/Fixtures/application.php';
+
+        return new App($compose($trace));
     }
 }

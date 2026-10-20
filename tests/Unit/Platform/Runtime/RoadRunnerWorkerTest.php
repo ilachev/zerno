@@ -2,27 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Platform\DI\ServiceProviders;
+namespace Tests\Unit\Platform\Runtime;
 
-use App\Platform\DI\DIContainer;
-use App\Platform\DI\ServiceProviders\CoreServiceProvider;
-use App\Platform\DI\ServiceProviders\RoadRunnerServiceProvider;
+use App\Platform\Runtime\RoadRunnerRuntime;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Spiral\RoadRunner\Http\PSR7Worker;
 use Spiral\RoadRunner\Payload;
 use Spiral\RoadRunner\StreamWorkerInterface;
-use Spiral\RoadRunner\Worker;
-use Spiral\RoadRunner\WorkerInterface;
 
-final class RoadRunnerServiceProviderTest extends TestCase
+final class RoadRunnerWorkerTest extends TestCase
 {
     public function testPreservesTheExistingBufferedDefault(): void
     {
         $transport = new RecordingStreamWorker();
-        $worker = self::createWorker(new RoadRunnerServiceProvider(), $transport);
+        $worker = RoadRunnerRuntime::createWorker($transport);
 
         $worker->respond(new Response(200, [], 'existing response'));
 
@@ -38,14 +33,14 @@ final class RoadRunnerServiceProviderTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('RoadRunner chunk size must not be negative');
 
-        new RoadRunnerServiceProvider(chunkSize: -1);
+        RoadRunnerRuntime::createWorker(new RecordingStreamWorker(), chunkSize: -1);
     }
 
     #[DataProvider('provideStreamsRealBodiesInBoundedChunksCases')]
     public function testStreamsRealBodiesInBoundedChunks(int $size): void
     {
         $transport = new RecordingStreamWorker();
-        $worker = self::createWorker(new RoadRunnerServiceProvider(chunkSize: 8192), $transport);
+        $worker = RoadRunnerRuntime::createWorker($transport, chunkSize: 8192);
         $resource = fopen('php://temp/maxmemory:8192', 'w+b');
         self::assertIsResource($resource);
         $body = Stream::create($resource);
@@ -86,16 +81,6 @@ final class RoadRunnerServiceProviderTest extends TestCase
         yield 'smaller than one chunk' => [8191];
         yield 'exact chunk' => [8192];
         yield 'large body with final partial chunk' => [16 * 1024 * 1024 + 17];
-    }
-
-    private static function createWorker(RoadRunnerServiceProvider $provider, WorkerInterface $transport): PSR7Worker
-    {
-        $container = new DIContainer();
-        new CoreServiceProvider()->register($container);
-        $provider->register($container);
-        $container->set(Worker::class, static fn(): WorkerInterface => $transport);
-
-        return $container->get(PSR7Worker::class);
     }
 }
 

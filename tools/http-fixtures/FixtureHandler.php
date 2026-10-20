@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Project\HttpFixtures;
 
-use App\Platform\Http\Handler\HandlerInterface;
 use App\Platform\Http\RequestContextAttributes;
+use App\Platform\Http\RequestHandler;
 use App\Platform\Routing\RouteResult;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final readonly class FixtureHandler implements HandlerInterface
+final readonly class FixtureHandler implements RequestHandler
 {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {

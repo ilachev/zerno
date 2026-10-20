@@ -9,7 +9,7 @@
 | Область | Конкретный результат |
 | --- | --- |
 | HTTP | PSR-7 requests/responses, routes, middleware, ошибки и attachment response |
-| Композиция | Явные PHP constructors/factories/providers; App отделён от server loop |
+| Композиция | Обычные PHP constructors и функции сборки; готовые handlers в маршрутах, без контейнера/autowiring; App отделён от server loop |
 | БД | PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции |
 | Разработка SQL | Типизированные queries/rows из читаемого SQL, LIMIT и PostgreSQL checker |
 | Диагностика | Request ID, время обработки, логи метаданных без чтения response body |

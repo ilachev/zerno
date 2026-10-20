@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Platform\Http\Handler;
 
+use App\Platform\Http\RequestHandler;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final readonly class HealthHandler implements HandlerInterface
+final readonly class HealthHandler implements RequestHandler
 {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Platform\Runtime;
 
 use App\Platform\Http\RequestHandler;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Stream;
+use Spiral\RoadRunner\Http\PSR7Worker;
 use Spiral\RoadRunner\Http\PSR7WorkerInterface;
+use Spiral\RoadRunner\WorkerInterface;
 
 final readonly class RoadRunnerRuntime
 {
@@ -14,6 +17,18 @@ final readonly class RoadRunnerRuntime
         private PSR7WorkerInterface $worker,
         private RequestHandler $handler,
     ) {}
+
+    public static function createWorker(WorkerInterface $transport, int $chunkSize = 0): PSR7Worker
+    {
+        if ($chunkSize < 0) {
+            throw new \InvalidArgumentException('RoadRunner chunk size must not be negative');
+        }
+        $factory = new Psr17Factory();
+        $worker = new PSR7Worker($transport, $factory, $factory, $factory);
+        $worker->chunkSize = $chunkSize;
+
+        return $worker;
+    }
 
     public function run(): void
     {
