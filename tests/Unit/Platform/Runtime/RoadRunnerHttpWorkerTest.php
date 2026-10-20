@@ -24,7 +24,7 @@ final class RoadRunnerHttpWorkerTest extends TestCase
             'protocol' => 'HTTP/2.0',
             'method' => 'POST',
             'uri' => 'https://example.test/form?tags%5B%5D=a&tags%5B%5D=b',
-            'headers' => ['Content-Type' => ['multipart/form-data'], 'X-Multiple' => ['first', 'second']],
+            'headers' => ['Content-Type' => ['multipart/form-data'], 'X-Multiple' => ['first', 'second'], 123 => ['numeric']],
             'cookies' => ['name' => 'value'],
             'uploads' => ['documents' => [['name' => 'file.txt', 'tmpName' => $path, 'size' => 8, 'error' => UPLOAD_ERR_OK, 'mime' => 'text/plain']]],
             'attributes' => ['trace' => 'first'],
@@ -47,6 +47,7 @@ final class RoadRunnerHttpWorkerTest extends TestCase
             self::assertSame('POST', $request->getMethod());
             self::assertSame('2', $request->getProtocolVersion());
             self::assertSame(['first', 'second'], $request->getHeader('x-multiple'));
+            self::assertSame('numeric', $request->getHeaderLine('123'));
             self::assertSame(['tags' => ['a', 'b']], $request->getQueryParams());
             self::assertSame(['field' => 'value'], $request->getParsedBody());
             self::assertSame('{"field":"value"}', (string) $request->getBody());

@@ -29,11 +29,14 @@ php -S 127.0.0.1:8080 -t public public/http.php
 
 [GET /health](http://127.0.0.1:8080/health) возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Запрос не открывает БД и не создаёт cookies. Встроенный PHP-сервер предназначен для локальной разработки; обычная SAPI/FPM точка входа — public/http.php.
 
-Для RoadRunner с установленным executable:
+Для RoadRunner 3.x с установленным executable `rr` и расширением `sockets` (проверен 3.0.0):
 
 ```bash
+rr --version
 php tools/project.php run
 ```
+
+При нескольких установках выберите RR3 через PATH; бинарник является требованием платформы и не загружается командами проекта. `version: '3'` в YAML — версия формата конфигурации.
 
 [.rr.yaml](.rr.yaml) запускает ту же [функцию сборки](config/core.php), что SAPI/FPM: `Closure(Logger): App`. Точка входа выбирает logger, функция явно создаёт граф через new. APP_CONFIG задаёт этот файл; отдельных RR service providers/профилей нет. Маршруты хранят готовые RequestHandler objects. Примеры применения — [обычные маршруты](config/routes.php) и [каталог документов](examples/document-catalog/README.md).
 

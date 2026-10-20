@@ -6,21 +6,21 @@ namespace App\Platform\Http;
 
 final class Headers
 {
-    /** @var array<string, list<string>> */
+    /** @var array<array-key, list<string>> */
     private array $values = [];
 
     /** @var array<string, string> */
     private array $names = [];
 
-    /** @param array<string, string|list<string>> $headers */
+    /** @param array<array-key, string|list<string>> $headers */
     public function __construct(array $headers = [])
     {
         foreach ($headers as $name => $values) {
-            $this->set($name, $values, true);
+            $this->set((string) $name, $values, true);
         }
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array<array-key, list<string>> */
     public function all(): array
     {
         return $this->values;

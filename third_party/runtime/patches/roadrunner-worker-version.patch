@@ -1,18 +1,8 @@
---- a/src/Version.php
-+++ b/src/Version.php
-@@ -3,8 +3,6 @@
- declare(strict_types=1);
- 
- namespace Spiral\RoadRunner;
--
+--- a/packages/roadrunner/worker/src/Version.php
++++ b/packages/roadrunner/worker/src/Version.php
+@@ -7 +6,0 @@
 -use Composer\InstalledVersions;
- 
- final class Version
- {
-@@ -16,13 +14,7 @@
- 
-     public static function current(): string
-     {
+@@ -20,7 +19 @@
 -        foreach (self::PACKAGE_NAMES as $name) {
 -            if (InstalledVersions::isInstalled($name)) {
 -                return \ltrim((string) InstalledVersions::getPrettyVersion($name), 'v');
@@ -20,7 +10,4 @@
 -        }
 -
 -        return self::VERSION_FALLBACK;
-+        return '2025.1.11';
-     }
- 
-     public static function constraint(): string
++        return '3.0.0';

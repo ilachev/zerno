@@ -14,17 +14,19 @@ Runtime, генерация, проверки и сборка не устана�
 
 [Главный manifest](../../third_party/manifest.json) содержит hashes distribution manifests; каждый manifest перечисляет файлы и SHA256. [Checker](../../tools/check-third-party.php) проверяет также незаявленные файлы и symlinks без сети. Runtime bootstrap не загружает generator/quality libraries.
 
-Сторонние package trees фиксированы с version/ref/license и исходными notices. Provenance описывает локальный импорт прежнего установленного snapshot; hashes подтверждают локальную целостность, не повторную аутентификацию издателя. Исходные composer metadata внутри upstream packages сохранены как происхождение, не как вход installer.
+Транспорт RR3 зафиксирован: roadrunner/worker 3.8.0, roadrunner/http 4.2.1, roadrunner/goridge 4.6.0, roadrunner/api-dto 2.1.0. Namespaces Spiral/RoadRunner/GPBMetadata не переименовывались. Compatibility metapackage spiral/roadrunner обновлён до v3.0.0: tagged upstream metadata сохраняет старое имя, хотя новые PHP packages также ссылаются на roadrunner/roadrunner. Эти декларации хранят происхождение, package resolution отсутствует. Исполняемый RR 3.x и sockets — отдельная платформа; проверка релизного executable не добавляет download path в проект.
+
+Сторонние package trees фиксированы с version/ref/license и исходными notices. Для retained protobuf/polyfill provenance описывает прежний установленный snapshot; transport обновлён из upstream tag/commit archives по HTTPS с локальным archive SHA256. Новая поставка не заявляет независимую проверку подписи издателя; hashes подтверждают локальную целостность, не повторную аутентификацию издателя. Исходные composer metadata внутри upstream packages сохранены как происхождение, не как вход installer.
 
 ## Потребители runtime libraries
 
-HTTP-типы и Logger принадлежат ядру. Nyholm/psr7, psr/http-factory, psr/http-message и psr/log удалены вместе с package trees и autoload prefixes. SAPI не загружает сторонние HTTP-типы. RR использует native HttpWorker: Goridge, RR worker/HTTP, polyfill, roadrunner-api-dto и Google protobuf остаются в runtime. Собственного protobuf API пока нет. GeoIP, psr/simple-cache и RR KV также удалены; protobuf generator distribution отсутствует.
+HTTP-типы и Logger принадлежат ядру. Nyholm/psr7, psr/http-factory, psr/http-message и psr/log удалены вместе с package trees и autoload prefixes. SAPI не загружает сторонние HTTP-типы. RR использует native HttpWorker: Goridge, RR worker/HTTP, polyfill, roadrunner/api-dto и Google protobuf остаются в runtime. Собственного protobuf API пока нет. GeoIP, psr/simple-cache и RR KV также удалены; protobuf generator distribution отсутствует.
 
 Retained upstream trees сохраняют исходные metadata и неиспользуемые PSR7Worker/Logger классы. Они не загружаются, PSR namespaces не регистрируются и этих packages в поставке нет. Это provenance, не поддерживаемый compatibility API. Крупные quality PHARs изолированы от runtime; их внутренние bundled libraries не являются API приложения.
 
 У RR worker две явные адаптации: Version.php читает pinned compatibility metapackage version без installed registry; Worker.php удаляет неиспользуемые logger property/constructor/factory parameters/getter, которые eagerly создавали PSR logger. Обработка protocol/frames этим patch не меняется. Patch files, upstream hashes и итоговые hashes находятся в [runtime manifest](../../third_party/runtime/manifest.json). При обновлении upstream обе адаптации проверяются заново. Incidental edits bundled files запрещены.
 
-Общая autoload map имеет стоимость; отсутствие этих packages не означает нулевой bootstrap overhead. Короткое CLI-сравнение и проверки перехода описаны в [истории собственного HTTP](../history/2026-10-20-native-http.md). Это не FPM/RR performance baseline.
+Общая autoload map имеет стоимость; отсутствие этих packages не означает нулевой bootstrap overhead. Переход RR3, дополнительные проверки и состав источников описаны в [отчёте RR3](../history/2026-10-20-roadrunner3.md). Короткое CLI-сравнение и проверки перехода HTTP описаны в [истории собственного HTTP](../history/2026-10-20-native-http.md). Это не FPM/RR performance baseline.
 
 ## SQL и сборка
 

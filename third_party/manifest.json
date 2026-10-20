@@ -18,18 +18,21 @@
       "pdo_sqlite"
     ],
     "executables": {
-      "http": "PHP SAPI/FPM or rr",
+      "http": "PHP SAPI/FPM or RoadRunner >=3.0 <4.0",
       "development": [
         "docker",
         "k6"
       ]
-    }
+    },
+    "roadrunner_extensions": [
+      "sockets"
+    ]
   },
   "distributions": [
     {
       "name": "runtime",
       "manifest": "runtime/manifest.json",
-      "sha256": "32fc7604cedb4224ff41516129b05ccc5191c0347be9043396f5860f880166c2"
+      "sha256": "9a697ed9c5eadcabed65856493708d7863448201be758f0c5c17f759492d0813"
     },
     {
       "name": "codegen/sql",

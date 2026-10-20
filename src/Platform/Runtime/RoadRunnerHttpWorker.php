@@ -61,7 +61,7 @@ final readonly class RoadRunnerHttpWorker
         $headers = $response->getHeaders();
         if ($status < 200 || $status === 204) {
             foreach (array_keys($headers) as $name) {
-                if (strcasecmp($name, 'Content-Length') === 0) {
+                if (strcasecmp((string) $name, 'Content-Length') === 0) {
                     unset($headers[$name]);
                 }
             }

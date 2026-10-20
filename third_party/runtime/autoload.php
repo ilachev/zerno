@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'prefixes' => [
         'GPBMetadata\\' => [
-            __DIR__ . '/packages/roadrunner-php/roadrunner-api-dto/generated/GPBMetadata',
+            __DIR__ . '/packages/roadrunner/api-dto/generated/GPBMetadata',
         ],
         'GPBMetadata\\Google\\Protobuf\\' => [
             __DIR__ . '/packages/google/protobuf/src/GPBMetadata/Google/Protobuf',
@@ -14,22 +14,22 @@ return [
             __DIR__ . '/packages/google/protobuf/src/Google/Protobuf',
         ],
         'RoadRunner\\' => [
-            __DIR__ . '/packages/roadrunner-php/roadrunner-api-dto/generated/RoadRunner',
+            __DIR__ . '/packages/roadrunner/api-dto/generated/RoadRunner',
         ],
         'Spiral\\Goridge\\' => [
-            __DIR__ . '/packages/spiral/goridge/src',
+            __DIR__ . '/packages/roadrunner/goridge/src',
         ],
         'Spiral\\RoadRunner\\' => [
-            __DIR__ . '/packages/spiral/roadrunner-worker/src',
+            __DIR__ . '/packages/roadrunner/worker/src',
         ],
         'Spiral\\RoadRunner\\Http\\' => [
-            __DIR__ . '/packages/spiral/roadrunner-http/src',
+            __DIR__ . '/packages/roadrunner/http/src',
         ],
         'Symfony\\Polyfill\\Php83\\' => [
             __DIR__ . '/packages/symfony/polyfill-php83',
         ],
         'Temporal\\' => [
-            __DIR__ . '/packages/roadrunner-php/roadrunner-api-dto/generated/Temporal',
+            __DIR__ . '/packages/roadrunner/api-dto/generated/Temporal',
         ],
     ],
     'classmap' => [

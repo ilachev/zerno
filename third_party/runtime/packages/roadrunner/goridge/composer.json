@@ -1,0 +1,113 @@
+{
+    "name": "roadrunner/goridge",
+    "type": "library",
+    "description": "High-performance PHP-to-Go IPC bridge: the RPC transport between PHP workers and the RoadRunner application server",
+    "keywords": [
+        "roadrunner",
+        "goridge",
+        "rpc",
+        "ipc",
+        "golang",
+        "relay",
+        "socket",
+        "pipes",
+        "protobuf"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton Titov",
+            "homepage": "https://github.com/wolfy-j"
+        },
+        {
+            "name": "Valery Piashchynski",
+            "homepage": "https://github.com/rustatian"
+        },
+        {
+            "name": "Aleksei Gagarin",
+            "homepage": "https://github.com/roxblnfk"
+        },
+        {
+            "name": "Pavel Buchnev",
+            "homepage": "https://github.com/butschster"
+        },
+        {
+            "name": "Maksim Smakouz",
+            "homepage": "https://github.com/msmakouz"
+        },
+        {
+            "name": "RoadRunner Community",
+            "homepage": "https://github.com/roadrunner-server/roadrunner/graphs/contributors"
+        }
+    ],
+    "homepage": "https://roadrunner.dev/",
+    "support": {
+        "docs": "https://docs.roadrunner.dev/docs/php-worker/rpc",
+        "issues": "https://github.com/roadrunner-server/roadrunner/issues",
+        "source": "https://github.com/roadrunner-php/goridge",
+        "chat": "https://discord.gg/V6EK4he"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/roadrunner-server"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "ext-json": "*",
+        "ext-sockets": "*",
+        "roadrunner/roadrunner": "^3.0"
+    },
+    "require-dev": {
+        "google/protobuf": "^3.22 || ^4.0 || ^5.0",
+        "jetbrains/phpstorm-attributes": "^1.0",
+        "llm/skills": "^1.14",
+        "roxblnfk/unpoly": "^1.8",
+        "rybakit/msgpack": "^0.7",
+        "spiral/code-style": "^2.3.1",
+        "testo/testo": "^0.10.55",
+        "vimeo/psalm": "^6 || ^7"
+    },
+    "replace": {
+        "spiral/goridge": "self.version"
+    },
+    "suggest": {
+        "ext-protobuf": "Protobuf codec support",
+        "google/protobuf": "(^3.22 || ^4.0 || ^5.0) Protobuf codec support"
+    },
+    "autoload": {
+        "psr-4": {
+            "Spiral\\Goridge\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Spiral\\Goridge\\Tests\\": "tests/Goridge"
+        }
+    },
+    "scripts": {
+        "test": "testo",
+        "test-cover": "testo --coverage",
+        "test-static": "psalm --no-cache",
+        "test-mutations": "infection",
+        "cs:diff": "php-cs-fixer fix --dry-run -v --diff",
+        "cs:fix": "php-cs-fixer fix -v",
+        "psalm": "psalm",
+        "psalm:baseline": "psalm --set-baseline=psalm-baseline.xml"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true,
+            "llm/skills": true
+        },
+        "audit": {
+            "ignore": {
+                "GHSA-g9pc-8g42-g6vq": "False positive: the range < 2025.1.0 also matches RoadRunner 3.x, which is not affected"
+            }
+        },
+        "sort-packages": true
+    }
+}

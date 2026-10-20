@@ -13,3 +13,7 @@ http:
 logs:
   level: error
   mode: production
+  channels:
+    server:
+      level: info
+      mode: production

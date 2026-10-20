@@ -70,6 +70,7 @@ final readonly class FixtureHandler implements RequestHandler
             return new Response($status, $headers, 'this body must not reach the wire');
         }
         if ($path === '/__wire/headers') {
+            $headers['123'] = 'numeric';
             $headers['X-Fixture-Multi'] = ['first', 'second'];
             $headers['Set-Cookie'] = ['first=one; Path=/; HttpOnly', 'second=two; Path=/; HttpOnly'];
         }
@@ -79,6 +80,7 @@ final readonly class FixtureHandler implements RequestHandler
         }
 
         return new Response(200, $headers, json_encode([
+            'numericHeader' => $request->getHeaderLine('123'),
             'path' => $path,
             'query' => $request->getUri()->getQuery(),
             'queryParams' => $request->getQueryParams(),

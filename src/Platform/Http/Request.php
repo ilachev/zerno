@@ -30,7 +30,7 @@ final class Request
     private array $attributes = [];
 
     /**
-     * @param array<string, string|list<string>> $headers
+     * @param array<array-key, string|list<string>> $headers
      * @param array<array-key, mixed> $serverParams
      */
     public function __construct(
@@ -108,7 +108,7 @@ final class Request
         return $copy;
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array<array-key, list<string>> */
     public function getHeaders(): array
     {
         return $this->headers->all();

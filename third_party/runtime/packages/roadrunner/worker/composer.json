@@ -1,0 +1,103 @@
+{
+    "name": "roadrunner/worker",
+    "type": "library",
+    "description": "Base PHP worker for the RoadRunner application server: receives payloads over Goridge, sends responses and manages the worker pool",
+    "keywords": [
+        "roadrunner",
+        "worker",
+        "goridge",
+        "application-server",
+        "long-running"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton Titov",
+            "homepage": "https://github.com/wolfy-j"
+        },
+        {
+            "name": "Valery Piashchynski",
+            "homepage": "https://github.com/rustatian"
+        },
+        {
+            "name": "Aleksei Gagarin",
+            "homepage": "https://github.com/roxblnfk"
+        },
+        {
+            "name": "Pavel Buchnev",
+            "homepage": "https://github.com/butschster"
+        },
+        {
+            "name": "Maksim Smakouz",
+            "homepage": "https://github.com/msmakouz"
+        },
+        {
+            "name": "RoadRunner Community",
+            "homepage": "https://github.com/roadrunner-server/roadrunner/graphs/contributors"
+        }
+    ],
+    "homepage": "https://roadrunner.dev/",
+    "support": {
+        "docs": "https://docs.roadrunner.dev/docs/php-worker/worker",
+        "issues": "https://github.com/roadrunner-server/roadrunner/issues",
+        "source": "https://github.com/roadrunner-php/worker",
+        "chat": "https://discord.gg/V6EK4he"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/roadrunner-server"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "ext-json": "*",
+        "ext-sockets": "*",
+        "composer-runtime-api": "^2.0",
+        "psr/log": "^2.0 || ^3.0",
+        "roadrunner/goridge": "^4.5",
+        "spiral/roadrunner": "^3.0"
+    },
+    "require-dev": {
+        "buggregator/trap": "^1.13",
+        "jetbrains/phpstorm-attributes": "^1.0",
+        "mockery/mockery": "^1.6.7",
+        "spiral/code-style": "^2.3.1",
+        "testo/bridge-mockery": "^0.1.2",
+        "testo/testo": "^0.10.55",
+        "vimeo/psalm": "^6 || ^7"
+    },
+    "replace": {
+        "spiral/roadrunner-worker": "self.version"
+    },
+    "suggest": {
+        "roadrunner/cli": "Provides RoadRunner installation and management CLI tools"
+    },
+    "autoload": {
+        "psr-4": {
+            "Spiral\\RoadRunner\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Spiral\\RoadRunner\\Tests\\Worker\\": "tests"
+        }
+    },
+    "scripts": {
+        "cs:diff": "php-cs-fixer fix --dry-run -v --diff",
+        "cs:fix": "php-cs-fixer fix -v",
+        "test": "testo",
+        "psalm": "psalm",
+        "test:unit": "vendor/bin/testo --suite=Unit"
+    },
+    "config": {
+        "audit": {
+            "ignore": {
+                "GHSA-g9pc-8g42-g6vq": "False positive: the range < 2025.1.0 also matches RoadRunner 3.x, which is not affected"
+            }
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -10,7 +10,7 @@ final class Response
 
     private Body $body;
 
-    /** @param array<string, string|list<string>> $headers */
+    /** @param array<array-key, string|list<string>> $headers */
     public function __construct(
         private readonly int $status = 200,
         array $headers = [],
@@ -41,7 +41,7 @@ final class Response
         return $copy;
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array<array-key, list<string>> */
     public function getHeaders(): array
     {
         return $this->headers->all();

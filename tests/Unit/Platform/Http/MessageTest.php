@@ -25,6 +25,17 @@ final class MessageTest extends TestCase
         self::assertTrue($original->hasHeader('set-cookie'));
     }
 
+    public function testPreservesNumericHeaderNamesStoredAsIntegerArrayKeys(): void
+    {
+        $request = new Request('GET', '/', [123 => 'request']);
+        $response = new Response(200, [123 => ['first', 'second']]);
+
+        self::assertSame('request', $request->getHeaderLine('123'));
+        self::assertSame(['first', 'second'], $response->getHeader('123'));
+        self::assertSame(['first', 'second', 'third'], $response->withAddedHeader('123', 'third')->getHeaders()[123]);
+        self::assertFalse($response->withoutHeader('123')->hasHeader('123'));
+    }
+
     #[DataProvider('provideRejectsInvalidHeadersAtConstructionAndReplacementCases')]
     public function testRejectsInvalidHeadersAtConstructionAndReplacement(string $name, string $value): void
     {

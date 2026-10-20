@@ -4,7 +4,7 @@
 
 [PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. Runtime: PHP 8.5+, PDO; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
 
-Для HTTP check нужны установленные php-fpm/rr. Для нагрузок — k6, а для описанного front baseline — Caddy. Docker используется только при выборе локального PostgreSQL service. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
+Для HTTP check нужны установленные php-fpm и RoadRunner 3.x (проверен rr 3.0.0); RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, а для описанного front baseline — Caddy. Docker используется только при выборе локального PostgreSQL service. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
 
 ## Команды
 

@@ -66,7 +66,7 @@ final readonly class SapiRequestFactory
             ->withBody($body ?? Body::create());
 
         foreach ($this->headers($server) as $name => $value) {
-            $request = $request->withHeader($name, $value);
+            $request = $request->withHeader((string) $name, $value);
         }
 
         $contentType = strtolower(trim(explode(';', $request->getHeaderLine('Content-Type'), 2)[0]));
@@ -120,7 +120,7 @@ final readonly class SapiRequestFactory
 
     /**
      * @param array<array-key, mixed> $server
-     * @return array<string, string>
+     * @return array<array-key, string>
      */
     private function headers(array $server): array
     {

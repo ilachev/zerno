@@ -30,7 +30,7 @@
 
 ## Композиции и ограничения
 
-config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/http.php и public/index.php используют одну APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
+config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/http.php и public/index.php используют одну APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. Целевой RoadRunner — 3.x, проверен 3.0.0; executable выбирается через PATH и не скачивается командами проекта. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
 
 Каталог собирается в examples/document-catalog/application.php из Logger/Storage/private directory; config.php только выбирает эти входы. PostgreSQLStorage лениво открывает PDO при первой операции; handlers/repository строятся заранее без SQL. /health/404/405 не открывают БД. Миграции — отдельный CLI граф с директорией migrations, не HTTP-конфигурацией.
 

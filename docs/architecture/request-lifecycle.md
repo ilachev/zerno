@@ -46,7 +46,7 @@ RoadRunner HTTP → RoadRunnerHttpWorker::waitRequest()
 
 Перед отправкой адаптер подавляет body для HEAD/1xx/204/304 без чтения/перемотки исходного; для 1xx/204 удаляет Content-Length. Runtime закрывает response body в finally, включая transport error. App::handle ничего не отправляет и не закрывает.
 
-Нативный RR HttpWorker обслуживает protocol/frames, собственный адаптер — HTTP-типы и чтение Body. RR_HTTP_CHUNK_SIZE=8192 включает чтение с одним chunk lookahead (до двух chunks в адаптере); default 0 материализует body строкой. Seekable body перематывается, non-seekable читается с текущей позиции; запрещённые тела отправляются пустой строкой даже при включённых chunks. После native completion при ошибке генератора адаптер повторно выбрасывает ошибку чтения. Отмена клиента остаётся поведением upstream; длительная устойчивость всех типов потоков не заявляется. Проверка больших regular files входит в http:check.
+Проверенный server — RoadRunner 3.0.0 с worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0 и DTO 2.1.0. Нативный RR HttpWorker обслуживает protocol/frames, собственный адаптер — HTTP-типы и чтение Body. RR_HTTP_CHUNK_SIZE=8192 включает чтение с одним chunk lookahead (до двух chunks в адаптере); default 0 материализует body строкой. Seekable body перематывается, non-seekable читается с текущей позиции; запрещённые тела отправляются пустой строкой даже при включённых chunks. После native completion при ошибке генератора адаптер повторно выбрасывает ошибку чтения. Отмена клиента остаётся поведением upstream; длительная устойчивость всех типов потоков не заявляется. Проверка больших regular files входит в http:check.
 
 ## Собственные HTTP-типы
 
@@ -54,7 +54,7 @@ Handler имеет контракт handle(Request): Response. Минималь�
 
 Request хранит method, Uri, headers, Body, protocol, server/query/cookie params, parsed body, uploads и attributes. Его with-методы копируют metadata; Response аналогично копирует headers/body reference. Uri сохраняет encoded path/query bytes; decode/route matching не смешиваются. Scheme/host нормализуются в lowercase, стандартные порты 80/443 опускаются. Credentials, fragment, недопустимые escape/control/space/backslash и неподдержанный scheme отвергаются. Authority SAPI дополнительно проверяется до создания Uri.
 
-Headers хранят отдельные значения, ищутся без учёта регистра и отклоняют недопустимые имена/CR/LF/control values. Set-Cookie не склеивается при отправке. Header value — string либо list<string>, status — 100..599. Reason phrase и response protocol выбирает server transport.
+Headers принимают string/int array keys: PHP превращает числовое имя вроде "123" в int; на границе имя переводится в string. Числовые поля сохраняются в запросе и ответе через SAPI/RR. Headers хранят отдельные значения, ищутся без учёта регистра и отклоняют недопустимые имена/CR/LF/control values. Set-Cookie не склеивается при отправке. Header value — string либо list<string>, status — 100..599. Reason phrase и response protocol выбирает server transport.
 
 Body хранит строку с позицией либо владеет PHP stream resource. read/getContents читают с текущей позиции; преобразование в string перематывает seekable body и читает до конца. Ошибка чтения выбрасывается, не превращается в пустой успех. close идемпотентен; закрытый body не читается, getSize возвращает null. Body нельзя клонировать; копии сообщений разделяют его. String Body не создаёт временный ресурс; файловый payload не материализуется до явного чтения. При замене body вызывающий код отвечает за прежний поток.
 

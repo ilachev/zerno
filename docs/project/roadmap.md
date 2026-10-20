@@ -6,6 +6,8 @@
 
 ## Проверенная база
 
+- [RoadRunner 3](../history/2026-10-20-roadrunner3.md): native transport, фиксированные upstream sources и проверки SAPI/RR без Composer/PSR.
+
 - [Явная сборка без контейнера](../history/2026-10-20-explicit-composition.md): конструкторы, готовые handlers, общий HTTP config для SAPI/RR и lazy PDO.
 - Автономные runtime, SQL codegen и quality tools; проверки и runtime archive без package installation/download.
 - Общие App/RequestHandler, SAPI/FPM/RoadRunner, явные маршруты, 404/405/Allow/HEAD, выбор ErrorResponse.

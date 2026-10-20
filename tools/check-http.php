@@ -9,7 +9,7 @@ require_once __DIR__ . '/http-fixtures/AttachmentFiles.php';
 
 final readonly class HttpWireResponse
 {
-    /** @param array<string, list<string>> $headers */
+    /** @param array<array-key, list<string>> $headers */
     public function __construct(public int $status, public array $headers, public string $body) {}
 }
 
@@ -157,7 +157,7 @@ function wireResponse(string $raw, bool $fastcgi, string $method): HttpWireRespo
     return new HttpWireResponse($status, $headers, $body);
 }
 
-/** @param array<string, string> $headers */
+/** @param array<array-key, string> $headers */
 function wireHttp(int $port, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     $socket = wireConnect($port);
@@ -200,7 +200,7 @@ function wireFcgiLength(int $length): string
     return $length < 128 ? chr($length) : pack('N', $length | 0x80000000);
 }
 
-/** @param array<string, string> $headers */
+/** @param array<array-key, string> $headers */
 function wireFastcgi(int $port, string $root, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     $socket = wireConnect($port);
@@ -213,7 +213,7 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
         'SCRIPT_FILENAME' => $root . '/public/http.php', 'DOCUMENT_ROOT' => $root . '/public', 'CONTENT_LENGTH' => (string) strlen($body),
     ];
     foreach ($headers as $name => $value) {
-        $key = strtoupper(str_replace('-', '_', $name));
+        $key = strtoupper(str_replace('-', '_', (string) $name));
         $parameters[in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH'], true) ? $key : 'HTTP_' . $key] = $value;
     }
     $encoded = '';
@@ -260,7 +260,7 @@ function wireFastcgi(int $port, string $root, string $method, string $target, ar
     }
 }
 
-/** @param array<string, string> $headers */
+/** @param array<array-key, string> $headers */
 function wireRequest(string $runtime, int $port, string $root, string $method, string $target, array $headers, string $body = ''): HttpWireResponse
 {
     return $runtime === 'fpm'
@@ -300,7 +300,7 @@ function wireMatrix(string $runtime, int $port, string $root, string $errorForma
     foreach ($cases as $index => [$method, $target, $status, $parameters, $allow]) {
         $context = $method . ' ' . $target;
         $requestId = 'wire-' . $index;
-        $response = wireRequest($runtime, $port, $root, $method, $target, ['X-Request-ID' => $requestId]);
+        $response = wireRequest($runtime, $port, $root, $method, $target, array_replace(['X-Request-ID' => $requestId], $target === '/__wire/headers' ? ['123' => 'request-numeric'] : []));
         wireSame($status, $response->status, $context . ' status');
         wireSame([$requestId], $response->headers['x-request-id'] ?? [], $context . ' request ID');
         $actualAllow = array_map(trim(...), explode(',', implode(',', $response->headers['allow'] ?? [])));
@@ -351,6 +351,8 @@ function wireMatrix(string $runtime, int $port, string $root, string $errorForma
             wireSame($pid, $currentPid, $context . ' single worker reuse');
         }
         if ($target === '/__wire/headers') {
+            wireSame(['numeric'], $response->headers['123'] ?? [], 'Numeric response header');
+            wireSame('request-numeric', $payload['numericHeader'] ?? null, 'Numeric request header');
             wireSame(['first', 'second'], $response->headers['x-fixture-multi'] ?? [], 'Repeated header');
             wireSame(['first=one; Path=/; HttpOnly', 'second=two; Path=/; HttpOnly'], $response->headers['set-cookie'] ?? [], 'Repeated Set-Cookie');
         }
@@ -509,7 +511,7 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
         $worker = PHP_BINARY . ' -d memory_limit=32M public/index.php';
         $contents = "version: '3'\nserver:\n  command: " . json_encode($worker, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
             . "\n  env: " . json_encode($environment, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
-            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: info\n  mode: production\n";
+            . "\nhttp:\n  address: 127.0.0.1:{$port}\n  pool:\n    num_workers: 1\n    allocate_timeout: 5s\n    destroy_timeout: 2s\nlogs:\n  level: error\n  mode: production\n  channels:\n    server:\n      level: info\n      mode: production\n";
         $command = [$binary, 'serve', '-w', $root, '-c', $config];
     }
     if (file_put_contents($config, $contents) !== strlen($contents)) {
@@ -538,6 +540,24 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
         $count += wireAttachments($runtime, $port, $root, $hashes);
         $logged = file_get_contents($log);
         wireSame(true, $logged !== false && str_contains($logged, 'Application responded.') && str_contains($logged, 'body_size'), 'Response metadata reached the runtime log');
+        wireSame(true, $logged !== false && str_contains($logged, 'wire-private-exception-details'), 'Private error reached the runtime log');
+        if ($runtime === 'rr') {
+            $serverRecord = false;
+            foreach (explode("\n", $logged === false ? '' : $logged) as $line) {
+                if (!json_validate($line)) {
+                    continue;
+                }
+                $record = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($record) && ($record['logger'] ?? null) === 'server') {
+                    wireSame('INFO', $record['level'] ?? null, 'RoadRunner 3 worker log level');
+                    wireSame(true, is_string($record['time'] ?? null), 'RoadRunner 3 worker log time');
+                    $serverRecord = true;
+                    break;
+                }
+            }
+            wireSame(true, $serverRecord, 'Worker stderr is retained with root ERROR and server INFO');
+        }
+
         fwrite(STDOUT, sprintf("HTTP wire: %s, %s errors, %d cases passed (%s).\n", $runtime, $errorFormat, $count, $binary));
     } catch (Throwable $exception) {
         $output = is_file($log) ? file_get_contents($log) : '';

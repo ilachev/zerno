@@ -21,7 +21,7 @@ final readonly class SapiResponseEmitter
 
             $status = $response->getStatusCode();
             foreach ($response->getHeaders() as $name => $values) {
-                if (($status < 200 || $status === 204) && strcasecmp($name, 'Content-Length') === 0) {
+                if (($status < 200 || $status === 204) && strcasecmp((string) $name, 'Content-Length') === 0) {
                     continue;
                 }
                 $replace = true;

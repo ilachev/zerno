@@ -1,5 +1,5 @@
---- a/packages/spiral/roadrunner-worker/src/Worker.php
-+++ b/packages/spiral/roadrunner-worker/src/Worker.php
+--- a/packages/roadrunner/worker/src/Worker.php
++++ b/packages/roadrunner/worker/src/Worker.php
 @@ -7 +6,0 @@
 -use Psr\Log\LoggerInterface;
 @@ -49 +47,0 @@

@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-20",
+  "source_before": "a0d0b12037dc804957144a469b81755ba1a06900",
+  "platform": {
+    "php": "PHP 8.5.9 (cli) (built: Jul 28 2026 13:06:52) (NTS)",
+    "rr": "rr version 3.0.0 (build time: 2026-10-09T12:54:11+0000, go1.27.2), OS: darwin, arch: arm64",
+    "os": "Darwin arm64"
+  },
+  "upstream_packages": [
+    {
+      "repo": "roadrunner-php/worker",
+      "tag": "v3.8.0",
+      "commit": "209132269fa4f33f6f017727aeee42a204046d04",
+      "url": "https://codeload.github.com/roadrunner-php/worker/zip/209132269fa4f33f6f017727aeee42a204046d04",
+      "archive_sha256": "9d199eb38cbea8c88fa1305227f12a508471f1d4f1722c2243d5a9a41ba9942a"
+    },
+    {
+      "repo": "roadrunner-php/http",
+      "tag": "v4.2.1",
+      "commit": "8aef71907057d076f132484b32fe6178c370a73d",
+      "url": "https://api.github.com/repos/roadrunner-php/http/zipball/8aef71907057d076f132484b32fe6178c370a73d",
+      "archive_sha256": "89423a197254d59ae629aa4374406934086ea85b6f528ee6fd20da87db896bfa"
+    },
+    {
+      "repo": "roadrunner-php/goridge",
+      "tag": "4.6.0",
+      "commit": "887bd3a6f89a0b95252db608856d33d7a1284406",
+      "url": "https://api.github.com/repos/roadrunner-php/goridge/zipball/887bd3a6f89a0b95252db608856d33d7a1284406",
+      "archive_sha256": "cedda4e6177bdea6db351980896caba0bf91ad3a59433ee3807d569f1d398ae8"
+    },
+    {
+      "repo": "roadrunner-php/roadrunner-api-dto",
+      "tag": "v2.1.0",
+      "commit": "90e5b93788820a08184ed9c0b821df8272cc24e5",
+      "url": "https://api.github.com/repos/roadrunner-php/roadrunner-api-dto/zipball/90e5b93788820a08184ed9c0b821df8272cc24e5",
+      "archive_sha256": "7b448779758e8344580f6d7e370fd320a95a01a06ad91f5935d72e6fc3810704"
+    }
+  ],
+  "binary": {
+    "url": "https://github.com/roadrunner-server/roadrunner/releases/download/v3.0.0/roadrunner-3.0.0-darwin-arm64.tar.gz",
+    "archive_sha256": "00d33b146268f8f5686325546c41a9f29e568948ef3b54a8e18fa54e38e6ce24",
+    "github_digest_match": true,
+    "installed_globally": false,
+    "bundled": false
+  },
+  "checks": {
+    "verify_full": {
+      "passed": true,
+      "root_unit": {
+        "tests": 231,
+        "assertions": 923
+      },
+      "sql_generator": {
+        "tests": 167,
+        "assertions": 625
+      },
+      "postgresql_integration": {
+        "tests": 32,
+        "assertions": 272
+      },
+      "postgresql": "16.15 in an owned ephemeral container; isolated random schemas"
+    },
+    "http_wire": {
+      "cases": 204,
+      "cases_per_profile": 51,
+      "profiles": [
+        "FPM JSON errors",
+        "FPM HTML errors",
+        "RR3 JSON errors",
+        "RR3 HTML errors"
+      ],
+      "binary": "RoadRunner 3.0.0",
+      "php_memory_limit": "32M",
+      "rr_chunk_size": 8192,
+      "numeric_request_and_response_header": "123 preserved",
+      "worker_stderr": "root ERROR/server INFO retains private error and metadata; production time and uppercase INFO verified"
+    },
+    "archive_smoke": {
+      "checks": 43,
+      "default_core_sapi_rr": "passed with unavailable DB",
+      "explicit_catalog_migration_seed": "passed with PostgreSQL, SAPI/RR",
+      "startup_ddl": "absent before explicit migration",
+      "archive_manifest": "runtime only, hash verified",
+      "generated_queries": "21 typed rows through explicit SqlExecutor",
+      "migration_cli": "default directory, explicit catalog directory, rollback/reapply and invalid arguments passed without HTTP/app namespace registration",
+      "baseline": "JSON without DB; JSON/SELECT through source SAPI/RR composition passed"
+    },
+    "native_bootstrap": "Real Worker/StreamRelay constructs in runtime-only archive without Composer or PSR HTTP/log interfaces; Version returns pinned 3.0.0",
+    "project_run": {
+      "command": "PATH=<local RR3 bin>:$PATH php tools/project.php run",
+      "server_version": "rr version 3.0.0 (build time: 2026-10-09T12:54:11+0000, go1.27.2), OS: darwin, arch: arm64",
+      "GET /health": "passed without database",
+      "global_rr_changed": false
+    },
+    "patches": "Both zero-context patches applied to recorded upstream hashes reproduce supplied worker sources",
+    "bundled": {
+      "distributions": 3,
+      "files": 2098,
+      "runtime_files": 1615,
+      "packages": 7,
+      "runtime_manifest_sha256": "9a697ed9c5eadcabed65856493708d7863448201be758f0c5c17f759492d0813"
+    }
+  },
+  "limits": [
+    "No runtime downloads, installation or Composer/PSR shims.",
+    "No FPM/RR performance comparison or long-running memory stability claim.",
+    "The full upstream DTO tree is kept; shipped source files are not per-request includes."
+  ]
+}

@@ -6,7 +6,7 @@
 
 ## HTTP: настоящие FPM и RoadRunner
 
-Для выбранного runtime нужен его установленный executable. Caddy, k6 и БД этой проверке не нужны:
+Для выбранного runtime нужен его установленный executable; RoadRunner target — 3.x, проверен 3.0.0. Путь можно выбрать --rr=/path/to/rr, обычные rr/run команды используют PATH. Caddy, k6 и БД этой проверке не нужны:
 
 ```bash
 php tools/project.php http:check
@@ -17,7 +17,7 @@ php tools/project.php http:check --runtime=all --php-fpm=/path/to/php-fpm --rr=/
 
 [`tools/check-http.php`](../../tools/check-http.php) запускает собственные процессы на временных loopback-портах. Для FPM клиент говорит непосредственно по FastCGI, для RR — по HTTP. Конфигурации и логи временные; tool останавливает созданные им процессы и убирает временный каталог. Он не останавливает чужие серверы.
 
-Сейчас выполняются по 51 случаю с default JSON и с HTML-представлением ошибок: 102 для каждого runtime, 204 при выборе обоих. Каждый профиль включает реальный HttpLoggingMiddleware; RR fixture явно выбирает chunk 8192. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный адрес PostgreSQL (`127.0.0.1:1`): HTTP-сценарии должны проходить без открытия БД. Это проверки корректности, без измерения ускорения.
+Сейчас выполняются по 51 случаю с default JSON и с HTML-представлением ошибок: 102 для каждого runtime, 204 при выборе обоих. Каждый профиль включает реальный HttpLoggingMiddleware; RR fixture явно выбирает chunk 8192. Проверяются статические и параметризованные маршруты, приоритет статического пути, literal `.`/`+`, path/query separation, принятые правила trailing slash, 404/405/500 и `Allow`, HEAD для успешного ответа и ошибок, отсутствие тела для 204/304, повторные headers/Set-Cookie и числовое имя заголовка 123 в запросе/ответе. HTML-профиль использует реальный `Errors` каталога через общий `ErrorResponse`; успешные fixture responses остаются JSON. Исключение handler не раскрывается в ответе; следующие запросы проходят тем же worker. Последовательные запросы проверяют request ID и route parameters без переноса контекста. Конфигурация задаёт недоступный адрес PostgreSQL (`127.0.0.1:1`): HTTP-сценарии должны проходить без открытия БД. Для RR fixture общий logs.level=error, channels.server.level=info: tool проверяет сохранение PHP metadata/error logs и production envelope time/INFO. Это проверки корректности, без измерения ускорения.
 
 Дополнительные 20 случаев на профиль проверяют GET/HEAD attachment для 0, 8191, 8192, 8193, 1 MiB и 16 MiB + 17 байт и четыре повторных больших GET/HEAD в одном worker. Проверяются длина, SHA-256, ASCII/UTF-8 Content-Disposition, no-store/nosniff и отсутствие session. Server memory_limit — 32M; после прогрева retained PHP allocation не должна вырасти больше чем на 2 MiB. Это проверка выбранного seekable-file path, а не универсальный memory budget: клиент отдельно буферизует body с ограничением 32 MiB, и этот предел не является RSS или peak server memory.
 
@@ -104,7 +104,7 @@ caddy run --config load-tests/baseline/Caddyfile
 | FPM через Caddy FastCGI | `http://127.0.0.1:18081` | FPM `127.0.0.1:19001` |
 | RR через Caddy HTTP proxy | `http://127.0.0.1:18082` | RR `127.0.0.1:19002` |
 
-Оба профиля используют один PHP worker. [FPM config](../../load-tests/baseline/php-fpm.conf) включает OPcache; [RR config](../../load-tests/baseline/rr.yaml) включает его для CLI и выбирает тот же `config.php` через `APP_CONFIG`. Общий [Caddyfile](../../load-tests/baseline/Caddyfile) использует один front process для двух протоколов backend. OPcache/JIT и прочие настройки унаследованного PHP ini всё равно нужно сохранить в metadata и проверить на сопоставимость.
+Оба профиля используют один PHP worker. Текущий RR-профиль предназначен для RR3; прежние исторические измерения RR2025 не являются результатами нового server. [FPM config](../../load-tests/baseline/php-fpm.conf) включает OPcache; [RR config](../../load-tests/baseline/rr.yaml) включает его для CLI и выбирает тот же `config.php` через `APP_CONFIG`. Общий [Caddyfile](../../load-tests/baseline/Caddyfile) использует один front process для двух протоколов backend. OPcache/JIT и прочие настройки унаследованного PHP ini всё равно нужно сохранить в metadata и проверить на сопоставимость.
 
 Все порты loopback. Если они заняты, выберите свободные и согласованно измените локальные sample configs и `BASE_URL`; не останавливайте чужие сервисы. Возможен запуск runtime по очереди с тем же Caddy front. Не запускайте две нагрузки одновременно.
 

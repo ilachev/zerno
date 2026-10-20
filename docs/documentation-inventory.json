@@ -550,6 +550,23 @@
         "third_party/runtime/manifest.json",
         "tools/check-http.php"
       ]
+    },
+    {
+      "id": "roadrunner3-history",
+      "path": "docs/history/2026-10-20-roadrunner3.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Переход на RR3: fixed transport versions, provenance, patches, числовые headers, stderr и проверки.",
+      "read_when": [
+        "Обновление RR transport и воспроизведение миграции"
+      ],
+      "source_paths": [
+        "third_party/runtime/manifest.json",
+        "third_party/runtime/autoload.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        ".rr.yaml",
+        "tools/check-http.php"
+      ]
     }
   ],
   "artifacts": [
@@ -664,6 +681,19 @@
       ],
       "source_paths": [
         "docs/history/2026-10-20-native-http.md"
+      ]
+    },
+    {
+      "id": "roadrunner3-data",
+      "path": "docs/history/2026-10-20-roadrunner3.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Pinned refs, archive hashes, платформа и результаты проверки RR3.",
+      "read_when": [
+        "Проверка provenance и фактического охвата миграции"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-roadrunner3.md"
       ]
     }
   ],
