@@ -12,6 +12,7 @@
 | Требования запуска и команды быстрого старта | Корневой `README.md`; полный command interface — `tools/project.php help` |
 | Цель, аудитория и границы продукта | `docs/project/vision.md` |
 | Обязательные цели и правила выбора решений | `docs/project/principles.md` |
+| Написание и ревью кода, границы, ошибки и ресурсы | `docs/development/coding-guidelines.md` |
 | Общие приоритеты, последовательность и критерии результатов | `docs/project/roadmap.md` |
 | Текущие связи модулей и профили | `docs/architecture/overview.md` |
 | Выполнение HTTP-запроса | `docs/architecture/request-lifecycle.md` |

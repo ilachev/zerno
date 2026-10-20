@@ -15,7 +15,9 @@
 - SQL-генератор: типизированные queries/rows, явный LIMIT, проверки PostgreSQL. Генератор не загружается при запросе.
 - Два способа исполнения одного RequestHandler: PHP/SAPI/FPM и RoadRunner.
 
-Сессии, GeoIP/fingerprints, ApiStats, cache-модули, protobuf API/генератор, hydration/mapping и исходящий HTTP-клиент удалены. Папки optional, совместимых заглушек и старого API-профиля нет. [Граница продукта](docs/project/vision.md) описывает правило включения новых возможностей; [история очистки](docs/history/2026-10-20-core-scope.md) — удалённый состав и несовместимость.
+Сессии, GeoIP/fingerprints, ApiStats, cache-модули, старый protobuf API/генератор, hydration/mapping и исходящий HTTP-клиент удалены. Папки optional, совместимых заглушек и старого API-профиля нет. [Граница продукта](docs/project/vision.md) описывает правило включения новых возможностей; [история очистки](docs/history/2026-10-20-core-scope.md) — удалённый состав и несовместимость.
+
+API из `.proto` — принятое направление: генерация DTO, endpoint contracts, HTTP adapters и маршрутов. Старый контур удалён; [первый сквозной этап](docs/design/protobuf-contract-generation.md) ещё предстоит реализовать.
 
 ## Запуск
 
@@ -60,4 +62,4 @@ verify не требует внешних сервисов. verify:full доба
 
 Внутри bundled RoadRunner HTTP остаются требуемые им protobuf/DTO libraries. Это зависимость транспорта, а не API приложения. Происхождение, notices и hashes описаны в [поставке](docs/design/autonomous-core.md).
 
-Для агентов: [AGENTS.md](AGENTS.md), [onboarding](docs/llm-onboarding.md), [индекс документации](docs/README.md). Последующие ограниченные задачи — в [roadmap](docs/project/roadmap.md). Лицензия и политика публичных релизов собственного кода пока не определены.
+Для агентов: [AGENTS.md](AGENTS.md), [правила кода](docs/development/coding-guidelines.md), [onboarding](docs/llm-onboarding.md), [индекс документации](docs/README.md). Последующие ограниченные задачи — в [roadmap](docs/project/roadmap.md). Лицензия и политика публичных релизов собственного кода пока не определены.

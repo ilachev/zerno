@@ -34,7 +34,9 @@
         "tools/project.php",
         ".php-cs-fixer.php",
         "phpstan.neon",
-        "config/core.php"
+        "config/core.php",
+        "docs/development/coding-guidelines.md",
+        "docs/design/protobuf-contract-generation.md"
       ]
     },
     {
@@ -78,7 +80,9 @@
         "config/core.php",
         "config/core-roadrunner.php",
         "bootstrap.php",
-        "tools/project.php"
+        "tools/project.php",
+        "docs/development/coding-guidelines.md",
+        "docs/design/protobuf-contract-generation.md"
       ]
     },
     {
@@ -105,7 +109,7 @@
       "path": "docs/project/vision.md",
       "kind": "design",
       "status": "current",
-      "summary": "Конкретный состав универсального HTTP/PDO-ядра и правило включения новых функций; удалённые подсистемы не сохраняются как optional.",
+      "summary": "Конкретный состав HTTP/PDO-ядра, принятое направление API из protobuf-контракта и правило включения функций.",
       "read_when": [
         "Выбор направления",
         "Определение core или прикладной политики"
@@ -122,7 +126,7 @@
       "path": "docs/project/roadmap.md",
       "kind": "roadmap",
       "status": "accepted-plan",
-      "summary": "Три ближайшие core-задачи: единичное чтение, миграции и разбор входных данных; критерии готовности.",
+      "summary": "Ближайшие core-задачи: принятая protobuf-генерация API, единичное чтение SQL, миграции и разбор входных данных; критерии готовности.",
       "read_when": [
         "Планирование следующей итерации",
         "Проверка завершённости этапа"
@@ -457,6 +461,45 @@
         "config/core-roadrunner.php",
         "third_party/manifest.json",
         "tools/sql-gen"
+      ]
+    },
+    {
+      "id": "coding-guidelines",
+      "path": "docs/development/coding-guidelines.md",
+      "kind": "instructions",
+      "status": "current",
+      "summary": "PHP-адаптация правил devctl: законченные сценарии, конкретные границы, явные эффекты, контракты, ресурсы и проверки.",
+      "read_when": [
+        "Написание и ревью кода",
+        "Изменение границ, ошибок, ресурсов или генерации"
+      ],
+      "source_paths": [
+        "AGENTS.md",
+        "docs/project/principles.md",
+        "src/Platform/Runtime",
+        "src/Platform/Http",
+        "src/Platform/DI",
+        "src/Platform/Storage"
+      ]
+    },
+    {
+      "id": "protobuf-contract-generation",
+      "path": "docs/design/protobuf-contract-generation.md",
+      "kind": "design",
+      "status": "accepted-plan",
+      "summary": "Уточнённое направление protobuf как API-контракта: генерация DTO, endpoint interfaces, HTTP adapters/routes и критерии первого сквозного этапа; текущей реализации нет.",
+      "read_when": [
+        "Проектирование и восстановление генерации из protobuf",
+        "Проверка границы контракта, runtime и бизнес-логики"
+      ],
+      "source_paths": [
+        "docs/project/vision.md",
+        "docs/project/roadmap.md",
+        "docs/development/coding-guidelines.md",
+        "config/core.php",
+        "src/Platform/Routing/RouteEntry.php",
+        "src/Platform/Http/RouteHandlerResolver.php",
+        "src/Platform/DI/ContainerHandlerFactory.php"
       ]
     }
   ],

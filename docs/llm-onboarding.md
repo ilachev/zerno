@@ -8,11 +8,11 @@
 
 HTTP/маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation, SAPI/FPM и RoadRunner. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
 
-Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/protobuf API/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. PHP зависимости и quality/codegen tools включены; package installation/download отсутствуют на всех путях.
+Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. Старый protobuf API/генератор также удалён, но пользователь подтвердил направление `.proto → DTO/endpoint/HTTP adapter/routes`; это [принятый план](design/protobuf-contract-generation.md), не реализованная сейчас возможность и не запрет protobuf после очистки. PHP зависимости и quality/codegen tools включены; package installation/download отсутствуют на всех путях.
 
 ## Начать задачу
 
-1. Прочитать AGENTS и принципы, проверить git status и фактический код/тесты.
+1. Прочитать AGENTS, [правила кода](development/coding-guidelines.md) и принципы, проверить git status и фактический код/тесты.
 2. Найти документ-владелец через [индекс](README.md) и [инвентарь](documentation-inventory.json).
 3. Реализовать минимальный контракт для конкретного потребителя, сохраняя SQL и время жизни ресурсов явными.
 4. Обновить текущую документацию и выполнить verify. Для БД — PostgreSQL integration; для генератора — tools:sql:check; для transport — реальные HTTP checks.
@@ -20,6 +20,7 @@ HTTP/маршруты/явная композиция, ErrorResponse, Attachment
 | Задача | Документ | Код |
 | --- | --- | --- |
 | HTTP, runtime, routing, DI | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, config/core-roadrunner.php, src/Platform |
+| API-контракт и генерация DTO/endpoints | [План protobuf](design/protobuf-contract-generation.md) | Контур пока удалён; реализуется отдельным законченным этапом |
 | SQL, миграции, генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
 | Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
 | FPM/RR, файлы и измерения | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |

@@ -25,3 +25,7 @@ RoadRunner HTTP зафиксированной версии требует roadr
 ## Проверки
 
 `verify:full` прошёл: 225 unit tests / 869 assertions, 167 SQL tool tests / 625 assertions, 31 PostgreSQL integration tests / 271 assertions. Проверены 3 bundled distributions / 1661 files, PHPStan level 10. `http:check` прошёл 188 случаев на настоящих FPM/RR с JSON/HTML error renderers. Runtime archive прошёл 38 HTTP smoke cases: стандартный core без доступной БД, отсутствие startup DDL, явная migration/seed, страницы и private PDF GET/HEAD на SAPI/RR. Manifest архива содержит только runtime distribution с правильным hash; development/tests и удалённые подсистемы отсутствуют. Итоги записаны в данных ревизии. Исторические замеры 2026-10-17/18 не пересчитывались под новый состав; две ссылки на удалённые исходники закреплены за предшествующей Git-версией. Нельзя воспроизводить их старые API-команды на текущем checkout.
+
+## Уточнение направления после очистки
+
+После коммита `bde3c3d` пользователь уточнил, что protobuf нужен как источник API-контракта для генерации DTO и endpoints. Удаление этого механизма вместе с прикладным наследством было слишком широким решением агента. Исторический состав и результаты очистки выше сохранены; текущее принятое направление зафиксировано в [отдельном плане](../design/protobuf-contract-generation.md). Старые sessions/GeoIP/statistics и API-профиль из этого уточнения не следуют.

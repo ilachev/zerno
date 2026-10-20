@@ -39,3 +39,7 @@ DI кеширует объекты/планы autowiring. При SAPI App соз
 Bootstrap регистрирует собственные namespaces и [runtime map](../../third_party/runtime/autoload.php). SQL generator/quality PHARs изолированы от runtime. Нативные PHP/FPM/RR, PostgreSQL и инструменты стенда — требования платформы, а не скачиваемые PHP dependencies. [Поставка](../design/autonomous-core.md) описывает три distributions и транспортные зависимости RR.
 
 [verify](../development/infrastructure-and-testing.md) не требует внешней БД; verify:full добавляет SQL checks и настоящие PostgreSQL integration tests. http:check проверяет реальные FPM/RR отдельно. Числовые бюджеты, основной runtime и длительная устойчивость памяти не устанавливаются короткой проверкой.
+
+## Принятое расширение
+
+[Генерация API из protobuf-контракта](../design/protobuf-contract-generation.md) принята после уточнения пользователя: DTO, endpoint contracts, HTTP adapters и явные routes. В текущем коде её нет. Реализация должна использовать общий App/RequestHandler и следовать [правилам кода](../development/coding-guidelines.md); наличие transport protobuf у RR не заменяет этот контур.
