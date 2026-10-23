@@ -1,0 +1,450 @@
+{
+  "date": "2026-10-23",
+  "base_commit": "786fe50306f447f8af81254dad269cab1caca6ad",
+  "platform": {
+    "php": "8.5.9",
+    "os": "Darwin arm64",
+    "postgres": "16.15"
+  },
+  "fixture": {
+    "rows": 20000,
+    "payload_bytes": 1024,
+    "index": "PRIMARY KEY (id)",
+    "warmup_calls_per_process": 1,
+    "measured_calls_per_process": 1,
+    "fresh_processes_per_case": 7,
+    "random_seed": 20261023
+  },
+  "probe_php": "<?php\n\ndeclare(strict_types=1);\n\nrequire $argv[1] . '/bootstrap.php';\n\n$mode = $argv[2];\n$shape = $argv[3];\n$storage = new App\\Platform\\Storage\\PostgreSQLStorage(\n    getenv('TEST_DB_HOST'),\n    (int) getenv('TEST_DB_PORT'),\n    getenv('TEST_DB_NAME'),\n    getenv('TEST_DB_USER'),\n    getenv('TEST_DB_PASSWORD'),\n    getenv('FETCH_ONE_SCHEMA'),\n);\n$sql = match ($shape) {\n    'lookup' => 'SELECT id, payload FROM records WHERE id = :id',\n    'bounded' => 'SELECT id, payload FROM records WHERE id >= :id ORDER BY id LIMIT 1',\n    'unbounded' => 'SELECT id, payload FROM records WHERE id >= :id ORDER BY id',\n    default => throw new InvalidArgumentException('Unknown probe shape'),\n};\n$read = static function () use ($storage, $mode, $sql): ?array {\n    if ($mode === 'one') {\n        return $storage->queryOne($sql, ['id' => 1]);\n    }\n    $rows = $storage->query($sql, ['id' => 1]);\n\n    return $rows[0] ?? null;\n};\n$row = $read();\nif ($row !== ['id' => 1, 'payload' => str_repeat('x', 1024)]) {\n    throw new RuntimeException('Unexpected warmup row');\n}\nunset($row);\n$baseline = memory_get_usage();\nmemory_reset_peak_usage();\n$started = hrtime(true);\n$row = $read();\n$elapsed = hrtime(true) - $started;\n$after = memory_get_usage();\n$peak = memory_get_peak_usage();\nif ($row !== ['id' => 1, 'payload' => str_repeat('x', 1024)]) {\n    throw new RuntimeException('Unexpected measured row');\n}\necho json_encode([\n    'mode' => $mode,\n    'shape' => $shape,\n    'elapsed_ns' => $elapsed,\n    'php_baseline_bytes' => $baseline,\n    'php_live_delta_bytes' => $after - $baseline,\n    'php_peak_delta_bytes' => $peak - $baseline,\n], JSON_THROW_ON_ERROR), PHP_EOL;\n",
+  "runner_python": "import hashlib,json,os,pathlib,random,statistics,subprocess\nroot=pathlib.Path.cwd()\nenv=dict(os.environ)\nassert env.get('TEST_DB_NAME'), 'Set TEST_DB_* for a separate test database'\nsetup=r'''require 'bootstrap.php'; require 'tests/Integration/PostgreSqlTestDatabase.php'; $db=Tests\\Integration\\PostgreSqlTestDatabase::fromEnvironment(); $db->create(); $pdo=$db->connect(); $pdo->exec('SET search_path TO \"'.$db->schema.'\"'); $pdo->exec(\"CREATE TABLE records (id BIGINT PRIMARY KEY, payload TEXT NOT NULL); INSERT INTO records SELECT id, repeat('x',1024) FROM generate_series(1,20000) AS records(id); ANALYZE records\"); echo json_encode(['schema'=>$db->schema,'postgres'=>$pdo->query('SHOW server_version')->fetchColumn()]);'''\nmetadata=json.loads(subprocess.run(['php','-r',setup],cwd=root,env=env,check=True,capture_output=True,text=True).stdout)\nschema=metadata['schema']\nassert schema.startswith('phpunit_') and len(schema)==32\nenv['FETCH_ONE_SCHEMA']=schema\nsamples=[]\ntry:\n    jobs=[(mode,shape) for shape in ['lookup','bounded','unbounded'] for mode in ['legacy','one'] for _ in range(7)]\n    random.Random(20261023).shuffle(jobs)\n    for mode,shape in jobs:\n        r=subprocess.run(['php','var/fetch-one-probe.php',str(root),mode,shape],cwd=root,env=env,check=True,capture_output=True,text=True)\n        samples.append(json.loads(r.stdout))\n    summaries=[]\n    for shape in ['lookup','bounded','unbounded']:\n        for mode in ['legacy','one']:\n            s=[s for s in samples if s['mode']==mode and s['shape']==shape]\n            summaries.append({'mode':mode,'shape':shape,'samples':len(s),'median_ms':statistics.median(x['elapsed_ns'] for x in s)/1e6,'peak_php_bytes_max':max(x['php_peak_delta_bytes'] for x in s),'live_php_bytes_max':max(x['php_live_delta_bytes'] for x in s)})\n    data={'date':'2026-10-23','base_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'platform':{'php':subprocess.check_output(['php','-r','echo PHP_VERSION;'],text=True),'os':subprocess.check_output(['uname','-sm'],text=True).strip(),'postgres':metadata['postgres']},'fixture':{'rows':20000,'payload_bytes':1024,'index':'PRIMARY KEY (id)','warmup_calls_per_process':1,'measured_calls_per_process':1,'fresh_processes_per_case':7,'random_seed':20261023},'probe_php':pathlib.Path('var/fetch-one-probe.php').read_text(),'runner_python':pathlib.Path(__file__).read_text(),'setup_php':setup,'source_sha256':{p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in ['src/Platform/Storage/Storage.php','src/Platform/Storage/PostgreSQLStorage.php','src/Platform/Storage/Sql/SqlExecutor.php','examples/document-catalog/src/CatalogRepository.php']},'summaries':summaries,'samples':samples,'limitations':['Zend memory counters exclude native libpq buffers, RSS and PostgreSQL memory.','Both paths use the default buffered PDO PostgreSQL mode and execute identical SQL per case.','Legacy callback reproduces fetchAll then first-row selection without closeCursor, as in the base commit.','PDO PostgreSQL closeCursor is not a guarantee that native result memory is released from cached statements.', 'These are short loopback CLI observations, not HTTP load tests or a worker memory soak.']}\n    pathlib.Path('var/fetch-one-measurements.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\\n')\n    print(json.dumps(summaries,ensure_ascii=False,indent=2))\nfinally:\n    drop=r'''$p=new PDO('pgsql:host='.getenv('TEST_DB_HOST').';port='.getenv('TEST_DB_PORT').';dbname='.getenv('TEST_DB_NAME'),getenv('TEST_DB_USER'),getenv('TEST_DB_PASSWORD')); $p->exec('DROP SCHEMA \"'.getenv('FETCH_ONE_SCHEMA').'\" CASCADE');'''\n    subprocess.run(['php','-r',drop],env=env,check=True,capture_output=True)\n",
+  "setup_php": "require 'bootstrap.php'; require 'tests/Integration/PostgreSqlTestDatabase.php'; $db=Tests\\Integration\\PostgreSqlTestDatabase::fromEnvironment(); $db->create(); $pdo=$db->connect(); $pdo->exec('SET search_path TO \"'.$db->schema.'\"'); $pdo->exec(\"CREATE TABLE records (id BIGINT PRIMARY KEY, payload TEXT NOT NULL); INSERT INTO records SELECT id, repeat('x',1024) FROM generate_series(1,20000) AS records(id); ANALYZE records\"); echo json_encode(['schema'=>$db->schema,'postgres'=>$pdo->query('SHOW server_version')->fetchColumn()]);",
+  "source_sha256": {
+    "src/Platform/Storage/Storage.php": "fd3623e9f520bf7462c41bc4a8354adf57737f546513923fd03dce51f56c8948",
+    "src/Platform/Storage/PostgreSQLStorage.php": "7269b49f01ff23da8beb44d15ae7f4c652e9371d326d403bada2a4117a0f7d9e",
+    "src/Platform/Storage/Sql/SqlExecutor.php": "9411984725fb1fac8f8c8463dc75d9999ee5ca335ef2f98eb05dfb91d015730f",
+    "examples/document-catalog/src/CatalogRepository.php": "62b854ae894ac2c960118ea8c12dabc2ba35eb3b5c5db1ec0569372f677c514d"
+  },
+  "summaries": [
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "samples": 7,
+      "median_ms": 0.245708,
+      "peak_php_bytes_max": 1872,
+      "live_php_bytes_max": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "samples": 7,
+      "median_ms": 0.222291,
+      "peak_php_bytes_max": 1656,
+      "live_php_bytes_max": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "samples": 7,
+      "median_ms": 0.289958,
+      "peak_php_bytes_max": 1872,
+      "live_php_bytes_max": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "samples": 7,
+      "median_ms": 0.300834,
+      "peak_php_bytes_max": 1656,
+      "live_php_bytes_max": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "samples": 7,
+      "median_ms": 42.224625,
+      "peak_php_bytes_max": 33648440,
+      "live_php_bytes_max": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "samples": 7,
+      "median_ms": 24.969084,
+      "peak_php_bytes_max": 1656,
+      "live_php_bytes_max": 1656
+    }
+  ],
+  "samples": [
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 330083,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 27334250,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 335833,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 39498333,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 197250,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 29435583,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 192166,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 213375,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 29642458,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 245708,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 241084,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 780916,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 46847416,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 260250,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 189958,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 206167,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 253209,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 40890208,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 182250,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 21198459,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 24969084,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 23106958,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 421959,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 46734292,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 222291,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 289958,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 45429042,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 236708,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 164458,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 293625,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 43854583,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 155291,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 259042,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 300834,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "lookup",
+      "elapsed_ns": 441417,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 356833,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 292209,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    },
+    {
+      "mode": "one",
+      "shape": "bounded",
+      "elapsed_ns": 248083,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "unbounded",
+      "elapsed_ns": 42224625,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 33648440
+    },
+    {
+      "mode": "one",
+      "shape": "lookup",
+      "elapsed_ns": 164083,
+      "php_baseline_bytes": 538240,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "one",
+      "shape": "unbounded",
+      "elapsed_ns": 22333708,
+      "php_baseline_bytes": 538264,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1656
+    },
+    {
+      "mode": "legacy",
+      "shape": "bounded",
+      "elapsed_ns": 1476000,
+      "php_baseline_bytes": 538256,
+      "php_live_delta_bytes": 1656,
+      "php_peak_delta_bytes": 1872
+    }
+  ],
+  "limitations": [
+    "Zend memory counters exclude native libpq buffers, RSS and PostgreSQL memory.",
+    "Both paths use the default buffered PDO PostgreSQL mode and execute identical SQL per case.",
+    "Legacy callback reproduces fetchAll then first-row selection without closeCursor, as in the base commit.",
+    "PDO PostgreSQL closeCursor is not a guarantee that native result memory is released from cached statements.",
+    "These are short loopback CLI observations, not HTTP load tests or a worker memory soak."
+  ],
+  "verification": {
+    "verify_full": "passed",
+    "unit": {
+      "tests": 267,
+      "assertions": 1104
+    },
+    "sql_generator": {
+      "tests": 167,
+      "assertions": 625
+    },
+    "postgresql_integration": {
+      "tests": 40,
+      "assertions": 332
+    },
+    "runtime_archive": {
+      "http_cases": 73,
+      "runtimes": [
+        "SAPI",
+        "RoadRunner 3.0.0"
+      ],
+      "scenarios": [
+        "explicit migrations/seed and rollback/reapply",
+        "repeated catalog lookup and missing documents",
+        "generated typed one-row query reused eight times",
+        "core health without a database"
+      ]
+    }
+  }
+}

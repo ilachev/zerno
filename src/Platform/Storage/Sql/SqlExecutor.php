@@ -16,12 +16,11 @@ final readonly class SqlExecutor
      * @template TParams of array<string, scalar|null>
      * @param ExecutableQuery<TParams> $query
      * @return array<string, scalar|null>|null
+     * @phpstan-impure
      */
     public function fetchOne(ExecutableQuery $query): ?array
     {
-        $rows = $this->storage->query($query->sql(), $query->params());
-
-        return $rows[0] ?? null;
+        return $this->storage->queryOne($query->sql(), $query->params());
     }
 
     /**
@@ -29,6 +28,7 @@ final readonly class SqlExecutor
      * @template TParams of array<string, scalar|null>
      * @param OneRowQuery<T, TParams> $query
      * @return T|null
+     * @phpstan-impure
      */
     public function fetchOneRow(OneRowQuery $query): ?DatabaseRow
     {
@@ -48,6 +48,7 @@ final readonly class SqlExecutor
      * @template TParams of array<string, scalar|null>
      * @param ExecutableQuery<TParams> $query
      * @return list<array<string, scalar|null>>
+     * @phpstan-impure
      */
     public function fetchAll(ExecutableQuery $query): array
     {
@@ -59,6 +60,7 @@ final readonly class SqlExecutor
      * @template TParams of array<string, scalar|null>
      * @param ManyRowsQuery<T, TParams> $query
      * @return list<T>
+     * @phpstan-impure
      */
     public function fetchAllRows(ManyRowsQuery $query): array
     {

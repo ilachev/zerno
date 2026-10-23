@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-10-20",
+  "reviewed_at": "2026-10-23",
   "scope": "Собственные repository guides, design/architecture/planning docs и связанные reference artifacts. Пути относительны корню; current/accepted-plan описывают статус документа, не реализацию каждой идеи.",
   "documents": [
     {
@@ -299,7 +299,10 @@
         "tests/Integration/Storage/SqlLimitTest.php",
         "sql",
         "gen/Generated/Sql",
-        "src/Platform/Storage/Sql"
+        "src/Platform/Storage/Sql",
+        "src/Platform/Storage/Storage.php",
+        "src/Platform/Storage/PostgreSQLStorage.php",
+        "tests/Integration/Storage/QueryOneTest.php"
       ]
     },
     {
@@ -587,6 +590,26 @@
         "tests/Unit/Examples/JsonEcho",
         "tools/check-http.php"
       ]
+    },
+    {
+      "id": "query-one-validation",
+      "path": "docs/history/2026-10-23-query-one.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Storage.queryOne и SqlExecutor.fetchOne: семантика, PostgreSQL checks, breaking Storage contract, PHP/native memory и короткое сравнение.",
+      "read_when": [
+        "Ревью one-row SQL пути",
+        "Воспроизведение сравнения fetchAll и queryOne"
+      ],
+      "source_paths": [
+        "src/Platform/Storage/Storage.php",
+        "src/Platform/Storage/PostgreSQLStorage.php",
+        "src/Platform/Storage/Sql/SqlExecutor.php",
+        "tests/Integration/Storage/QueryOneTest.php",
+        "tests/Integration/Storage/SqlLimitTest.php",
+        "examples/document-catalog/src/CatalogRepository.php",
+        "docs/history/2026-10-23-query-one.json"
+      ]
     }
   ],
   "artifacts": [
@@ -714,6 +737,19 @@
       ],
       "source_paths": [
         "docs/history/2026-10-20-roadrunner3.md"
+      ]
+    },
+    {
+      "id": "query-one-data",
+      "path": "docs/history/2026-10-23-query-one.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "SQL one-row: fixture/probe/runner, source hashes, окружение и raw CLI measurements.",
+      "read_when": [
+        "Проверка чисел и воспроизведение SQL one-row measurement"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-23-query-one.md"
       ]
     }
   ],

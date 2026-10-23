@@ -321,6 +321,14 @@ final class CatalogRecordingStorage implements Storage
         return $rows;
     }
 
+    public function queryOne(string $sql, array $params = []): ?array
+    {
+        $row = $this->storage->queryOne($sql, $params);
+        $this->queries[] = ['sql' => $sql, 'rows' => $row === null ? 0 : 1];
+
+        return $row;
+    }
+
     public function execute(string $sql, array $params = []): bool
     {
         return $this->storage->execute($sql, $params);

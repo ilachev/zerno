@@ -1,6 +1,6 @@
 # Контракт и развитие `sql-gen`
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 ## Роль в «Зерне»
 
@@ -86,7 +86,7 @@ LIMIT 21;
 - `:name`, включая `:limit`, получает non-null PHP `int` и PostgreSQL `BIGINT` без привязки к колонке schema. Если это имя также сравнивается с integer-колонками, параметры объединяются, а SQL-тип сохраняется из первого сравнения в JOIN/WHERE, как при native PostgreSQL prepare. Для `INTEGER`/`SERIAL` действует диапазон PostgreSQL integer; для `BIGINT`/`BIGSERIAL` — bigint. Nullable integer-колонка не делает LIMIT nullable. Сравнение того же параметра с `TEXT`/`JSONB`, bool или float отвергается resolver-ом с сообщением `LIMIT parameter ... must be compatible with an integer column ...`.
 - Повторное использование LIMIT-параметра внутри projection expressions (`MIN`, `COALESCE`, `CASE` и остальных) отвергается с сообщением `LIMIT parameter ... cannot be reused in projection expressions ...`. Native PostgreSQL prepare может вывести тип аргумента projection до обработки LIMIT; checker с явным `PREPARE(bigint)` не воспроизводит этот вывод. Исправление общей модели expression typing и runtime casts в этот контракт не входят.
 - Значение параметра `0` возвращает пустой список; отрицательный `int` отклоняет PostgreSQL при исполнении. Генератор не добавляет runtime validation: допустимый положительный максимум определяет вызывающее приложение. `null` не входит в generated signature, поскольку PostgreSQL трактует `LIMIT NULL` как отсутствие ограничения.
-- `ORDER BY`, `WHERE` и сам `LIMIT` необязательны. Маркеры `:one` и `:many` выбирают runtime contract, не меняя SQL: `:one` без явного `LIMIT` по-прежнему может прочитать весь результат через `fetchAll()`.
+- `ORDER BY`, `WHERE` и сам `LIMIT` необязательны. Маркеры `:one` и `:many` выбирают runtime contract, не меняя SQL: `:one` материализует только первую строку как PHP-массив, но без явного `LIMIT` БД и buffered PDO по-прежнему могут получить весь результат.
 
 Syntax errors от parser-а получают формы `LIMIT ALL`, `LIMIT NULL`, signed/decimal/exponent/quoted values, column references, expressions, casts, parentheses, повторный или неверно расположенный LIMIT, `OFFSET`/comma pagination и LIMIT у INSERT/UPDATE/DELETE. Числовой literal добавлен только в LIMIT; WHERE literals этим расширением не поддержаны.
 
@@ -131,7 +131,22 @@ php tests/Fixtures/SqlLimit/measure.php --rows=50000
 
 [SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) исполняет query через `Storage`, а typed rows создаются через `DatabaseRow::fromDatabaseRow`. `:one` выбирает первый результат либо возвращает null; сам по себе этот marker не доказывает уникальность строки в БД. Транзакции предоставляет `Storage::transaction`.
 
-Сейчас даже `fetchOne` сначала получает весь result set: `Storage::query` PostgreSQL adapter вызывает `fetchAll`. `fetchAllRows` дополнительно создаёт массив typed rows. Поэтому `:one` не ограничивает работу БД или память PHP. Для растущих списков приложение задаёт явный LIMIT и устойчивый порядок; LIMIT поддержан как в generated queries, так и в прямом параметризованном SQL через storage. Он ограничивает количество возвращаемых строк, сохраняя существующий контракт чтения массива.
+`Storage::queryOne($sql, $params)` возвращает первую ассоциативную строку либо null. Это не проверка уникальности: дополнительные строки допустимы, порядок задаётся SQL. Строка из одних SQL NULL остаётся массивом, а ошибки PDO остаются StorageException с исходным PDOException. Метод выполняет исходный запрос целиком, вызывает один `fetch(PDO::FETCH_ASSOC)` и `closeCursor()` в finally, включая ошибку execute/fetch. Он не добавляет LIMIT, не меняет SELECT/RETURNING и не ограничивает число изменённых строк. Ошибка БД после первой строки также приводит к отказу buffered execution.
+
+```php
+$row = $storage->queryOne(
+    'SELECT id, title FROM catalog_documents WHERE id = :id',
+    ['id' => 42],
+);
+```
+
+Это обычный прямой SQL, без генерации. `SqlExecutor::fetchOne` делегирует этому пути, `fetchOneRow` преобразует только полученную строку в DatabaseRow. Код вызова generated query сохраняется; `Storage::query` / `fetchAll` по-прежнему возвращают весь список, `fetchAllRows` дополнительно строит список typed rows. Каталог использует queryOne для findPublished с тем же SQL по primary key, без переписывания published literal или partial index. Доступ к БД помечен для PHPStan как impure: повторный вызов после изменения данных может дать другой результат.
+
+Native prepared statements и соединение переиспользуются, кеш ограничен 100 SQL-ключами. `closeCursor()` закрывает PDO cursor, но не обещает освобождение native-буфера cached statement: в [pdo_pgsql PHP 8.5](https://github.com/php/php-src/blob/PHP-8.5/ext/pdo_pgsql/pgsql_statement.c) cursor closer сам по себе не очищает PGresult. Буферы могут жить до следующего исполнения этого statement или его уничтожения/вытеснения. [PDO fetch](https://www.php.net/manual/en/pdostatement.fetch.php) и [closeCursor](https://www.php.net/manual/en/pdostatement.closecursor.php) не являются server-side LIMIT. Этот этап убирает полный PHP-массив из однострочного пути, сохраняя стандартный buffered PDO; native memory и работа PostgreSQL не становятся ограниченными одной строкой.
+
+Для растущих списков или first-row lookup без уникального предиката приложение задаёт явный LIMIT и устойчивый порядок. Размер одной строки тоже остаётся его ответственностью. Ни уникальный key lookup, ни LIMIT 1 раньше не создавали большой список, поэтому общий выигрыш на них заранее не заявляется. [Замер 2026-10-23](../history/2026-10-23-query-one.md) сравнивает прежний и новый путь на одинаковом SQL.
+
+Изменение контракта Storage: собственные реализации/decorators должны реализовать queryOne с такой семантикой; default fallback через query/fetchAll не добавлен. Внутренний SQLite fixture адаптирован для автономных migration/error tests, но не становится production backend. Без вызова нового метода не выполняются дополнительный SQL, чтение или закрытие cursor; прежние query/execute paths сохранены.
 
 Runtime contract FQCN и naming вынесены в `SqlGenerationProfile`. CLI поддерживает `--runtime-namespace` для default profile либо `--bootstrap` + `--profile-class` для внешнего profile; явно выбранный profile определяет contracts сам.
 
@@ -148,6 +163,7 @@ php tools/project.php sql:check:pg
 php tools/project.php tools:sql:check
 ```
 
+- `verify:integration` проверяет queryOne на настоящем PostgreSQL: 0/1/many, NULL/falsy, reuse prepared statement/connection, все изменения RETURNING, исходные SQLSTATE, PHP allocations и generated row mapping. Тесты typed mapping используют реальное исполнение SQL, прежний InMemorySqlExecutorStorage удалён.
 - `sql:check` сравнивает ожидаемые PHP-артефакты с каталогом output: отсутствующие, устаревшие и лишние PHP-файлы дают ошибку.
 - `sql:check:pg` через runner использует `TEST_DB_*`, создаёт случайную схему `sql_gen_check_...`, выполняет trusted schema SQL и проверяет скомпилированные запросы через `PREPARE`. После проверки удаляет свою схему.
 - Прямой `tools/sql-gen/bin/sql-check-pg.php` принимает `--db-*` и `DB_*`; это другая граница конфигурации, чем root runner.

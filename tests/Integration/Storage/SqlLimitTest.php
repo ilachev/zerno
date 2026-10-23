@@ -66,7 +66,10 @@ final class SqlLimitTest extends TestCase
         self::assertCount(min(21, $count), $rows);
         self::assertSame($count === 0 ? [] : \array_slice(range($count, 1), 0, 21), array_column($rows, 'id'));
         self::assertSame($rows, $this->executor->fetchAll($query));
-        self::assertCount(min(21, $count), $this->executor->fetchAllRows($query));
+        $typedRows = $this->executor->fetchAllRows($query);
+        self::assertCount(min(21, $count), $typedRows);
+        self::assertSame(array_column($rows, 'id'), array_column($typedRows, 'id'));
+        self::assertSame(array_column($rows, 'title'), array_column($typedRows, 'title'));
     }
 
     /** @return iterable<string, array{int}> */
@@ -190,5 +193,25 @@ final class SqlLimitTest extends TestCase
         self::assertCount(22, $this->executor->fetchAll($unbounded));
         self::assertSame($this->executor->fetchOne($bounded), $this->executor->fetchOne($unbounded));
         self::assertEquals($this->executor->fetchOneRow($bounded), $this->executor->fetchOneRow($unbounded));
+    }
+
+    public function testOneRowMappingSupportsEmptyOneAndManyResults(): void
+    {
+        $query = self::$fixture->query('FindUnbounded', ['status' => 'published']);
+        self::assertInstanceOf(OneRowQuery::class, $query);
+        self::assertNull($this->executor->fetchOne($query));
+        self::assertNull($this->executor->fetchOneRow($query));
+        Fixture::seed($this->storage, 1);
+        $row = $this->executor->fetchOneRow($query);
+        self::assertNotNull($row);
+        self::assertInstanceOf($query->rowClass(), $row);
+        self::assertSame(1, get_object_vars($row)['id'] ?? null);
+        self::assertSame('Document 1', get_object_vars($row)['title'] ?? null);
+        $this->storage->execute('DELETE FROM catalog_documents');
+        Fixture::seed($this->storage, 3);
+        $row = $this->executor->fetchOneRow($query);
+        self::assertNotNull($row);
+        self::assertSame(3, get_object_vars($row)['id'] ?? null);
+        self::assertSame('Document 3', get_object_vars($row)['title'] ?? null);
     }
 }

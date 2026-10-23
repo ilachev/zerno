@@ -1,6 +1,6 @@
 # Текущая архитектура
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 Проект поставляет HTTP/PDO-контур, SQL-генератор и проверочный каталог. [Границы](../project/vision.md), [правила кода](../development/coding-guidelines.md) и [история явной сборки](../history/2026-10-20-explicit-composition.md) объясняют принятый состав. Контейнер, autowiring и providers удалены.
 
@@ -32,9 +32,9 @@ AttachmentResponse принимает stream/размер, создаёт без
 
 ## PostgreSQL и CLI
 
-[config/storage.php](../../config/storage.php) явно создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Конструктор не открывает PDO: первая query/execute/transaction/lastInsertId создаёт соединение и устанавливает quoted search_path. PDO публикуется в объекте после успешной инициализации и используется повторно. Ошибка подключения теперь возникает при первой операции. Кеш native prepared statements ограничен 100 SQL-запросами.
+[config/storage.php](../../config/storage.php) явно создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Конструктор не открывает PDO: первая query/queryOne/execute/transaction/lastInsertId создаёт соединение и устанавливает quoted search_path. PDO публикуется в объекте после успешной инициализации и используется повторно. Ошибка подключения теперь возникает при первой операции. Кеш native prepared statements ограничен 100 SQL-запросами.
 
-HTTP core вообще не создаёт Storage. Каталог создаёт его и handlers при сборке; /health/404/405 не выполняют SQL. Это имеет стоимость чтения config/создания PHP objects, но не подключения к БД. Query получает fetchAll, SqlExecutor.fetchOne выбирает первую строку массива; ограничение задаётся явным LIMIT.
+HTTP core вообще не создаёт Storage. Каталог создаёт его и handlers при сборке; /health/404/405 не выполняют SQL. Это имеет стоимость чтения config/создания PHP objects, но не подключения к БД. query получает fetchAll, queryOne читает первую строку через fetch и закрывает PDO cursor; SqlExecutor.fetchOne и lookup каталога используют queryOne. SQL не переписывается, prepared statements переиспользуются. Native buffer cached statement может сохраняться после closeCursor; ограничение возвращаемых БД строк задаётся явным LIMIT. [SQL-контракт](../design/sql-gen-product.md#runtime-и-применение) описывает семантику, ошибки и цену.
 
 [bin/migrate.php](../../bin/migrate.php) получает действие и каталог migrations, проверяет аргументы до соединения и явно создаёт Storage → MigrationRepository/Loader → MigrationService → MigrateCommand. Default directory — пустой src/Migrations; каталог передаёт examples/document-catalog/migrations. Loader подключает PHP-файлы выбранного каталога напрямую, без регистрации application namespace. Только CLI создаёт таблицу migrations; HTTP startup DDL не выполняет.
 

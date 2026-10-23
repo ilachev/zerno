@@ -1,6 +1,6 @@
 # Инфраструктура и тестирование
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 [PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. Runtime: PHP 8.5+, PDO; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
 
@@ -25,7 +25,7 @@
 
 ## База приложения
 
-config/storage.php создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Адаптер открывает PDO только при первой query/execute/transaction/lastInsertId; конструктор не выполняет I/O. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
+config/storage.php создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Адаптер открывает PDO только при первой query/queryOne/execute/transaction/lastInsertId; конструктор не выполняет I/O. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
 
 Core migration path — пустой src/Migrations; пример имеет собственную migration. Явный migrate создаёт служебную таблицу migrations при явном создании MigrationRepository в CLI. Запуск HTTP и services:start не запускают migration автоматически. Существующие пользовательские таблицы старого API не удаляются этой очисткой.
 
@@ -33,7 +33,7 @@ Core migration path — пустой src/Migrations; пример имеет с�
 
 [phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего WorkerInterface и реальный RoadRunnerHttpWorker/HttpWorker. HTTP-типы и ресурсы проверяются реальными объектами; ObservedStream — PHP stream wrapper для наблюдения чтений/seek/close.
 
-[phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом.
+[phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом. SqlExecutor и generated row mapping проверяются на настоящем PostgreSQL; прежний InMemorySqlExecutorStorage удалён. QueryOneTest отдельно проверяет one-row семантику, SQLSTATE/reuse и отсутствие полного PHP-массива; этот memory counter не включает native libpq buffers/RSS.
 
 Runner берёт TEST_DB_HOST/PORT/NAME/USER/PASSWORD независимо от DB_*. Для прямого PHPUnit TEST_DB_NAME обязателен. Роли нужны права создавать и удалять свои схемы. Значения ниже относятся к заранее подготовленной отдельной test database:
 

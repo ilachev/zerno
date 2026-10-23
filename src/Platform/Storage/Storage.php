@@ -9,8 +9,18 @@ interface Storage
     /**
      * @param array<string, scalar|null> $params
      * @return list<array<string, scalar|null>>
+     * @phpstan-impure
      */
     public function query(string $sql, array $params = []): array;
+
+    /**
+     * Returns the first row or null, without rewriting SQL or checking uniqueness.
+     * Closes the PDO cursor before returning; native buffers follow the driver's statement lifetime.
+     * @param array<string, scalar|null> $params
+     * @return array<string, scalar|null>|null
+     * @phpstan-impure
+     */
+    public function queryOne(string $sql, array $params = []): ?array;
 
     /**
      * @param array<string, scalar|null> $params

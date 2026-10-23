@@ -67,6 +67,30 @@ final class PostgreSQLStorage extends AbstractStorage
 
     /**
      * @param array<string, scalar|null> $params
+     * @return array<string, scalar|null>|null
+     * @throws StorageException
+     */
+    public function queryOne(string $sql, array $params = []): ?array
+    {
+        try {
+            $statement = $this->getStatement($sql);
+
+            try {
+                $statement->execute($params);
+                /** @var array<string, scalar|null>|false $row */
+                $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+                return $row === false ? null : $row;
+            } finally {
+                $statement->closeCursor();
+            }
+        } catch (\PDOException $e) {
+            throw new StorageException($e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * @param array<string, scalar|null> $params
      * @throws StorageException
      */
     public function execute(string $sql, array $params = []): bool

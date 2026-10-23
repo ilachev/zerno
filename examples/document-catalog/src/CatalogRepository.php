@@ -48,9 +48,9 @@ final readonly class CatalogRepository
         if ($id <= 0) {
             return null;
         }
-        $rows = $this->storage->query(self::FIND_PUBLISHED, ['id' => $id]);
+        $row = $this->storage->queryOne(self::FIND_PUBLISHED, ['id' => $id]);
 
-        return isset($rows[0]) ? self::document($rows[0]) : null;
+        return $row !== null ? self::document($row) : null;
     }
 
     /** @param array<string, scalar|null> $row */
