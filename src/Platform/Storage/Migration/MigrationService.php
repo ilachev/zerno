@@ -35,8 +35,8 @@ final class MigrationService
 
     public function migrate(): void
     {
+        $this->assertUniqueVersions();
         $executedMigrations = $this->repository->getExecutedMigrations();
-        $processedVersions = [];
 
         usort(
             $this->migrations,
@@ -45,29 +45,20 @@ final class MigrationService
 
         foreach ($this->migrations as $migration) {
             $version = $migration->getVersion();
-            if (\in_array($version, $processedVersions, true)) {
-                continue;
-            }
-
             if (!\in_array($version, $executedMigrations, true)) {
-                $sqlQueries = array_filter(
-                    array_map('trim', explode(';', $migration->up())),
-                    static fn(string $sql): bool => !empty($sql),
-                );
-
-                foreach ($sqlQueries as $sql) {
-                    $this->storage->execute($sql);
-                }
-
-                $this->repository->add($version);
+                $this->storage->transaction(function () use ($migration, $version): void {
+                    foreach ($migration->up() as $sql) {
+                        $this->storage->execute($sql);
+                    }
+                    $this->repository->add($version);
+                });
             }
-
-            $processedVersions[] = $version;
         }
     }
 
     public function rollback(): void
     {
+        $this->assertUniqueVersions();
         $executedMigrations = $this->repository->getExecutedMigrations();
 
         $migrations = array_filter(
@@ -82,16 +73,25 @@ final class MigrationService
 
         foreach ($migrations as $migration) {
             $version = $migration->getVersion();
-            $sqlQueries = array_filter(
-                array_map('trim', explode(';', $migration->down())),
-                static fn(string $sql): bool => !empty($sql),
-            );
+            $this->storage->transaction(function () use ($migration, $version): void {
+                foreach ($migration->down() as $sql) {
+                    $this->storage->execute($sql);
+                }
+                $this->repository->remove($version);
+            });
+        }
+    }
 
-            foreach ($sqlQueries as $sql) {
-                $this->storage->execute($sql);
+    private function assertUniqueVersions(): void
+    {
+        $seen = [];
+        foreach ($this->migrations as $migration) {
+            // Prefixing keeps numeric versions as string array keys.
+            $key = 'version:' . $migration->getVersion();
+            if (isset($seen[$key])) {
+                throw new \LogicException('Duplicate migration version: ' . $migration->getVersion());
             }
-
-            $this->repository->remove($version);
+            $seen[$key] = true;
         }
     }
 }

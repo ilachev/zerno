@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-23",
+  "base_commit": "496de33845843f52953bf4fcfcff20e92cdcfd7b",
+  "platform": {
+    "php": "8.5.9",
+    "postgres": "16.15"
+  },
+  "before": {
+    "caught_sql_error_result": "success",
+    "rows_after_reported_success": [],
+    "deferred_commit_error": {
+      "class": "PDOException",
+      "code": 0,
+      "message": "There is no active transaction"
+    },
+    "migration_up_error": "App\\Platform\\Storage\\StorageException",
+    "table_left_after_failed_up": {
+      "present": true
+    },
+    "versions_after_failed_up": [],
+    "migration_down_error": "App\\Platform\\Storage\\StorageException",
+    "table_left_after_failed_down": {
+      "present": false
+    },
+    "versions_after_failed_down": [
+      "broken-down"
+    ]
+  },
+  "after": {
+    "caught_sql_error_result": "App\\Platform\\Storage\\StorageException",
+    "rows_after_reported_success": [],
+    "deferred_commit_error": {
+      "class": "PDOException",
+      "code": "23505",
+      "message": "SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint \"deferred_records_id_key\"\nDETAIL:  Key (id)=(1) already exists."
+    },
+    "migration_up_error": "App\\Platform\\Storage\\StorageException",
+    "table_left_after_failed_up": {
+      "present": false
+    },
+    "versions_after_failed_up": [],
+    "migration_down_error": "App\\Platform\\Storage\\StorageException",
+    "table_left_after_failed_down": {
+      "present": true
+    },
+    "versions_after_failed_down": [
+      "broken-down"
+    ]
+  },
+  "probe_before_php": "<?php\n\ndeclare(strict_types=1);\n\nrequire 'bootstrap.php';\nrequire 'tests/Integration/PostgreSqlTestDatabase.php';\n$db = Tests\\Integration\\PostgreSqlTestDatabase::fromEnvironment();\n$db->create();\n$s = new App\\Platform\\Storage\\PostgreSQLStorage($db->host, $db->port, $db->database, $db->username, $db->password, $db->schema);\n$out = [];\ntry {\n    $s->execute('CREATE TABLE tx_records (id INTEGER PRIMARY KEY)');\n    try {\n        $out['caught_sql_error_result'] = $s->transaction(static function () use ($s): string {\n            $s->execute('INSERT INTO tx_records VALUES (1)');\n            try { $s->execute('INSERT INTO tx_records VALUES (1)'); } catch (App\\Platform\\Storage\\StorageException) {}\n            return 'success';\n        });\n    } catch (Throwable $e) { $out['caught_sql_error_result'] = $e::class; }\n    $out['rows_after_reported_success'] = $s->query('SELECT id FROM tx_records');\n    $s->execute('CREATE TABLE deferred_records (id INTEGER UNIQUE DEFERRABLE INITIALLY DEFERRED)');\n    try {\n        $s->transaction(static fn(): bool => $s->execute('INSERT INTO deferred_records VALUES (1), (1)'));\n    } catch (Throwable $e) { $out['deferred_commit_error'] = ['class'=>$e::class, 'code'=>$e->getCode(), 'message'=>$e->getMessage()]; }\n    $repo = new App\\Platform\\Storage\\Migration\\MigrationRepository($s);\n    $migration = new class implements App\\Platform\\Storage\\Migration\\Migration {\n        public function getVersion(): string { return 'broken-up'; }\n        public function up(): string { return 'CREATE TABLE partial_up (id INTEGER); ALTER TABLE missing_table ADD value TEXT;'; }\n        public function down(): string { return 'DROP TABLE partial_up;'; }\n    };\n    $service = new App\\Platform\\Storage\\Migration\\MigrationService($s, $repo, new App\\Platform\\Storage\\Migration\\MigrationLoader('', new App\\Platform\\Logging\\ReadableOutputLogger()));\n    $service->addMigration($migration);\n    try { $service->migrate(); } catch (Throwable $e) { $out['migration_up_error'] = $e::class; }\n    $out['table_left_after_failed_up'] = $s->queryOne(\"SELECT to_regclass('partial_up') IS NOT NULL AS present\");\n    $out['versions_after_failed_up'] = $repo->getExecutedMigrations();\n    $s->execute('CREATE TABLE partial_down (id INTEGER)');\n    $repo->add('broken-down');\n    $migration = new class implements App\\Platform\\Storage\\Migration\\Migration {\n        public function getVersion(): string { return 'broken-down'; }\n        public function up(): string { return ''; }\n        public function down(): string { return 'DROP TABLE partial_down; ALTER TABLE missing_table ADD value TEXT;'; }\n    };\n    $service = new App\\Platform\\Storage\\Migration\\MigrationService($s, $repo, new App\\Platform\\Storage\\Migration\\MigrationLoader('', new App\\Platform\\Logging\\ReadableOutputLogger()));\n    $service->addMigration($migration);\n    try { $service->rollback(); } catch (Throwable $e) { $out['migration_down_error'] = $e::class; }\n    $out['table_left_after_failed_down'] = $s->queryOne(\"SELECT to_regclass('partial_down') IS NOT NULL AS present\");\n    $out['versions_after_failed_down'] = $repo->getExecutedMigrations();\n    echo json_encode($out, JSON_THROW_ON_ERROR|JSON_PRETTY_PRINT), PHP_EOL;\n} finally { $db->cleanup(); }\n",
+  "probe_after_php": "<?php\n\ndeclare(strict_types=1);\n\nrequire 'bootstrap.php';\nrequire 'tests/Integration/PostgreSqlTestDatabase.php';\n$db = Tests\\Integration\\PostgreSqlTestDatabase::fromEnvironment();\n$db->create();\n$s = new App\\Platform\\Storage\\PostgreSQLStorage($db->host, $db->port, $db->database, $db->username, $db->password, $db->schema);\n$out = [];\ntry {\n    $s->execute('CREATE TABLE tx_records (id INTEGER PRIMARY KEY)');\n    try {\n        $out['caught_sql_error_result'] = $s->transaction(static function () use ($s): string {\n            $s->execute('INSERT INTO tx_records VALUES (1)');\n            try { $s->execute('INSERT INTO tx_records VALUES (1)'); } catch (App\\Platform\\Storage\\StorageException) {}\n            return 'success';\n        });\n    } catch (Throwable $e) { $out['caught_sql_error_result'] = $e::class; }\n    $out['rows_after_reported_success'] = $s->query('SELECT id FROM tx_records');\n    $s->execute('CREATE TABLE deferred_records (id INTEGER UNIQUE DEFERRABLE INITIALLY DEFERRED)');\n    try {\n        $s->transaction(static fn(): bool => $s->execute('INSERT INTO deferred_records VALUES (1), (1)'));\n    } catch (Throwable $e) { $out['deferred_commit_error'] = ['class'=>$e::class, 'code'=>$e->getCode(), 'message'=>$e->getMessage()]; }\n    $repo = new App\\Platform\\Storage\\Migration\\MigrationRepository($s);\n    $migration = new class implements App\\Platform\\Storage\\Migration\\Migration {\n        public function getVersion(): string { return 'broken-up'; }\n        public function up(): array { return ['CREATE TABLE partial_up (id INTEGER);', 'ALTER TABLE missing_table ADD value TEXT;']; }\n        public function down(): array { return ['DROP TABLE partial_up;']; }\n    };\n    $service = new App\\Platform\\Storage\\Migration\\MigrationService($s, $repo, new App\\Platform\\Storage\\Migration\\MigrationLoader('', new App\\Platform\\Logging\\ReadableOutputLogger()));\n    $service->addMigration($migration);\n    try { $service->migrate(); } catch (Throwable $e) { $out['migration_up_error'] = $e::class; }\n    $out['table_left_after_failed_up'] = $s->queryOne(\"SELECT to_regclass('partial_up') IS NOT NULL AS present\");\n    $out['versions_after_failed_up'] = $repo->getExecutedMigrations();\n    $s->execute('CREATE TABLE partial_down (id INTEGER)');\n    $repo->add('broken-down');\n    $migration = new class implements App\\Platform\\Storage\\Migration\\Migration {\n        public function getVersion(): string { return 'broken-down'; }\n        public function up(): array { return []; }\n        public function down(): array { return ['DROP TABLE partial_down;', 'ALTER TABLE missing_table ADD value TEXT;']; }\n    };\n    $service = new App\\Platform\\Storage\\Migration\\MigrationService($s, $repo, new App\\Platform\\Storage\\Migration\\MigrationLoader('', new App\\Platform\\Logging\\ReadableOutputLogger()));\n    $service->addMigration($migration);\n    try { $service->rollback(); } catch (Throwable $e) { $out['migration_down_error'] = $e::class; }\n    $out['table_left_after_failed_down'] = $s->queryOne(\"SELECT to_regclass('partial_down') IS NOT NULL AS present\");\n    $out['versions_after_failed_down'] = $repo->getExecutedMigrations();\n    echo json_encode($out, JSON_THROW_ON_ERROR|JSON_PRETTY_PRINT), PHP_EOL;\n} finally { $db->cleanup(); }\n",
+  "source_sha256": {
+    "src/Platform/Storage/AbstractStorage.php": "b3f403d3fdf77856b2b7552f1af4d2fa46345c1b5f24fc8bce50c1cf7ae77d4b",
+    "src/Platform/Storage/PostgreSQLStorage.php": "862c55ed39d173880cc9629b1490c0cc7d5c551a57e6338ed627b8cd6030ae9b",
+    "src/Platform/Storage/TransactionRollbackException.php": "7310725b0a057b6f84ebc8bee25ece52c140fe390ad3758df807535c51e2b636",
+    "src/Platform/Storage/Migration/Migration.php": "65fb49f5fb2f5d2bbc87fb664ae9e0504536ef4abd04db49f8c8c9bdadf1d2e3",
+    "src/Platform/Storage/Migration/MigrationService.php": "2bba62e8520f065d64d7ae92d1573eb2bdd731d0bbb471486c9085999b886a07",
+    "examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php": "6bfd03e80d9c37cbf3d9deb388891b1e7a2023c88e6441cecade765455eda5de"
+  },
+  "scope": [
+    "One wrapped transaction; no nested/savepoint or automatic retry policy.",
+    "One migration version and its metadata write per transaction.",
+    "Explicit SQL statement lists replace semicolon splitting.",
+    "A lost connection is not transparently replaced."
+  ],
+  "verification_commands": [
+    "php tools/project.php verify:full",
+    "php tools/project.php build transactions"
+  ],
+  "verification": {
+    "verify_full": "passed",
+    "unit": {
+      "tests": 265,
+      "assertions": 1097
+    },
+    "sql_generator": {
+      "tests": 167,
+      "assertions": 625
+    },
+    "postgresql_integration": {
+      "tests": 58,
+      "assertions": 446
+    },
+    "runtime_archive_http_cases": 68,
+    "baseline_source_http_cases": 5,
+    "standalone_cli_recovery": "failed up, correction, migrate, failed down, correction, rollback passed"
+  }
+}

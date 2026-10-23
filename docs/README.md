@@ -44,6 +44,7 @@
 Эти документы уточняют область компонента; приоритеты всего проекта задаёт [roadmap](project/roadmap.md).
 
 - API из protobuf-контракта: [принятый план первого сквозного этапа](design/protobuf-contract-generation.md); генератор в текущем дереве отсутствует.
+- Транзакции и миграции: [атомарность версии, ошибки и восстановление](design/transactions-and-migrations.md).
 - SQL: [дизайн и ограничения](design/sql-gen-product.md), [инструкция инструмента](../tools/sql-gen/README.md).
 
 ## Исторические материалы

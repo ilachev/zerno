@@ -27,6 +27,14 @@ interface Storage
      */
     public function execute(string $sql, array $params = []): bool;
 
+    /**
+     * Owns one transaction; nested calls are rejected. A caught SQL failure still aborts it.
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     * @throws \Throwable
+     * @phpstan-impure
+     */
     public function transaction(callable $callback): mixed;
 
     public function lastInsertId(): string;

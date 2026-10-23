@@ -27,6 +27,8 @@
 
 config/storage.php создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Адаптер открывает PDO только при первой query/queryOne/execute/transaction/lastInsertId; конструктор не выполняет I/O. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
 
+Текущие миграции возвращают массив отдельных SQL в up/down. Каждая версия и её запись в migrations атомарны; после исправления сбоя CLI запускается явно повторно. [Полный контракт](../design/transactions-and-migrations.md) фиксирует nested calls, исходные ошибки, потерю соединения и ограничения DDL.
+
 Core migration path — пустой src/Migrations; пример имеет собственную migration. Явный migrate создаёт служебную таблицу migrations при явном создании MigrationRepository в CLI. Запуск HTTP и services:start не запускают migration автоматически. Существующие пользовательские таблицы старого API не удаляются этой очисткой.
 
 ## Unit и integration profiles

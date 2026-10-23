@@ -8,7 +8,9 @@ interface Migration
 {
     public function getVersion(): string;
 
-    public function up(): string;
+    /** @return list<string> Each element is one complete SQL statement. */
+    public function up(): array;
 
-    public function down(): string;
+    /** @return list<string> Each element is one complete SQL statement. */
+    public function down(): array;
 }

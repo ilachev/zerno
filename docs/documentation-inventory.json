@@ -610,6 +610,30 @@
         "examples/document-catalog/src/CatalogRepository.php",
         "docs/history/2026-10-23-query-one.json"
       ]
+    },
+    {
+      "id": "transactions-migrations",
+      "path": "docs/design/transactions-and-migrations.md",
+      "kind": "design",
+      "status": "current",
+      "summary": "Один transaction callback, сохранение ошибок, атомарная версия миграции, явный SQL-список, retry/connection ownership и native checks.",
+      "read_when": [
+        "Изменение транзакций и миграций",
+        "Диагностика сбоя commit/rollback и повтор CLI"
+      ],
+      "source_paths": [
+        "src/Platform/Storage/AbstractStorage.php",
+        "src/Platform/Storage/PostgreSQLStorage.php",
+        "src/Platform/Storage/TransactionRollbackException.php",
+        "src/Platform/Storage/Migration/Migration.php",
+        "src/Platform/Storage/Migration/MigrationService.php",
+        "examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php",
+        "src/Platform/Storage/Migration/MigrationRepository.php",
+        "tests/Integration/Storage/TransactionRecoveryTest.php",
+        "tests/Integration/Storage/MigrationRecoveryTest.php",
+        "tests/Integration/Storage/MigrationCliRecoveryTest.php",
+        "tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php"
+      ]
     }
   ],
   "artifacts": [
@@ -750,6 +774,19 @@
       ],
       "source_paths": [
         "docs/history/2026-10-23-query-one.md"
+      ]
+    },
+    {
+      "id": "transaction-recovery-data",
+      "path": "docs/history/2026-10-23-transaction-recovery.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Наблюдавшиеся сбои до изменения, исправленные PostgreSQL результаты, probes и hashes транзакций/миграций.",
+      "read_when": [
+        "Проверка доказательств восстановления после SQL/DDL ошибок"
+      ],
+      "source_paths": [
+        "docs/design/transactions-and-migrations.md"
       ]
     }
   ],

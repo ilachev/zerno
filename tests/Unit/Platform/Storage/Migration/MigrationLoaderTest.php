@@ -18,16 +18,16 @@ final class MigrationLoaderTest extends TestCase
         $file = $directory . '/Migration20300101001_Records.php';
         $source = '<?php namespace MigrationFixture_' . $suffix . '; '
             . 'final readonly class Migration20300101001_Records extends \App\Platform\Storage\Migration\AbstractMigration {'
-            . 'public function up(): string { return "CREATE TABLE records (id BIGINT)"; }'
-            . 'public function down(): string { return "DROP TABLE records"; }}';
+            . 'public function up(): array { return ["CREATE TABLE records (id BIGINT)"]; }'
+            . 'public function down(): array { return ["DROP TABLE records"]; }}';
 
         try {
             self::assertSame(\strlen($source), file_put_contents($file, $source));
             $loader = new MigrationLoader($directory, new TestLogger());
             $migrations = $loader->loadMigrations();
             self::assertCount(1, $migrations);
-            self::assertSame('CREATE TABLE records (id BIGINT)', $migrations[0]->up());
-            self::assertSame('DROP TABLE records', $migrations[0]->down());
+            self::assertSame(['CREATE TABLE records (id BIGINT)'], $migrations[0]->up());
+            self::assertSame(['DROP TABLE records'], $migrations[0]->down());
             self::assertCount(1, $loader->loadMigrations());
         } finally {
             if (is_file($file)) {

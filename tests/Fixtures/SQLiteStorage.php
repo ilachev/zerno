@@ -40,7 +40,7 @@ final class SQLiteStorage extends AbstractStorage
 
             return array_values($result);
         } catch (\PDOException $e) {
-            throw new StorageException($e->getMessage(), 0, $e);
+            throw $this->recordFailure($e);
         }
     }
 
@@ -59,7 +59,7 @@ final class SQLiteStorage extends AbstractStorage
                 $statement->closeCursor();
             }
         } catch (\PDOException $e) {
-            throw new StorageException($e->getMessage(), 0, $e);
+            throw $this->recordFailure($e);
         }
     }
 
@@ -74,7 +74,7 @@ final class SQLiteStorage extends AbstractStorage
 
             return $statement->execute($params);
         } catch (\PDOException $e) {
-            throw new StorageException($e->getMessage(), 0, $e);
+            throw $this->recordFailure($e);
         }
     }
 

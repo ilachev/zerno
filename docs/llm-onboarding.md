@@ -1,6 +1,6 @@
 # LLM onboarding
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 «Зерно» — универсальная автономная PHP HTTP/PDO-основа. [AGENTS.md](../AGENTS.md) задаёт правила работы, [принципы](project/principles.md) — три совместных критерия, [граница продукта](project/vision.md) — конкретный состав. План не устанавливает наличие функции.
 
@@ -22,7 +22,8 @@
 | HTTP, runtime, routing, сборка объектов | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, public/index.php, src/Platform |
 | Ограниченный JSON input | [Ручной POST-пример](../examples/json-echo/README.md) | Body::readLimited, examples/json-echo, tools/check-http.php |
 | API-контракт и генерация DTO/endpoints | [План protobuf](design/protobuf-contract-generation.md) | Контур пока удалён; реализуется отдельным законченным этапом |
-| SQL, миграции, генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
+| Транзакции и миграции | [Контракт восстановления](design/transactions-and-migrations.md) | AbstractStorage, MigrationService, bin/migrate.php |
+| SQL и генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
 | Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
 | FPM/RR, файлы и измерения | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |
 | Поставка | [Автономность](design/autonomous-core.md), [third-party](../third_party/README.md) | bootstrap.php, third_party/manifest.json |

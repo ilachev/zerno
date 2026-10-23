@@ -82,6 +82,7 @@ final class CoreApplicationTest extends TestCase
         ], $storage->query('SELECT id, value FROM core_application_records ORDER BY id'));
 
         $failure = new \DomainException('Rollback the transaction.');
+        $propagated = null;
 
         try {
             $storage->transaction(static function () use ($storage, $insert, $failure): void {
@@ -89,10 +90,10 @@ final class CoreApplicationTest extends TestCase
 
                 throw $failure;
             });
-            self::fail('The transaction callback exception must be propagated.');
         } catch (\DomainException $exception) {
-            self::assertSame($failure, $exception);
+            $propagated = $exception;
         }
+        self::assertSame($failure, $propagated);
         self::assertSame([], $storage->query('SELECT id FROM core_application_records WHERE id = :id', ['id' => 3]));
 
         $storage->transaction(static fn(): bool => $storage->execute($insert, ['id' => 4, 'value' => 'after rollback']));
