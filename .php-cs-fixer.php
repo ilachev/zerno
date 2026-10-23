@@ -17,6 +17,7 @@ $config = new Config()
             ->in(__DIR__ . '/public')
             ->in(__DIR__ . '/tools/http-fixtures')
             ->in(__DIR__ . '/tools/proto-gen')
+            ->in(__DIR__ . '/tools/security')
             ->in(__DIR__ . '/load-tests/baseline')
             ->in(__DIR__ . '/examples')
             ->append([

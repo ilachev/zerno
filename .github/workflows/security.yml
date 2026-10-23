@@ -1,0 +1,62 @@
+name: Security
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: PHP, bundled packages and RoadRunner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup current PHP 8.5 platform
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.5'
+          extensions: pdo, sockets
+          coverage: none
+          tools: none
+      - name: Verify bundled tools before executing them
+        id: integrity
+        run: php tools/project.php third-party:check
+      - name: Provision pinned RoadRunner platform
+        id: platform
+        run: |
+          mkdir -p var/security/bin
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            --max-time 120 --retry 2 \
+            --output var/security/rr.tar.gz \
+            https://github.com/roadrunner-server/roadrunner/releases/download/v3.0.1/roadrunner-3.0.1-linux-amd64.tar.gz
+          echo 'a6156d34a08cfdfba4934e737ed3208b11c6eab666def5c81f1b640ef43568e7  var/security/rr.tar.gz' | sha256sum --check --strict
+          tar -xzf var/security/rr.tar.gz --strip-components=1 -C var/security/bin roadrunner-3.0.1-linux-amd64/rr
+      - name: Audit bundled PHP libraries and upstream security release policy
+        run: |
+          set -o pipefail
+          php tools/project.php security:audit 2>&1 | tee var/security/php-audit.txt
+      - name: Audit the actual PHP and RoadRunner executable
+        if: ${{ !cancelled() && steps.integrity.outcome == 'success' && steps.platform.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          php tools/project.php security:platform --rr="$PWD/var/security/bin/rr" 2>&1 | tee var/security/platform-audit.txt
+      - name: Check HTTP on the patched platform
+        if: ${{ !cancelled() && steps.integrity.outcome == 'success' && steps.platform.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          php tools/project.php http:check --rr="$PWD/var/security/bin/rr" 2>&1 | tee var/security/http-check.txt
+      - name: Preserve audit diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: security-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: var/security/*.txt
+          if-no-files-found: warn
+          retention-days: 14

@@ -26,6 +26,9 @@ function projectCommand(string $command, array $arguments = []): void
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
                 http:check             Check real RoadRunner 3 HTTP behavior; forwards RR options
+                security:inventory     Print the bundled PHP package inventory; offline
+                security:audit         Audit PHP packages and PHP security policy; online advisory data only
+                security:platform      Check this PHP and an explicit RR binary; --rr=/path/to/rr
                 lint | fixcs           Check or fix PHP style
                 phpstan                Run root static analysis
                 test                   Run root unit tests; forwards PHPUnit arguments
@@ -81,6 +84,12 @@ function projectCommand(string $command, array $arguments = []): void
             projectRun([PHP_BINARY, $root . '/tools/check-http.php', ...$arguments], $root);
 
             return;
+        case 'security:inventory':
+        case 'security:audit':
+        case 'security:platform':
+            projectRun([PHP_BINARY, $root . '/tools/security/run.php', substr($command, 9), ...$arguments], $root);
+
+            return;
         case 'lint':
         case 'fixcs':
             projectDirectory($root . '/var');
@@ -93,7 +102,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'tools/proto-gen', 'gen/Generated/Echo', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'tools/proto-gen', 'tools/security', 'gen/Generated/Echo', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',

@@ -2,9 +2,9 @@
 
 Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
-[PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. Runtime: PHP 8.5+, PDO; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
+[PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. HTTP runtime: PHP 8.5.12+, PDO; технический минимум CLI checks — PHP 8.5; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
 
-Для HTTP check нужен установленный RoadRunner 3.x (проверен rr 3.0.0); RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, Docker используется только при выборе локального PostgreSQL service. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
+Для HTTP check нужен установленный RoadRunner 3.0.1+ в ветке 3.x; RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, Docker используется для локального PostgreSQL service; изолированный контейнер PHP также может служить явно подготовленной тестовой платформой. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
 
 ## Команды
 
@@ -17,13 +17,16 @@
 | proto:check | Хеши contract sources/descriptor и точная сверка generated PHP без compiler |
 | tools:sql:check | Style, PHPStan и tests SQL generator |
 | http:check | Настоящий RR3, JSON/HTML ошибки и файлы с metadata logging |
+| security:inventory | Автономный список версий PHP packages из manifests |
+| security:audit | Online OSV и PHP security release policy; advisory data only |
+| security:platform --rr=PATH | Проверка текущего PHP и конкретного RR binary через bundled govulncheck |
 | build VERSION | Integrity и runtime tar.gz; не заменяет quality gate |
 | services:start | Только PostgreSQL Docker service с --pull never, без миграций |
 | services:stop / services:status | Остановка / статус compose-проекта |
 | run | Только запуск RR core из .rr.yaml; не требует запуска БД для /health |
 | migrate [action] [directory] | Явный CLI DDL; default src/Migrations |
 
-Полный справочник — php tools/project.php help. proto:gen и proto:compile:check требуют установленный protoc (проверен 26.1); proto:check входит в verify и сверяет sources/descriptor/PHP без compiler. Нет cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build.
+Полный справочник — php tools/project.php help. proto:gen и proto:compile:check требуют установленный protoc (проверен 26.1); proto:check входит в verify и сверяет sources/descriptor/PHP без compiler. Нет cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build. [Security workflow](security.md) также выполняется ежедневно и для push/PR; release packaging/upload требует его успеха. Подготовка PHP/RR платформы в CI отделена от checks, а verify остаётся без сети.
 
 ## База приложения
 

@@ -8,7 +8,7 @@
 
 Собственные Request/Response/Body/Uri/UploadedFile без PSR/Nyholm, маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation и единственный HTTP runtime RoadRunner 3.x. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
 
-Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. Старый protobuf API/генератор также удалён, но пользователь подтвердил направление `.proto → DTO/endpoint/HTTP adapter/routes`; первый [сквозной Echo-этап](design/protobuf-contract-generation.md) реализован с обычными string DTO и unary POST JSON. PHP зависимости и quality/codegen tools включены; package installation/download отсутствуют на всех путях.
+Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. Старый protobuf API/генератор также удалён, но пользователь подтвердил направление `.proto → DTO/endpoint/HTTP adapter/routes`; первый [сквозной Echo-этап](design/protobuf-contract-generation.md) реализован с обычными string DTO и unary POST JSON. PHP зависимости и quality/codegen/security tools включены; package installation отсутствует. Только отдельные [security checks](development/security.md) получают advisory data по сети; обычный verify автономен.
 
 ## Начать задачу
 
@@ -24,6 +24,7 @@
 | API-контракт и генерация DTO/endpoints | [Контракт protobuf](design/protobuf-contract-generation.md) | contracts/echo.proto, tools/proto-gen, gen/Generated/Echo, examples/contract-echo |
 | Транзакции и миграции | [Контракт восстановления](design/transactions-and-migrations.md) | AbstractStorage, MigrationService, bin/migrate.php |
 | SQL и генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
+| Уязвимости и CI | [Security monitoring](development/security.md) | tools/security, .github/workflows/security.yml, .github/dependabot.yml |
 | Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
 | RoadRunner, файлы и измерения | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |
 | Поставка | [Автономность](design/autonomous-core.md), [third-party](../third_party/README.md) | bootstrap.php, third_party/manifest.json |
@@ -32,7 +33,7 @@
 
 ## Композиции и ограничения
 
-config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/index.php использует APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. Целевой RoadRunner — 3.x, проверен 3.0.0; executable выбирается через PATH и не скачивается командами проекта. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
+config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/index.php использует APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. Для HTTP нужны PHP 8.5.12+ и RoadRunner 3.0.1+ в ветке 3.x; executable выбирается через PATH и не скачивается командами проекта. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
 
 Каталог собирается в examples/document-catalog/application.php из Logger/Storage/private directory; config.php только выбирает эти входы. PostgreSQLStorage лениво открывает PDO при первой операции; handlers/repository строятся заранее без SQL. /health/404/405 не открывают БД. Миграции — отдельный CLI граф с директорией migrations, не HTTP-конфигурацией.
 

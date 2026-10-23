@@ -15,7 +15,7 @@
 
 GET/HEAD /health сохраняют JSON {"status":"ok"}. Core HTTP граф не создаёт Storage или migration services. Каталог строит Storage и handlers заранее, но PDO открывается при первой SQL-операции: /health/404/405 не зависят от БД.
 
-Единственная HTTP-точка входа — [public/index.php](../../public/index.php). Она загружает [bootstrap.php](../../bootstrap.php), выбирает APP_CONFIG (default config/core.php), передаёт RoadRunnerLogger в явную Closure(Logger): App и запускает RoadRunnerRuntime с native transport. Абсолютный APP_CONFIG позволяет не зависеть от рабочего каталога.
+Единственная HTTP-точка входа — [public/index.php](../../public/index.php). Она загружает [bootstrap.php](../../bootstrap.php), отклоняет PHP ниже [security floor](../development/security.md), выбирает APP_CONFIG (default config/core.php), передаёт RoadRunnerLogger в явную Closure(Logger): App и запускает RoadRunnerRuntime с native transport. Абсолютный APP_CONFIG позволяет не зависеть от рабочего каталога.
 
 [App](../../src/Platform/Runtime/App.php) принимает готовый RequestHandler и делегирует handle/handleRequest, не читая конфигурацию и не запуская server loop. Это граница композиции/тестов; альтернативные HTTP runtimes не поставляются. CLI migrations/seed/generators остаются обычными PHP-процессами.
 
@@ -32,7 +32,7 @@ RoadRunner HTTP → RoadRunnerHttpWorker::waitRequest()
 
 Перед отправкой адаптер подавляет body для HEAD/1xx/204/304 без чтения/перемотки исходного; для 1xx/204 удаляет Content-Length. Runtime закрывает response body в finally, включая transport error. App::handle ничего не отправляет и не закрывает.
 
-Проверенный server — RoadRunner 3.0.0 с worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0 и DTO 2.1.0. Нативный RR HttpWorker обслуживает protocol/frames, собственный адаптер — HTTP-типы и чтение Body. RR_HTTP_CHUNK_SIZE=8192 включает чтение с одним chunk lookahead (до двух chunks в адаптере); default 0 материализует body строкой. Seekable body перематывается, non-seekable читается с текущей позиции; запрещённые тела отправляются пустой строкой даже при включённых chunks. После native completion при ошибке генератора адаптер повторно выбрасывает ошибку чтения. Отмена клиента остаётся поведением upstream; длительная устойчивость всех типов потоков не заявляется. Проверка больших regular files входит в http:check.
+Текущий HTTP check пройден на PHP 8.5.12/RoadRunner 3.0.1 с worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0 и DTO 2.1.0. Нативный RR HttpWorker обслуживает protocol/frames, собственный адаптер — HTTP-типы и чтение Body. RR_HTTP_CHUNK_SIZE=8192 включает чтение с одним chunk lookahead (до двух chunks в адаптере); default 0 материализует body строкой. Seekable body перематывается, non-seekable читается с текущей позиции; запрещённые тела отправляются пустой строкой даже при включённых chunks. После native completion при ошибке генератора адаптер повторно выбрасывает ошибку чтения. Отмена клиента остаётся поведением upstream; длительная устойчивость всех типов потоков не заявляется. Проверка больших regular files входит в http:check.
 
 ## Собственные HTTP-типы
 

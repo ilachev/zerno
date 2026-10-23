@@ -2,7 +2,7 @@
 
 Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
-Runtime, генерация, проверки и сборка не устанавливают пакеты и не скачивают dependencies. PHP, расширения, PostgreSQL, RoadRunner 3.x executable и инструменты стенда — внешняя платформа. [Конкретный состав](../project/vision.md) не содержит optional-подсистем старого API.
+Runtime, генерация, проверки и сборка не устанавливают пакеты и не скачивают dependencies. Только отдельные [security checks](../development/security.md) получают advisory data по сети; обычные verify/build автономны. PHP, расширения, PostgreSQL, RoadRunner 3.x executable и инструменты стенда — внешняя платформа. [Конкретный состав](../project/vision.md) не содержит optional-подсистем старого API.
 
 ## Distributions
 
@@ -11,11 +11,11 @@ Runtime, генерация, проверки и сборка не устана�
 | Runtime | third_party/runtime | bootstrap приложения |
 | SQL generator | third_party/codegen/sql | Отдельный процесс sql-gen/sql-check |
 | API contract sources | third_party/codegen/proto | Только компиляция contracts/echo.proto; bundled annotations/http/descriptor.proto |
-| Quality | third_party/tools | PHPStan, PHPUnit, PHP-CS-Fixer PHAR launchers |
+| Quality/security | third_party/tools | PHPStan, PHPUnit, PHP-CS-Fixer PHAR launchers и govulncheck binaries |
 
 [Главный manifest](../../third_party/manifest.json) содержит hashes distribution manifests; каждый manifest перечисляет файлы и SHA256. [Checker](../../tools/check-third-party.php) проверяет также незаявленные файлы и symlinks без сети. Runtime bootstrap не загружает generator/quality libraries.
 
-Транспорт RR3 зафиксирован: roadrunner/worker 3.8.0, roadrunner/http 4.2.1, roadrunner/goridge 4.6.0, roadrunner/api-dto 2.1.0. Namespaces Spiral/RoadRunner/GPBMetadata не переименовывались. Compatibility metapackage spiral/roadrunner обновлён до v3.0.0: tagged upstream metadata сохраняет старое имя, хотя новые PHP packages также ссылаются на roadrunner/roadrunner. Эти декларации хранят происхождение, package resolution отсутствует. Исполняемый RR 3.x и sockets — отдельная платформа; проверка релизного executable не добавляет download path в проект.
+Транспорт RR3 зафиксирован: roadrunner/worker 3.8.0, roadrunner/http 4.2.1, roadrunner/goridge 4.6.0, roadrunner/api-dto 2.1.0. Namespaces Spiral/RoadRunner/GPBMetadata не переименовывались. Compatibility metapackage spiral/roadrunner обновлён до v3.0.0: tagged upstream metadata сохраняет старое имя, хотя новые PHP packages также ссылаются на roadrunner/roadrunner. Эти декларации хранят происхождение, package resolution отсутствует. Исполняемый RR 3.x и sockets — отдельная платформа; команды проверки получают установленный executable. CI отдельно подготавливает RR 3.0.1 по release URL с фиксированным SHA-256 перед проверками; это внешняя платформа, не runtime dependency downloader.
 
 Сторонние package trees фиксированы с version/ref/license и исходными notices. Для retained protobuf/polyfill provenance описывает прежний установленный snapshot; transport обновлён из upstream tag/commit archives по HTTPS с локальным archive SHA256. Новая поставка не заявляет независимую проверку подписи издателя; hashes подтверждают локальную целостность, не повторную аутентификацию издателя. Исходные composer metadata внутри upstream packages сохранены как происхождение, не как вход installer.
 
@@ -39,8 +39,8 @@ php tools/project.php verify:full
 php tools/project.php build local
 ```
 
-Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR, каталог с migration/seed и [ручной POST JSON](../../examples/json-echo/README.md) с RR3 конфигурацией, а также [Echo из контракта](../../examples/contract-echo/README.md) и его готовый PHP. SQL/API generators, contracts/descriptors, codegen sources, quality PHARs, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
+Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR, каталог с migration/seed и [ручной POST JSON](../../examples/json-echo/README.md) с RR3 конфигурацией, а также [Echo из контракта](../../examples/contract-echo/README.md) и его готовый PHP. SQL/API generators, contracts/descriptors, codegen sources, quality PHARs/security binaries, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
 
 CLI migration в распакованном архиве: php bin/migrate.php migrate [migration-directory]. Default — src/Migrations; каталог передаёт examples/document-catalog/migrations. CLI явно собирает Storage/repository/loader/service и подключает файлы директории без HTTP graph. БД не создаётся автоматически, HTTP startup не выполняет DDL.
 
-CI/release запускают полный gate и build, не регенерируют артефакты при запросе и не устанавливают PHP packages. Реальные HTTP/load checks выполняются явно на установленной платформе. Удаление API-миграций из дерева не удаляет таблицы существующих пользовательских БД; никакой автоматической destructive migration не добавлено.
+CI запускает online security gate независимо от полного verify; release packaging/upload зависит от его успеха. CI/release запускают полный gate и build, не регенерируют артефакты при запросе и не устанавливают PHP packages. Реальные HTTP/load checks выполняются явно на установленной платформе. Удаление API-миграций из дерева не удаляет таблицы существующих пользовательских БД; никакой автоматической destructive migration не добавлено.

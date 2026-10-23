@@ -1,0 +1,62 @@
+{
+  "name": "golang.org/x/vuln/cmd/govulncheck",
+  "version": "v1.9.0",
+  "license_spdx": "BSD-3-Clause",
+  "recorded_on": "2026-10-23",
+  "source": "https://pkg.go.dev/golang.org/x/vuln@v1.9.0/cmd/govulncheck",
+  "module_sum": "h1:12VaqnI9kJfqwRoPptxoqsUhQtdfrSbdksT7X/KY/sc=",
+  "go_mod_sum": "h1:E/Frwm0xp49fTyBW+6CQHdkvobknbwUM49yEpMGUauw=",
+  "compiler": "go1.27.3",
+  "build": "CGO_ENABLED=0 GOOS=<linux|darwin> GOARCH=<amd64|arm64> go build -trimpath -ldflags=\"-s -w\" -o <artifact> ./cmd/govulncheck",
+  "source_changes": [],
+  "verification": "Sources obtained through the Go module proxy with checksum database verification. Compiled locally from the pinned module directory; not signed upstream executable releases.",
+  "build_dependencies": {
+    "vuln": "v1.9.0",
+    "mod": "v0.42.0",
+    "sync": "v0.24.0",
+    "tools": "v0.52.0",
+    "telemetry": "v0.0.0-20261010193011-f71dc92da45e"
+  },
+  "artifacts": {
+    "govulncheck-darwin-arm64": {
+      "sha256": "61ba969068c124f8d57f42aee5c4c89d74a3ff27b1101ce0e9a589b05efac57a",
+      "bytes": 10234354,
+      "buildinfo": [
+        "\tpath\tgolang.org/x/vuln/cmd/govulncheck",
+        "\tmod\tgolang.org/x/vuln\t(devel)\t",
+        "\tdep\tgolang.org/x/mod\tv0.42.0\th1:ICeL3t2L30ljSPHHxDnR4fqVcBt/zR2zJAb9juavmQg=",
+        "\tdep\tgolang.org/x/sync\tv0.24.0\th1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=",
+        "\tdep\tgolang.org/x/telemetry\tv0.0.0-20261010193011-f71dc92da45e\th1:P6NGsugec4oASJ+yKMNgTndeo0h2CbixZLvQIe9h5R4=",
+        "\tdep\tgolang.org/x/tools\tv0.52.0\th1:ryxg4U63oaUYk7uOLTF37n43f4qgtGvqV4Ioit1BaEs=",
+        "\tbuild\t-buildmode=exe",
+        "\tbuild\t-compiler=gc",
+        "\tbuild\t-trimpath=true",
+        "\tbuild\tDefaultGODEBUG=tracebacklabels=0,x509sslcertoverrideplatform=0",
+        "\tbuild\tCGO_ENABLED=0",
+        "\tbuild\tGOARCH=arm64",
+        "\tbuild\tGOOS=darwin",
+        "\tbuild\tGOARM64=v8.0"
+      ]
+    },
+    "govulncheck-linux-amd64": {
+      "sha256": "1176534e37656ded8ccf7c85b00c5a03cedff341edbdc5dafa1456e518f40c43",
+      "bytes": 10842272,
+      "buildinfo": [
+        "\tpath\tgolang.org/x/vuln/cmd/govulncheck",
+        "\tmod\tgolang.org/x/vuln\t(devel)\t",
+        "\tdep\tgolang.org/x/mod\tv0.42.0\th1:ICeL3t2L30ljSPHHxDnR4fqVcBt/zR2zJAb9juavmQg=",
+        "\tdep\tgolang.org/x/sync\tv0.24.0\th1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=",
+        "\tdep\tgolang.org/x/telemetry\tv0.0.0-20261010193011-f71dc92da45e\th1:P6NGsugec4oASJ+yKMNgTndeo0h2CbixZLvQIe9h5R4=",
+        "\tdep\tgolang.org/x/tools\tv0.52.0\th1:ryxg4U63oaUYk7uOLTF37n43f4qgtGvqV4Ioit1BaEs=",
+        "\tbuild\t-buildmode=exe",
+        "\tbuild\t-compiler=gc",
+        "\tbuild\t-trimpath=true",
+        "\tbuild\tDefaultGODEBUG=tracebacklabels=0,x509sslcertoverrideplatform=0",
+        "\tbuild\tCGO_ENABLED=0",
+        "\tbuild\tGOARCH=amd64",
+        "\tbuild\tGOOS=linux",
+        "\tbuild\tGOAMD64=v1"
+      ]
+    }
+  }
+}

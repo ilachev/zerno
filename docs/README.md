@@ -31,6 +31,7 @@
 
 ## Работа с репозиторием
 
+- [Уязвимости поставки и платформы](development/security.md) — Dependabot, PHP floor, OSV, аудит RR executable, CI/release gates и границы покрытия.
 - [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
 - [HTTP и малый baseline](development/http-and-baseline.md) — реальные RR3 wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
 - [Запуск публичного каталога](../examples/document-catalog/README.md) — отдельная БД, миграция/seed, HTML и private PDF storage на RR3.

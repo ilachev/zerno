@@ -20,7 +20,7 @@ RequestContext → ErrorHandler → Routing → RouteHandlerResolver → гот�
 
 [public/index.php](../../public/index.php) — единственная HTTP-точка входа. Она передаёт RoadRunnerLogger в APP_CONFIG функцию, явно создаёт native transport и запускает RoadRunnerRuntime. Default APP_CONFIG — config/core.php. CLI commands строят собственные графы без HTTP loop.
 
-Целевой server — RoadRunner 3.x (проверен 3.0.0), отдельный executable платформы. Обновлены native transport sources: worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0, API DTO 2.1.0. PHP namespaces сохранены upstream, пути packages следуют roadrunner/*.
+Целевой server — RoadRunner 3.x, отдельный executable платформы. Текущий security floor: PHP 8.5.12+ и RR 3.0.1+; [аудит платформы](../development/security.md) проверяется отдельно от HTTP-корректности. Native transport sources: worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0, API DTO 2.1.0. PHP namespaces сохранены upstream, пути packages следуют roadrunner/*.
 
 RoadRunnerRuntime::createWorker(transport, chunkSize) создаёт собственный [RoadRunnerHttpWorker](../../src/Platform/Runtime/RoadRunnerHttpWorker.php) поверх нативного RR HttpWorker, без PSR factories/adapters. RR_HTTP_CHUNK_SIZE задаётся в server env: default 0 материализует body, каталог/HTTP fixtures выбирают 8192. Чтение частями удерживает текущий и следующий chunk; seekable body перематывается, non-seekable читается с текущей позиции. Native transport завершает поток при ошибке генератора; адаптер сохраняет и повторно выбрасывает read failure. Полного охвата отмены клиента и произвольных потоков нет.
 

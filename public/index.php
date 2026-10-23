@@ -8,8 +8,11 @@ use App\Platform\Logging\Logger;
 use App\Platform\Logging\ReadableOutputLogger;
 use App\Platform\Logging\RoadRunnerLogger;
 use App\Platform\Runtime\App;
+use App\Platform\Runtime\PhpRuntime;
 use App\Platform\Runtime\RoadRunnerRuntime;
 use Spiral\RoadRunner\Worker;
+
+PhpRuntime::assertSupported();
 
 $configPath = getenv('APP_CONFIG') ?: __DIR__ . '/../config/core.php';
 /** @var Closure(Logger): App $compose */

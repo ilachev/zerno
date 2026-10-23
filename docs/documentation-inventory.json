@@ -668,6 +668,25 @@
         "tools/check-http.php",
         "docs/architecture/request-lifecycle.md"
       ]
+    },
+    {
+      "id": "security-monitoring",
+      "path": "docs/development/security.md",
+      "kind": "operations",
+      "status": "current",
+      "summary": "Уязвимости включённого кода и платформы: PHP floor, OSV, RR binary scan, Dependabot и CI/release gates.",
+      "read_when": [
+        "Изменение CI или bundled dependencies",
+        "Обновление PHP/RoadRunner и разбор advisories"
+      ],
+      "source_paths": [
+        "tools/security",
+        "src/Platform/Runtime/PhpRuntime.php",
+        "public/index.php",
+        ".github/workflows/security.yml",
+        ".github/dependabot.yml",
+        "third_party/manifest.json"
+      ]
     }
   ],
   "artifacts": [

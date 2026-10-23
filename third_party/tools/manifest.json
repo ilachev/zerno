@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "description": "Pinned standalone quality tools; no package manager or network access is required to run them.",
-  "recorded_on": "2026-10-17",
+  "description": "Pinned standalone quality and security tools. Only the explicit security audit fetches advisory data; no package installation is required.",
+  "recorded_on": "2026-10-23",
   "tools": {
     "phpstan": {
       "version": "2.1.42",
@@ -20,9 +20,33 @@
       "license_spdx": "MIT",
       "artifact": "php-cs-fixer/php-cs-fixer.phar",
       "provenance": "php-cs-fixer/provenance.json"
+    },
+    "govulncheck": {
+      "version": "v1.9.0",
+      "license_spdx": "BSD-3-Clause",
+      "artifacts": [
+        "govulncheck/govulncheck-linux-amd64",
+        "govulncheck/govulncheck-darwin-arm64"
+      ],
+      "provenance": "govulncheck/provenance.json"
     }
   },
   "files": {
+    "govulncheck/govulncheck-darwin-arm64": "61ba969068c124f8d57f42aee5c4c89d74a3ff27b1101ce0e9a589b05efac57a",
+    "govulncheck/govulncheck-linux-amd64": "1176534e37656ded8ccf7c85b00c5a03cedff341edbdc5dafa1456e518f40c43",
+    "govulncheck/notices/go/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/go/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/notices/mod/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/mod/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/notices/sync/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/sync/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/notices/telemetry/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/telemetry/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/notices/tools/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/tools/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/notices/vuln/LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "govulncheck/notices/vuln/PATENTS": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "govulncheck/provenance.json": "b3d9221c0f13283e41fe91f7798e09ae02aebf5d3c9adb7c0458c0bf69f2bb40",
     "php-cs-fixer/LICENSE": "2328ecf7ed904804f5e9f9c70762d2e0baf6610d872c611bbddca94baa970549",
     "php-cs-fixer/php-cs-fixer.phar": "aaafc3a53b877c6741ddccac0a783f0fb73fff5f84fba5870d5dd306ee22dde0",
     "php-cs-fixer/php-cs-fixer.phar.asc": "d0b08d286df181fef54350530e6acb670176d05581490941f2edf4c0cd3f0678",

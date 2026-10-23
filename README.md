@@ -18,7 +18,7 @@
 
 ## Запуск
 
-Нужны PHP 8.5+, PDO, sockets и установленный RoadRunner 3.x; проверен 3.0.0. Для БД дополнительно нужны pdo_pgsql и PostgreSQL. PHP libraries и quality/codegen tools поставляются статически, установка пакетов не требуется.
+Для HTTP нужны PHP 8.5.12+, PDO, sockets и установленный RoadRunner 3.0.1+ в ветке 3.x. Для БД дополнительно нужны pdo_pgsql и PostgreSQL. PHP libraries и quality/codegen tools поставляются статически, установка пакетов не требуется.
 
 ```bash
 rr --version
@@ -47,10 +47,12 @@ php tools/project.php help
 php tools/project.php verify
 php tools/project.php verify:full
 php tools/project.php http:check --rr=/path/to/rr3
+php tools/project.php security:audit
+php tools/project.php security:platform --rr=/path/to/rr3
 php tools/project.php build local
 ```
 
-verify не требует внешних сервисов или protoc. verify:full добавляет SQL-tool checks и PostgreSQL через TEST_DB_*. http:check запускает только настоящий RR3 и проверяет HTTP, ресурсы и состояние следующего запроса. [Инфраструктура](docs/development/infrastructure-and-testing.md) описывает требования и изоляцию. Runtime archive содержит готовый PHP и SQL/API-artifacts без генераторов, contracts и quality tools.
+verify не требует внешних сервисов или protoc. verify:full добавляет SQL-tool checks и PostgreSQL через TEST_DB_*. Отдельные [security checks](docs/development/security.md) читают advisory data без скачивания пакетов; CI выполняет их ежедневно и блокирует релиз при ошибке. Текущий RR finding требует разрешения перед релизом. http:check запускает только настоящий RR3 и проверяет HTTP, ресурсы и состояние следующего запроса. [Инфраструктура](docs/development/infrastructure-and-testing.md) описывает требования и изоляцию. Runtime archive содержит готовый PHP и SQL/API-artifacts без генераторов, contracts и quality tools.
 
 Bundled RR использует protobuf/DTO libraries для своего транспорта; API Echo их не загружает как codec. Notices, происхождение и hashes описаны в [автономной поставке](docs/design/autonomous-core.md).
 

@@ -18,7 +18,7 @@
       "pdo_sqlite"
     ],
     "executables": {
-      "http": "RoadRunner >=3.0 <4.0 only",
+      "http": "RoadRunner >=3.0.1 <4.0 only; audit the actual executable before deployment",
       "development": [
         "docker",
         "k6",
@@ -27,7 +27,8 @@
     },
     "roadrunner_extensions": [
       "sockets"
-    ]
+    ],
+    "http_php": ">=8.5.12; see src/Platform/Runtime/PhpRuntime.php"
   },
   "distributions": [
     {
@@ -43,7 +44,7 @@
     {
       "name": "tools",
       "manifest": "tools/manifest.json",
-      "sha256": "6c0343e11a137ed6b82fbbb08b1e112faf8f8813eecdb3d610b37cfd849f0dc2"
+      "sha256": "e526e927584041e288340b485090d747d438c28587ec9d4020964409c38f299d"
     },
     {
       "name": "codegen/proto",

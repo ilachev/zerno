@@ -4,10 +4,19 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
+  security:
+    uses: ./.github/workflows/security.yml
   build:
     name: Verify and Package Release
     runs-on: ubuntu-latest
+    needs: security
+    timeout-minutes: 20
+    permissions:
+      contents: write
     env:
       TEST_DB_HOST: 127.0.0.1
       TEST_DB_PORT: 5432
@@ -29,9 +38,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Setup PHP platform
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
           extensions: dom, fileinfo, mbstring, pdo_sqlite, pdo_pgsql, sockets, xml, xmlwriter
@@ -44,7 +55,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.release.tag_name }}
         run: php tools/project.php build "$RELEASE_VERSION"
       - name: Upload release assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: |
             dist/zerno-${{ github.event.release.tag_name }}.tar.gz

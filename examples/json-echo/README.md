@@ -21,7 +21,7 @@ Media type сравнивается без учёта регистра, пара
 
 ## RoadRunner 3
 
-Команды выполняются из корня обычным пользователем. Нужны PHP 8.5+, PDO, sockets и установленный RR3 (проверен 3.0.0).
+Команды выполняются из корня обычным пользователем. Нужны PHP 8.5.12+, PDO, sockets и установленный RR 3.0.1+ в ветке 3.x; действуют общие [security checks](../../docs/development/security.md).
 
 ```bash
 rr serve -c examples/json-echo/rr.yaml
