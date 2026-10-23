@@ -6,6 +6,8 @@
 
 ## Проверенная база
 
+- [API из контракта](../design/protobuf-contract-generation.md): первый string/unary POST JSON Echo, readonly DTO, typed endpoint, adapter/routes, автономные snapshots и реальные FPM/RR checks.
+
 - [RoadRunner 3](../history/2026-10-20-roadrunner3.md): native transport, фиксированные upstream sources и проверки SAPI/RR без Composer/PSR.
 - [Восстановление транзакций и миграций](../design/transactions-and-migrations.md): исходные ошибки, атомарность каждой версии, явные SQL-списки и native PostgreSQL/CLI checks.
 - [Однострочный SQL-путь](../history/2026-10-23-query-one.md): queryOne/fetchOne без полного PHP-массива, сохранение SQL, проверки PostgreSQL и измеренная граница PHP/native памяти.
@@ -25,7 +27,7 @@
 
 | Задача | Конкретный потребитель/проблема | Проверяемый результат |
 | --- | --- | --- |
-| API из protobuf-контракта — принят, не реализован | Один Echo-контракт → DTO/endpoint/HTTP adapter/routes → ручная реализация | [Критерии сквозного этапа](../design/protobuf-contract-generation.md), автономная генерация и реальные FPM/RR checks |
+| Расширение API-контракта — пока без нового consumer | Presence, типы и transcoding добавляются только под конкретную операцию | Полный сценарий, проверки wire compatibility и сравнимые затраты; не добавлять все protobuf types заранее |
 
 Это отдельные задачи, не заказ на новую подсистему. Для каждой сначала показать текущего потребителя, минимальный API, шаги разработчика и сравнимые затраты, затем реализовывать. Сессии, редактор, auth framework и общий cache не следуют автоматически из таблицы. Protobuf-генерация имеет отдельное прямое основание — уточнённый пользователем API-контракт; старый API-шаблон целиком не восстанавливается.
 

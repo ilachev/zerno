@@ -1,6 +1,6 @@
 # Автономная поставка
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 Runtime, генерация, проверки и сборка не устанавливают пакеты и не скачивают dependencies. PHP, расширения, PostgreSQL, выбранный HTTP executable и инструменты стенда — внешняя платформа. [Конкретный состав](../project/vision.md) не содержит optional-подсистем старого API.
 
@@ -10,6 +10,7 @@ Runtime, генерация, проверки и сборка не устана�
 | --- | --- | --- |
 | Runtime | third_party/runtime | bootstrap приложения |
 | SQL generator | third_party/codegen/sql | Отдельный процесс sql-gen/sql-check |
+| API contract sources | third_party/codegen/proto | Только компиляция contracts/echo.proto; bundled annotations/http/descriptor.proto |
 | Quality | third_party/tools | PHPStan, PHPUnit, PHP-CS-Fixer PHAR launchers |
 
 [Главный manifest](../../third_party/manifest.json) содержит hashes distribution manifests; каждый manifest перечисляет файлы и SHA256. [Checker](../../tools/check-third-party.php) проверяет также незаявленные файлы и symlinks без сети. Runtime bootstrap не загружает generator/quality libraries.
@@ -20,7 +21,7 @@ Runtime, генерация, проверки и сборка не устана�
 
 ## Потребители runtime libraries
 
-HTTP-типы и Logger принадлежат ядру. Nyholm/psr7, psr/http-factory, psr/http-message и psr/log удалены вместе с package trees и autoload prefixes. SAPI не загружает сторонние HTTP-типы. RR использует native HttpWorker: Goridge, RR worker/HTTP, polyfill, roadrunner/api-dto и Google protobuf остаются в runtime. Собственного protobuf API пока нет. GeoIP, psr/simple-cache и RR KV также удалены; protobuf generator distribution отсутствует.
+HTTP-типы и Logger принадлежат ядру. Nyholm/psr7, psr/http-factory, psr/http-message и psr/log удалены вместе с package trees и autoload prefixes. SAPI не загружает сторонние HTTP-типы. RR использует native HttpWorker: Goridge, RR worker/HTTP, polyfill, roadrunner/api-dto и Google protobuf остаются в runtime. API Echo использует обычные readonly DTO без Google Message. GeoIP, psr/simple-cache и RR KV также удалены; contract sources поставляются отдельно в codegen/proto; descriptor reader берётся из уже bundled Google runtime только процессом генерации.
 
 Retained upstream trees сохраняют исходные metadata и неиспользуемые PSR7Worker/Logger классы. Они не загружаются, PSR namespaces не регистрируются и этих packages в поставке нет. Это provenance, не поддерживаемый compatibility API. Крупные quality PHARs изолированы от runtime; их внутренние bundled libraries не являются API приложения.
 
@@ -30,7 +31,7 @@ Retained upstream trees сохраняют исходные metadata и неис
 
 ## SQL и сборка
 
-SQL inputs — sql/schema.sql и sql/queries/catalog.sql, runtime namespace задаётся аргументом runner, engine — tools/sql-gen. Generated artifacts не редактируются вручную. Nette/Phplrt/Typhoon нужны codegen-процессу, не HTTP. Собственных .proto/SDK/OpenAPI и protoc compiler requirements больше нет.
+SQL inputs — sql/schema.sql и sql/queries/catalog.sql, runtime namespace задаётся аргументом runner, engine — tools/sql-gen. Generated artifacts не редактируются вручную. Nette/Phplrt/Typhoon нужны codegen-процессу, не HTTP. contracts/echo.proto и сохранённый descriptor дают отдельный проверочный API-контур. proto:gen и proto:compile:check требуют platform protoc (проверен 26.1); proto:check/verify сверяют sources/descriptor/PHP без compiler. SDK/OpenAPI не поставляются.
 
 ```bash
 php tools/project.php third-party:check
@@ -38,7 +39,7 @@ php tools/project.php verify:full
 php tools/project.php build local
 ```
 
-Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR, каталог с migration/seed и [ручной POST JSON](../../examples/json-echo/README.md) с FPM/RR конфигурациями. SQL generator, quality PHARs, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
+Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR, каталог с migration/seed и [ручной POST JSON](../../examples/json-echo/README.md) с FPM/RR конфигурациями, а также [Echo из контракта](../../examples/contract-echo/README.md) и его готовый PHP. SQL/API generators, contracts/descriptors, codegen sources, quality PHARs, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
 
 CLI migration в распакованном архиве: php bin/migrate.php migrate [migration-directory]. Default — src/Migrations; каталог передаёт examples/document-catalog/migrations. CLI явно собирает Storage/repository/loader/service и подключает файлы директории без HTTP graph. БД не создаётся автоматически, HTTP startup не выполняет DDL.
 

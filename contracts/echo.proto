@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package zerno.examples;
+
+import "google/api/annotations.proto";
+
+option php_namespace = "App\\Generated\\Echo";
+
+service Echo {
+  rpc Send(EchoRequest) returns (EchoResponse) {
+    option (google.api.http) = { post: "/api/echo" body: "*" };
+  }
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+}

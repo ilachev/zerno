@@ -10,9 +10,11 @@
 
 | Команда | Что выполняется |
 | --- | --- |
-| verify | Integrity → docs → style → PHPStan 10 → SQL synchronization → root unit tests |
+| verify | Integrity → docs → style → PHPStan 10 → SQL/API synchronization → root unit tests |
 | verify:integration | sql:check:pg → PostgreSQL integration tests |
 | verify:full | verify → tools:sql:check → verify:integration |
+| proto:gen / proto:compile:check | Компиляция/полная сверка Echo через platform protoc |
+| proto:check | Хеши contract sources/descriptor и точная сверка generated PHP без compiler |
 | tools:sql:check | Style, PHPStan и tests SQL generator |
 | http:check | Реальные FPM/RR, JSON/HTML ошибки и файлы с metadata logging |
 | build VERSION | Integrity и runtime tar.gz; не заменяет quality gate |
@@ -21,7 +23,7 @@
 | run | Только запуск RR core из .rr.yaml; не требует запуска БД для /health |
 | migrate [action] [directory] | Явный CLI DDL; default src/Migrations |
 
-Полный справочник — php tools/project.php help. Нет proto/cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build.
+Полный справочник — php tools/project.php help. proto:gen и proto:compile:check требуют установленный protoc (проверен 26.1); proto:check входит в verify и сверяет sources/descriptor/PHP без compiler. Нет cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build.
 
 ## База приложения
 

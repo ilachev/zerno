@@ -503,19 +503,19 @@
       "id": "protobuf-contract-generation",
       "path": "docs/design/protobuf-contract-generation.md",
       "kind": "design",
-      "status": "accepted-plan",
-      "summary": "Уточнённое направление protobuf как API-контракта: генерация DTO, endpoint interfaces, HTTP adapters/routes и критерии первого сквозного этапа; текущей реализации нет.",
+      "status": "current",
+      "summary": "Первый реализованный proto3 string/unary POST JSON этап: readonly DTO, typed endpoint, adapter/routes, snapshot/compiler checks и стоимость.",
       "read_when": [
         "Проектирование и восстановление генерации из protobuf",
         "Проверка границы контракта, runtime и бизнес-логики"
       ],
       "source_paths": [
-        "docs/project/vision.md",
-        "docs/project/roadmap.md",
-        "docs/development/coding-guidelines.md",
-        "config/core.php",
-        "src/Platform/Routing/RouteEntry.php",
-        "src/Platform/Http/RouteHandlerResolver.php"
+        "contracts",
+        "tools/proto-gen",
+        "gen/Generated/Echo",
+        "examples/contract-echo",
+        "tests/Unit/Codegen",
+        "tools/check-http.php"
       ]
     },
     {
@@ -633,6 +633,23 @@
         "tests/Integration/Storage/MigrationRecoveryTest.php",
         "tests/Integration/Storage/MigrationCliRecoveryTest.php",
         "tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php"
+      ]
+    },
+    {
+      "id": "contract-echo-example",
+      "path": "examples/contract-echo/README.md",
+      "kind": "tool-guide",
+      "status": "current",
+      "summary": "Запуск Echo из .proto, ручная реализация и явное подключение generated adapter на SAPI/RR.",
+      "read_when": [
+        "Разработка API из контракта",
+        "Запуск готового generated PHP без compiler"
+      ],
+      "source_paths": [
+        "contracts/echo.proto",
+        "gen/Generated/Echo",
+        "examples/contract-echo",
+        "tools/proto-gen"
       ]
     }
   ],
@@ -787,6 +804,49 @@
       ],
       "source_paths": [
         "docs/design/transactions-and-migrations.md"
+      ]
+    },
+    {
+      "id": "contract-generation-data",
+      "path": "docs/history/2026-10-23-contract-generation.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "First contract generation slice: reproducible DTO/handler cost, real Caddy/FPM/RR checks and autonomous archive.",
+      "read_when": [
+        "Проверка измерений первого API-контракта"
+      ],
+      "source_paths": [
+        "docs/design/protobuf-contract-generation.md",
+        "tools/proto-gen/measure.php",
+        "tools/check-http.php"
+      ]
+    },
+    {
+      "id": "echo-descriptor-snapshot",
+      "path": "contracts/echo.pb",
+      "kind": "reference",
+      "status": "current",
+      "summary": "Compiled single-file Echo descriptor for compiler-free PHP regeneration checks.",
+      "read_when": [
+        "Проверка автономной генерации API"
+      ],
+      "source_paths": [
+        "contracts/echo.proto",
+        "tools/proto-gen/run.php"
+      ]
+    },
+    {
+      "id": "echo-input-snapshot",
+      "path": "contracts/echo.inputs.json",
+      "kind": "reference",
+      "status": "current",
+      "summary": "Generated source/import/descriptor hashes for the Echo contract snapshot.",
+      "read_when": [
+        "Изменение API-контракта"
+      ],
+      "source_paths": [
+        "contracts/echo.proto",
+        "tools/proto-gen/run.php"
       ]
     }
   ],

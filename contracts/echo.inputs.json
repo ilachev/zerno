@@ -1,0 +1,9 @@
+{
+    "inputs": {
+        "echo.proto": "d8c98154ea77cbaa0a0e63b87e3bd3e5efb6246c147fc93b7ce65700d75554ee",
+        "google/api/annotations.proto": "e79ea741cb605a65e78ca322174764a4af9fde1962c1631e12b84c4934ba9a6c",
+        "google/api/http.proto": "ead99129aa15dd5f6233942030c72eec33bc0d7b1c7c260dc143293ef66c5b78",
+        "google/protobuf/descriptor.proto": "fe091d8f9f1dababd2dad19e1f6c7255abf800fcfaf6292ab8aaa982727e0de9"
+    },
+    "descriptor_sha256": "28f9f80c6b6249e27baec091bea82090afce4c0acd62dc631420f88e26998d75"
+}

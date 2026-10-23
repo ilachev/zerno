@@ -32,6 +32,9 @@ function projectCommand(string $command, array $arguments = []): void
                 test:integration       Run isolated PostgreSQL integration tests
                 test:full              Unit and PostgreSQL integration tests
                 sql:gen | sql:check    Generate or check typed SQL artifacts
+                proto:gen              Compile the Echo contract and generate PHP; requires protoc
+                proto:check            Check source hashes, descriptor and generated PHP; no compiler
+                proto:compile:check    Recompile and compare the descriptor and PHP; requires protoc
                 sql:check:pg           Validate SQL against PostgreSQL using TEST_DB_* settings
                 tools:sql:check        Run style, PHPStan and tests for tools/sql-gen
                 tools:sql:<lint|fixcs|phpstan|test>
@@ -51,7 +54,7 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'verify':
-            projectSequence(['third-party:check', 'docs:check', 'lint', 'phpstan', 'sql:check', 'test']);
+            projectSequence(['third-party:check', 'docs:check', 'lint', 'phpstan', 'sql:check', 'proto:check', 'test']);
 
             return;
         case 'verify:integration':
@@ -90,7 +93,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'tools/proto-gen', 'gen/Generated/Echo', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',
@@ -105,6 +108,16 @@ function projectCommand(string $command, array $arguments = []): void
                 PHP_BINARY, $root . '/tools/phpunit.php', '--colors=never', '-c',
                 $command === 'test' ? 'phpunit.xml' : 'phpunit.integration.xml', ...$arguments,
             ], $root, $command === 'test:integration' ? projectTestEnvironment() : []);
+
+            return;
+        case 'proto:gen':
+        case 'proto:check':
+        case 'proto:compile:check':
+            projectRun([PHP_BINARY, $root . '/tools/proto-gen/run.php', match ($command) {
+                'proto:gen' => 'generate',
+                'proto:check' => 'check',
+                default => 'compile-check',
+            }, ...$arguments], $root);
 
             return;
         case 'sql:gen':
@@ -328,7 +341,7 @@ function projectBuild(string $version): void
         foreach ([
             'bootstrap.php', 'bootstrap', 'src', 'gen', 'config', 'public', 'bin',
             'third_party/runtime', 'docs', 'README.md',
-            'examples/document-catalog', 'examples/json-echo',
+            'examples/document-catalog', 'examples/json-echo', 'examples/contract-echo',
             '.rr.yaml',
         ] as $relative) {
             $path = $root . '/' . $relative;

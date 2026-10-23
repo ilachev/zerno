@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "distribution": "protobuf-contract-sources",
+  "provenance": {
+    "description": "Unmodified upstream contract sources, fetched explicitly during development. Generation and checks never download."
+  },
+  "packages": [
+    {
+      "name": "googleapis/googleapis",
+      "version": "1e9cfa78c60620af3c66aba343d99a75a9f79057",
+      "source": "https://github.com/googleapis/googleapis/tree/1e9cfa78c60620af3c66aba343d99a75a9f79057",
+      "files": [
+        "google/api/annotations.proto",
+        "google/api/http.proto",
+        "LICENSE"
+      ],
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "protocolbuffers/protobuf-descriptor",
+      "version": "26.1",
+      "source": "https://github.com/protocolbuffers/protobuf/tree/v26.1",
+      "files": [
+        "google/protobuf/descriptor.proto",
+        "PROTOBUF-LICENSE"
+      ],
+      "license": "BSD-3-Clause"
+    }
+  ],
+  "files": {
+    "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "PROTOBUF-LICENSE": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+    "google/api/annotations.proto": "e79ea741cb605a65e78ca322174764a4af9fde1962c1631e12b84c4934ba9a6c",
+    "google/api/http.proto": "ead99129aa15dd5f6233942030c72eec33bc0d7b1c7c260dc143293ef66c5b78",
+    "google/protobuf/descriptor.proto": "fe091d8f9f1dababd2dad19e1f6c7255abf800fcfaf6292ab8aaa982727e0de9"
+  }
+}

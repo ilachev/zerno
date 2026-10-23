@@ -1,3 +1,4 @@
 # Preserve the exact bytes pinned by the third-party integrity inventories.
 third_party/** -text
 third_party/**/*.phar binary
+contracts/*.pb binary

@@ -290,6 +290,49 @@ function wireJsonBody(int $bytes): string
     return '{"message":"' . str_repeat('x', $bytes - 14) . '"}';
 }
 
+function wireContract(string $runtime, int $port, string $root, string $errorFormat): int
+{
+    $before = wireRequest($runtime, $port, $root, 'GET', '/__wire/context', []);
+    $pid = $before->headers['x-fixture-pid'] ?? [];
+    $cases = [
+        ['{"message":"Привет"}', 'application/json', 200, '{"message":"Привет"}'],
+        ['{}', 'application/json', 200, '{}'],
+        ['{"message":null}', 'application/json', 200, '{}'],
+        ['{"message":""}', 'Application/JSON; charset=UTF-8', 200, '{}'],
+        [wireJsonBody(65_536), 'application/json', 200, wireJsonBody(65_536)],
+        [wireJsonBody(65_537), 'application/json', 413, '{"error":"Request body too large"}'],
+        ['', 'application/json', 400, '{"error":"Invalid JSON request"}'],
+        ['{', 'application/json', 400, '{"error":"Invalid JSON request"}'],
+        ['[]', 'application/json', 400, '{"error":"Invalid JSON request"}'],
+        ['{"message":1}', 'application/json', 400, '{"error":"Invalid JSON request"}'],
+        ['{"other":null}', 'application/json', 400, '{"error":"Invalid JSON request"}'],
+        ['{}', 'text/plain', 415, '{"error":"Unsupported media type"}'],
+        ['{"message":"wire-throw"}', 'application/json', 500, null],
+        ['{"message":"wire-invalid-output"}', 'application/json', 500, null],
+    ];
+    foreach ($cases as $index => [$input, $type, $status, $output]) {
+        $response = wireRequest($runtime, $port, $root, 'POST', '/api/echo', ['Content-Type' => $type, 'X-Request-ID' => 'wire-contract-' . $index], $input);
+        wireSame($status, $response->status, 'Contract status ' . $index);
+        wireSame(['wire-contract-' . $index], $response->headers['x-request-id'] ?? [], 'Contract request ID');
+        if ($output !== null) {
+            wireSame($output, $response->body, 'Contract output ' . $index);
+        } else {
+            wireSame(false, str_contains($response->body, 'wire-private-contract-failure'), 'Contract private exception');
+            wireSame([$errorFormat === 'html' ? 'text/html; charset=utf-8' : 'application/json'], $response->headers['content-type'] ?? [], 'Contract common error handler');
+        }
+        $next = wireRequest($runtime, $port, $root, 'POST', '/api/echo', ['Content-Type' => 'application/json'], '{}');
+        wireSame(200, $next->status, 'Contract next status');
+        wireSame('{}', $next->body, 'Contract next input starts empty');
+        $after = wireRequest($runtime, $port, $root, 'GET', '/__wire/context', []);
+        wireSame($pid, $after->headers['x-fixture-pid'] ?? [], 'Contract same worker');
+    }
+    $method = wireRequest($runtime, $port, $root, 'GET', '/api/echo', []);
+    wireSame(405, $method->status, 'Contract method');
+    wireSame(['POST'], $method->headers['allow'] ?? [], 'Contract Allow');
+
+    return 2 + 3 * count($cases);
+}
+
 function wireBoundedJson(string $runtime, int $port, string $root): int
 {
     $before = wireRequest($runtime, $port, $root, 'GET', '/__wire/context', []);
@@ -613,7 +656,32 @@ function wireReady($process, int $port): void
     throw new RuntimeException('Fixture runtime did not become ready within 10 seconds');
 }
 
-function wireFront(string $binary, int $fpmPort, string $root, string $temporary): int
+function wireContractCost(string $runtime, int $port, string $root): void
+{
+    $body = json_encode(['message' => str_repeat('Привет', 20)], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    $times = ['manual' => [], 'generated' => []];
+    for ($index = 0; $index < 120; ++$index) {
+        $order = $index % 2 === 0 ? ['manual', 'generated'] : ['generated', 'manual'];
+        foreach ($order as $name) {
+            $start = hrtime(true);
+            $response = wireRequest($runtime, $port, $root, 'POST', $name === 'manual' ? '/__wire/echo' : '/api/echo', ['Content-Type' => 'application/json'], $body);
+            $elapsed = hrtime(true) - $start;
+            wireSame(200, $response->status, 'Measured contract status');
+            wireSame($body, $response->body, 'Measured contract output');
+            if ($index >= 20) {
+                $times[$name][] = $elapsed;
+            }
+        }
+    }
+    $report = [];
+    foreach ($times as $name => $samples) {
+        sort($samples);
+        $report[$name] = ['requests' => count($samples), 'p50_us' => $samples[49] / 1000, 'p95_us' => $samples[94] / 1000];
+    }
+    fwrite(STDOUT, 'Contract HTTP cost: ' . json_encode(['runtime' => $runtime, 'input_bytes' => strlen($body), 'results' => $report], JSON_THROW_ON_ERROR) . "\n");
+}
+
+function wireFront(string $binary, int $fpmPort, string $root, string $temporary, string $errorFormat, bool $measure): int
 {
     $port = wirePort();
     $template = file_get_contents($root . '/examples/json-echo/Caddyfile');
@@ -630,8 +698,12 @@ function wireFront(string $binary, int $fpmPort, string $root, string $temporary
 
     try {
         wireReady($process, $port);
+        $count = wireBoundedJson('caddy', $port, $root) + wireContract('caddy', $port, $root, $errorFormat);
+        if ($measure && $errorFormat === 'json') {
+            wireContractCost('caddy', $port, $root);
+        }
 
-        return wireBoundedJson('caddy', $port, $root);
+        return $count;
     } catch (Throwable $exception) {
         throw new RuntimeException($exception->getMessage() . "\n" . file_get_contents($log), 0, $exception);
     } finally {
@@ -640,7 +712,7 @@ function wireFront(string $binary, int $fpmPort, string $root, string $temporary
 }
 
 /** @param array<int, string> $hashes */
-function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat, array $hashes, ?string $caddy): void
+function wireRun(string $runtime, string $binary, string $root, string $temporary, string $errorFormat, array $hashes, ?string $caddy, bool $measure): void
 {
     $port = wirePort();
     $log = $temporary . '/' . $runtime . '-' . $errorFormat . '.log';
@@ -667,17 +739,22 @@ function wireRun(string $runtime, string $binary, string $root, string $temporar
         $count += wireInputs($runtime, $port, $root);
         $count += wireAttachments($runtime, $port, $root, $hashes);
         $count += wireBoundedJson($runtime, $port, $root);
+        $count += wireContract($runtime, $port, $root, $errorFormat);
         if ($runtime === 'fpm' && $caddy !== null) {
-            $frontCount = wireFront($caddy, $port, $root, $temporary);
+            $frontCount = wireFront($caddy, $port, $root, $temporary, $errorFormat, $measure);
             $count += $frontCount;
             $access = file_get_contents($temporary . '/fpm-access-' . $errorFormat . '.log');
             wireSame(true, $access !== false && str_contains($access, '/__wire/echo'), 'FPM access log records accepted requests');
             wireSame(false, $access !== false && str_contains($access, 'ingress_rejected'), 'Oversized HTTP requests never entered FPM');
             fwrite(STDOUT, sprintf("HTTP ingress: Caddy/FPM, %s errors, %d cases passed.\n", $errorFormat, $frontCount));
         }
+        if ($runtime === 'rr' && $measure && $errorFormat === 'json') {
+            wireContractCost('rr', $port, $root);
+        }
         $logged = file_get_contents($log);
         wireSame(true, $logged !== false && str_contains($logged, 'Application responded.') && str_contains($logged, 'body_size'), 'Response metadata reached the runtime log');
         wireSame(true, $logged !== false && str_contains($logged, 'wire-private-exception-details'), 'Private error reached the runtime log');
+        wireSame(true, $logged !== false && str_contains($logged, 'wire-private-contract-failure'), 'Contract implementation error reached the runtime log');
         if ($runtime === 'rr') {
             $serverRecord = false;
             foreach (explode("\n", $logged === false ? '' : $logged) as $line) {
@@ -709,12 +786,12 @@ $temporary = null;
 $exitCode = 0;
 
 try {
-    $options = getopt('', ['runtime:', 'php-fpm:', 'rr:', 'caddy:', 'help']);
+    $options = getopt('', ['runtime:', 'php-fpm:', 'rr:', 'caddy:', 'measure-contract', 'help']);
     if (!is_array($options)) {
         throw new RuntimeException('Cannot read HTTP wire options');
     }
     if (isset($options['help'])) {
-        fwrite(STDOUT, "Usage: php tools/check-http.php [--runtime=all|fpm|rr] [--php-fpm=/path/to/php-fpm] [--rr=/path/to/rr] [--caddy=/path/to/caddy]\nRequires real PHP-FPM/RoadRunner executables; --caddy also checks the FPM HTTP ingress cap. No package installation or database.\n");
+        fwrite(STDOUT, "Usage: php tools/check-http.php [--runtime=all|fpm|rr] [--php-fpm=/path/to/php-fpm] [--rr=/path/to/rr] [--caddy=/path/to/caddy] [--measure-contract]\nRequires real PHP-FPM/RoadRunner executables; --caddy also checks the FPM HTTP ingress cap. --measure-contract compares sequential manual/generated HTTP requests on Caddy and RR. No package installation or database.\n");
         exit(0);
     }
     $selected = $options['runtime'] ?? 'all';
@@ -752,7 +829,7 @@ try {
     }
     foreach ($binaries as $runtime => $binary) {
         foreach (['json', 'html'] as $errorFormat) {
-            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat, $hashes, $caddy);
+            wireRun($runtime, $binary, dirname(__DIR__), $temporary, $errorFormat, $hashes, $caddy, isset($options['measure-contract']));
         }
     }
 } catch (Throwable $exception) {

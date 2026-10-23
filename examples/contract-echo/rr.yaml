@@ -1,0 +1,20 @@
+version: '3'
+
+server:
+  command: "php public/index.php"
+  env:
+    APP_CONFIG: examples/contract-echo/config.php
+
+http:
+  address: 127.0.0.1:8082
+  max_request_size: 1
+  pool:
+    num_workers: 1
+
+logs:
+  level: error
+  mode: production
+  channels:
+    server:
+      level: info
+      mode: production

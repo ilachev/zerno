@@ -1,6 +1,6 @@
 # Agent instructions
 
-Type: `instructions`. Status: `current`. Reviewed: 2026-10-20.
+Type: `instructions`. Status: `current`. Reviewed: 2026-10-23.
 
 These rules apply throughout the repository. Communicate with the user in Russian. Write code comments in English. This is the canonical instruction file; `CLAUDE.md` is a compatibility entry point.
 
@@ -15,7 +15,7 @@ These rules apply throughout the repository. Communicate with the user in Russia
 
 - Zerno (Зерно), repository `zerno`, is a small autonomous PHP HTTP/PDO core for general-purpose websites and web applications. Municipal and public-sector developers are a priority audience. Keep CMS workflows, editorial roles and other product policy in application code.
 - The shipped scope is HTTP requests/responses, explicit routing/composition, error responses, attachments, request IDs/metadata logging, PostgreSQL PDO/SQL/transactions/migrations, SQL generation and SAPI/FPM/RoadRunner execution. The catalog is an application consumer, not a CMS module. Do not retain speculative subsystems as optional capabilities. Sessions, GeoIP/fingerprints, analytics, caches, hydration/mapping and the outgoing HTTP client have been removed.
-- The legacy application protobuf API/generator was also removed, but contract-first generation from `.proto` into DTOs, endpoint contracts, HTTP adapters and explicit routes is an accepted product direction; see [the scoped plan](docs/design/protobuf-contract-generation.md). Do not interpret cleanup as a ban on this direction or restore the old API stack wholesale.
+- The legacy application protobuf API/generator was also removed, but contract-first generation from `.proto` into DTOs, endpoint contracts, HTTP adapters and explicit routes is an accepted product direction; see [the scoped contract](docs/design/protobuf-contract-generation.md). The first string/unary POST JSON Echo slice is implemented with plain readonly DTOs; reject unsupported declarations during generation. Do not restore the old API stack wholesale.
 - Develop Zerno's own model of ordinary PHP, explicit composition, visible SQL and autonomous delivery. Do not use Laravel feature parity or API imitation as the product specification. Distinctive design must improve the developer path or measured costs; retain useful standards and bundled components instead of inventing substitutes for novelty alone.
 - Database access is part of the core: PDO, explicit parameterized SQL, transactions and migrations. Do not introduce an ORM to hide SQL.
 - Runtime sources, generator dependencies and PHP quality tools are bundled. Do not add package installation or downloads to runtime, generation, builds or checks. Platform requirements are documented separately.
@@ -35,7 +35,8 @@ These rules apply throughout the repository. Communicate with the user in Russia
 
 ## Source boundaries
 
-- Do not hand-edit `gen/Generated/*`. Change SQL inputs or generator code and regenerate affected artifacts. Whole artifacts belonging to a removed feature are removed with that feature.
+- Do not hand-edit `gen/Generated/*`. Change source inputs or generator code and regenerate affected artifacts. Whole artifacts belonging to a removed feature are removed with that feature.
+- API contract inputs: `contracts/echo.proto`; engine: `tools/proto-gen`; output: `gen/Generated/Echo`. Regenerate descriptor/snapshot/PHP with `proto:gen`; `proto:check` requires no compiler, while `proto:compile:check` fully recompiles with the platform protoc.
 - SQL inputs: `sql/schema.sql`, `sql/queries/*`; engine: `tools/sql-gen`. The root runner sets `--runtime-namespace=App\Platform\Storage\Sql` directly; no pass-through project profile wrapper is retained.
 - Bundled third-party files are governed by `third_party/manifest.json`. Preserve upstream notices and record deliberate adaptations and new hashes; do not edit bundled code incidentally. See [delivery architecture](docs/design/autonomous-core.md).
 - Typhoon and other generator implementation dependencies belong to isolated codegen processes, not application runtime.

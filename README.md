@@ -17,7 +17,7 @@
 
 Сессии, GeoIP/fingerprints, ApiStats, cache-модули, старый protobuf API/генератор, hydration/mapping и исходящий HTTP-клиент удалены. Папки optional, совместимых заглушек и старого API-профиля нет. [Граница продукта](docs/project/vision.md) описывает правило включения новых возможностей; [история очистки](docs/history/2026-10-20-core-scope.md) — удалённый состав и несовместимость.
 
-API из `.proto` — принятое направление: генерация DTO, endpoint contracts, HTTP adapters и маршрутов. Старый контур удалён; [первый сквозной этап](docs/design/protobuf-contract-generation.md) ещё предстоит реализовать.
+API из `.proto` реализован первым сквозным [Echo-примером](examples/contract-echo/README.md): обычные readonly DTO, typed endpoint, HTTP adapter и явный маршрут. Генерация и [проверки](docs/design/protobuf-contract-generation.md) автономны; compiler нужен только для изменения контракта и повторной компиляции.
 
 ## Запуск
 
@@ -61,7 +61,7 @@ php tools/project.php http:check
 php tools/project.php build local
 ```
 
-verify не требует внешних сервисов. verify:full добавляет SQL-tool checks и настоящую PostgreSQL test database через отдельные TEST_DB_*; http:check запускает FPM/RR явно. [Инфраструктура и тестирование](docs/development/infrastructure-and-testing.md) описывают платформу и изоляцию. Runtime-архив содержит готовый код и SQL-artifacts, исключая инструменты генерации, качества и тесты.
+verify не требует внешних сервисов. verify:full добавляет SQL-tool checks и настоящую PostgreSQL test database через отдельные TEST_DB_*; http:check запускает FPM/RR явно. [Инфраструктура и тестирование](docs/development/infrastructure-and-testing.md) описывают платформу и изоляцию. Runtime-архив содержит готовый код, SQL/API-artifacts, исключая инструменты генерации, качества и тесты.
 
 Внутри bundled RoadRunner HTTP остаются требуемые им protobuf/DTO libraries. Это зависимость транспорта, а не API приложения. Происхождение, notices и hashes описаны в [поставке](docs/design/autonomous-core.md).
 

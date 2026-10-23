@@ -1,0 +1,469 @@
+{
+  "kind": "history",
+  "status": "historical",
+  "reviewed_at": "2026-10-23",
+  "base_commit": "b1c05e4",
+  "scope": "First proto3 string/unary POST JSON contract generation slice; no full ProtoJSON or binary/gRPC claim.",
+  "environment": {
+    "php": "8.5.9",
+    "protoc": "26.1",
+    "google_protobuf": "5.34.0",
+    "rr": "3.0.0",
+    "caddy": "2.11.4",
+    "os": "macOS-26.6.1-arm64-arm-64bit-Mach-O",
+    "architecture": "arm64"
+  },
+  "commands": [
+    "php tools/project.php proto:gen",
+    "php tools/project.php proto:compile:check",
+    "php tools/proto-gen/measure.php",
+    "php tools/project.php http:check --rr=/path/to/rr3 --caddy=/path/to/caddy --measure-contract",
+    "php tools/project.php build contract-echo"
+  ],
+  "microbenchmark": {
+    "php": "8.5.9",
+    "compiler": "protoc",
+    "opcache_cli": false,
+    "results": [
+      {
+        "mode": "dto",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 113541,
+        "classes": 2,
+        "first_php_bytes": 11848,
+        "ns_per_operation": 1294.95835,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 4888
+      },
+      {
+        "mode": "protobuf",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 4975250,
+        "classes": 33,
+        "first_php_bytes": 1444120,
+        "ns_per_operation": 15571.4375,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 5104
+      },
+      {
+        "mode": "manual",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 610750,
+        "classes": 6,
+        "first_php_bytes": 100536,
+        "ns_per_operation": 3793.6917,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6936
+      },
+      {
+        "mode": "generated",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 752667,
+        "classes": 9,
+        "first_php_bytes": 113560,
+        "ns_per_operation": 3963.74375,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6640
+      },
+      {
+        "mode": "dto",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 110750,
+        "classes": 2,
+        "first_php_bytes": 11848,
+        "ns_per_operation": 1346.30625,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 4888
+      },
+      {
+        "mode": "protobuf",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 4467875,
+        "classes": 33,
+        "first_php_bytes": 1444120,
+        "ns_per_operation": 14955.10835,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 5104
+      },
+      {
+        "mode": "manual",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 572208,
+        "classes": 6,
+        "first_php_bytes": 100536,
+        "ns_per_operation": 3871.7604,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6936
+      },
+      {
+        "mode": "generated",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 740083,
+        "classes": 9,
+        "first_php_bytes": 113560,
+        "ns_per_operation": 4047.27705,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6640
+      },
+      {
+        "mode": "dto",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 104542,
+        "classes": 2,
+        "first_php_bytes": 11848,
+        "ns_per_operation": 1332.72915,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 4888
+      },
+      {
+        "mode": "protobuf",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 4243750,
+        "classes": 33,
+        "first_php_bytes": 1444120,
+        "ns_per_operation": 14995.4625,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 5104
+      },
+      {
+        "mode": "manual",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 801916,
+        "classes": 6,
+        "first_php_bytes": 100536,
+        "ns_per_operation": 3735.87915,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6936
+      },
+      {
+        "mode": "generated",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 1101833,
+        "classes": 9,
+        "first_php_bytes": 113560,
+        "ns_per_operation": 3954.52915,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6640
+      },
+      {
+        "mode": "dto",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 110625,
+        "classes": 2,
+        "first_php_bytes": 11848,
+        "ns_per_operation": 1350.44165,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 4888
+      },
+      {
+        "mode": "protobuf",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 4723584,
+        "classes": 33,
+        "first_php_bytes": 1444120,
+        "ns_per_operation": 14478.41045,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 5104
+      },
+      {
+        "mode": "manual",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 572625,
+        "classes": 6,
+        "first_php_bytes": 100536,
+        "ns_per_operation": 3733.6229,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6936
+      },
+      {
+        "mode": "generated",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 660875,
+        "classes": 9,
+        "first_php_bytes": 113560,
+        "ns_per_operation": 3998.40835,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6640
+      },
+      {
+        "mode": "dto",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 125667,
+        "classes": 2,
+        "first_php_bytes": 11848,
+        "ns_per_operation": 1315.31665,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 4888
+      },
+      {
+        "mode": "protobuf",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 4447958,
+        "classes": 33,
+        "first_php_bytes": 1444120,
+        "ns_per_operation": 14624.33545,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 5104
+      },
+      {
+        "mode": "manual",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 520041,
+        "classes": 6,
+        "first_php_bytes": 100536,
+        "ns_per_operation": 3751.93125,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6936
+      },
+      {
+        "mode": "generated",
+        "iterations": 20000,
+        "input_bytes": 254,
+        "first_ns": 655708,
+        "classes": 9,
+        "first_php_bytes": 113560,
+        "ns_per_operation": 4037.54375,
+        "retained_php_bytes": 0,
+        "peak_php_bytes": 6640
+      }
+    ]
+  },
+  "http": {
+    "cost": [
+      {
+        "runtime": "caddy",
+        "input_bytes": 254,
+        "results": {
+          "manual": {
+            "requests": 100,
+            "p50_us": 3791.042,
+            "p95_us": 5456
+          },
+          "generated": {
+            "requests": 100,
+            "p50_us": 3867.958,
+            "p95_us": 5241.542
+          }
+        }
+      },
+      {
+        "runtime": "rr",
+        "input_bytes": 254,
+        "results": {
+          "manual": {
+            "requests": 100,
+            "p50_us": 1623.5,
+            "p95_us": 2092.625
+          },
+          "generated": {
+            "requests": 100,
+            "p50_us": 1701.334,
+            "p95_us": 2141.125
+          }
+        }
+      }
+    ],
+    "wire_results": [
+      "HTTP ingress: Caddy/FPM, json errors, 89 cases passed.",
+      "HTTP wire: fpm, json errors, 213 cases passed (/opt/homebrew/sbin/php-fpm).",
+      "HTTP ingress: Caddy/FPM, html errors, 89 cases passed.",
+      "HTTP wire: fpm, html errors, 213 cases passed (/opt/homebrew/sbin/php-fpm).",
+      "HTTP wire: rr, json errors, 140 cases passed (/Users/ilya/dev/PhpstormProjects/ProtoPHPStack/var/rr3/bin/rr).",
+      "HTTP wire: rr, html errors, 140 cases passed (/Users/ilya/dev/PhpstormProjects/ProtoPHPStack/var/rr3/bin/rr)."
+    ]
+  },
+  "archive": {
+    "checks": 106,
+    "runtimes": [
+      "Caddy2.11.4/PHP-FPM8.5.9",
+      "RoadRunner3.0.0/PHP8.5.9"
+    ],
+    "health_probe": {
+      "status": 200,
+      "dto": false,
+      "codec": false,
+      "storage": false,
+      "tool": false
+    },
+    "passed": [
+      "archive excludes contracts",
+      "archive excludes tools",
+      "archive excludes third_party/codegen",
+      "archive excludes tests",
+      "archive includes gen/Generated/Echo/EchoRequest.php",
+      "archive includes gen/Generated/Echo/EchoSendHttp.php",
+      "archive includes examples/contract-echo/config.php",
+      "archive health avoids DTO/codec/storage/tool",
+      "fpm GET /health 200",
+      "fpm request ID",
+      "fpm /health 200 exact response b'{\"status\":\"ok\"}'",
+      "fpm next empty request",
+      "fpm HEAD /health 200",
+      "fpm request ID",
+      "fpm HEAD body",
+      "fpm next empty request",
+      "fpm POST /api/echo 200",
+      "fpm request ID",
+      "fpm /api/echo 200 exact response b'{\"message\":\"\\xd0\\x9f\\xd1\\x80\\xd0\\xb8\\xd0\\xb2\\xd0\\xb5\\xd1\\x82\"}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 200",
+      "fpm request ID",
+      "fpm /api/echo 200 exact response b'{}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 200",
+      "fpm request ID",
+      "fpm /api/echo 200 exact response b'{}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 400",
+      "fpm request ID",
+      "fpm /api/echo 400 exact response b'{\"error\":\"Invalid JSON request\"}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 400",
+      "fpm request ID",
+      "fpm /api/echo 400 exact response b'{\"error\":\"Invalid JSON request\"}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 415",
+      "fpm request ID",
+      "fpm /api/echo 415 exact response b'{\"error\":\"Unsupported media type\"}'",
+      "fpm next empty request",
+      "fpm POST /api/echo 200",
+      "fpm request ID",
+      "fpm /api/echo 200 exact response b'{\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "fpm next empty request",
+      "fpm POST /api/echo 413",
+      "fpm request ID",
+      "fpm /api/echo 413 exact response b'{\"error\":\"Request body too large\"}'",
+      "fpm next empty request",
+      "fpm GET /api/echo 405",
+      "fpm request ID",
+      "fpm /api/echo 405 exact response b'{\"error\":\"Method not allowed\"}'",
+      "fpm Allow",
+      "fpm next empty request",
+      "fpm GET /missing 404",
+      "fpm request ID",
+      "fpm /missing 404 exact response b'{\"error\":\"Not found\"}'",
+      "fpm next empty request",
+      "rr GET /health 200",
+      "rr request ID",
+      "rr /health 200 exact response b'{\"status\":\"ok\"}'",
+      "rr next empty request",
+      "rr HEAD /health 200",
+      "rr request ID",
+      "rr HEAD body",
+      "rr next empty request",
+      "rr POST /api/echo 200",
+      "rr request ID",
+      "rr /api/echo 200 exact response b'{\"message\":\"\\xd0\\x9f\\xd1\\x80\\xd0\\xb8\\xd0\\xb2\\xd0\\xb5\\xd1\\x82\"}'",
+      "rr next empty request",
+      "rr POST /api/echo 200",
+      "rr request ID",
+      "rr /api/echo 200 exact response b'{}'",
+      "rr next empty request",
+      "rr POST /api/echo 200",
+      "rr request ID",
+      "rr /api/echo 200 exact response b'{}'",
+      "rr next empty request",
+      "rr POST /api/echo 400",
+      "rr request ID",
+      "rr /api/echo 400 exact response b'{\"error\":\"Invalid JSON request\"}'",
+      "rr next empty request",
+      "rr POST /api/echo 400",
+      "rr request ID",
+      "rr /api/echo 400 exact response b'{\"error\":\"Invalid JSON request\"}'",
+      "rr next empty request",
+      "rr POST /api/echo 415",
+      "rr request ID",
+      "rr /api/echo 415 exact response b'{\"error\":\"Unsupported media type\"}'",
+      "rr next empty request",
+      "rr POST /api/echo 200",
+      "rr request ID",
+      "rr /api/echo 200 exact response b'{\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "rr next empty request",
+      "rr POST /api/echo 413",
+      "rr request ID",
+      "rr /api/echo 413 exact response b'{\"error\":\"Request body too large\"}'",
+      "rr next empty request",
+      "rr GET /api/echo 405",
+      "rr request ID",
+      "rr /api/echo 405 exact response b'{\"error\":\"Method not allowed\"}'",
+      "rr Allow",
+      "rr next empty request",
+      "rr GET /missing 404",
+      "rr request ID",
+      "rr /missing 404 exact response b'{\"error\":\"Not found\"}'",
+      "rr next empty request"
+    ]
+  },
+  "limitations": [
+    "Microbenchmark is a 254-byte nonempty shared-success subset, 5 fresh processes x 20000 operations per mode, CLI OPcache off.",
+    "Official protobuf comparison generates only identical messages, omitting service/HTTP annotation metadata.",
+    "PHP memory excludes native RSS. Zero retained PHP bytes over this loop is not a long-running worker leak proof.",
+    "HTTP is 20 warmup pairs then 100 sequential requests per route, alternating order, with metadata logging; not concurrency/throughput evidence.",
+    "proto:check verifies snapshot source/descriptor hashes and re-rendered PHP, not compiler provenance; proto:compile:check performs real recompilation.",
+    "Archive smoke ran actual example configuration with DB port 1, unavailable PROTOC and no generator/contract files; checked methods, JSON errors/limit and next request."
+  ],
+  "source_sha256": {
+    "contracts/echo.inputs.json": "ea541576a5ff0843e062f3a03f5458978cdc5010b5fab34096de7abc36ad1f0e",
+    "contracts/echo.pb": "28f9f80c6b6249e27baec091bea82090afce4c0acd62dc631420f88e26998d75",
+    "contracts/echo.proto": "d8c98154ea77cbaa0a0e63b87e3bd3e5efb6246c147fc93b7ce65700d75554ee",
+    "examples/contract-echo/EchoEndpoint.php": "db3546037471b6604f52e11cbb2a74a9dfa625f3e63874beda95e0b94e161a7e",
+    "examples/contract-echo/config.php": "944d98e14981cf12eece13d8054a32848c8b2981989336c9cb9ff7a495b44d7b",
+    "examples/contract-echo/rr.yaml": "538242fbb77694ff2e4f2e21a46600727b95696a459fd7aec94e5ea7621e92a6",
+    "gen/Generated/Echo/EchoRequest.php": "50645d091414a00f536e729b7c7839215f2f4b132b71f37608735f6793167bc8",
+    "gen/Generated/Echo/EchoResponse.php": "9dfc7e9ccc82b1fd6a48994562629db330401b045f8b330860627d9a54f4215e",
+    "gen/Generated/Echo/EchoSendEndpoint.php": "9fb9861aa03efc28faf31abde3c2b04305006efb6f21baff182f80c2c9b5ffaa",
+    "gen/Generated/Echo/EchoSendHttp.php": "30bfbdba06138ba27afd1868f0d465ed31cfded62c653e5aeb733cb55acd4400",
+    "tests/Unit/Codegen/ContractEchoTest.php": "912c14ae81ca652fea30c4cce82fdd9333a03ac6ff7ab4e32e1266c20b3768e8",
+    "tests/Unit/Codegen/ProtoCompilerTest.php": "74223e9d881045fdd036ca8423c6fefcec7612c4aceb158aea7a15a540b89de0",
+    "tests/Unit/Codegen/ProtoGeneratorTest.php": "07d04485f7cfe3729e5f1188f9679af12880027062228645eb0d40bbc08222e6",
+    "third_party/codegen/proto/manifest.json": "72073989ff3ae793d318f8ad40169b012d71fe42ed0220e53420072097694d2b",
+    "third_party/manifest.json": "00493e56e302c7db3f51ef9c6caaee9d1a2b3bb467f786705ecbe2d53d6b2010",
+    "tools/check-http.php": "188e533a491ed8a9375f387a84f2f2f079a4085baee52f96324ab487cf5fa6df",
+    "tools/http-fixtures/ContractEndpoint.php": "ba59d8be53abf39fad58ad9a2c9ad575d7d43681d03828bf255890e3e9fea732",
+    "tools/http-fixtures/config.php": "116238b0f3cf1917950875efef4709f1ca77ea2366aaed60431fbfeee80c210d",
+    "tools/project.php": "17fb94701607b848c0df907eda72eb1f876014baa5b75863ee9c692fde682f34",
+    "tools/proto-gen/Compiler.php": "035226a6fbae2784d76b8c355bdd18dda9ddf522db532f08c40c4a3e0ac7295b",
+    "tools/proto-gen/Generator.php": "b247aa2cccdde3321fc9a15fb9cb6682300e0edd2dcaaca4b63992c40b2711ea",
+    "tools/proto-gen/HttpBinding.php": "88008e5d869cd3449c2c8be51640fe0cc2c6f46880b0a263869be24a559f22ad",
+    "tools/proto-gen/Output.php": "cb9206575ea76468c4ed03aabb56fe0789f41325a5502807e136b994844162fb",
+    "tools/proto-gen/measure.php": "b656df077964a6b491bd9729d947e630072b409b42c6b86cc77900ddbc3b9a54",
+    "tools/proto-gen/run.php": "b7b547b4250ad1c1a08afe44365bd3a7dc15151e5191657691e5534e4236785d"
+  },
+  "verification": {
+    "root_unit_tests": {
+      "tests": 302,
+      "assertions": 1238
+    },
+    "sql_tool_tests": {
+      "tests": 167,
+      "assertions": 625
+    },
+    "docs": {
+      "documents": 35,
+      "artifacts": 14,
+      "local_links": 370
+    },
+    "compiler_check": "protoc 26.1 matched descriptor and generated PHP",
+    "compiler_free_verify_environment": "PATH=/usr/bin:/bin PROTOC=/not-available; invoked /opt/homebrew/bin/php",
+    "archive_checks": 106
+  }
+}

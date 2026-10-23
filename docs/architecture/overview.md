@@ -2,7 +2,7 @@
 
 Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
-Проект поставляет HTTP/PDO-контур, SQL-генератор и проверочный каталог. [Границы](../project/vision.md), [правила кода](../development/coding-guidelines.md) и [история явной сборки](../history/2026-10-20-explicit-composition.md) объясняют принятый состав. Контейнер, autowiring и providers удалены.
+Проект поставляет HTTP/PDO-контур, SQL/API-генерацию, проверочный каталог и Echo из контракта. [Границы](../project/vision.md), [правила кода](../development/coding-guidelines.md) и [история явной сборки](../history/2026-10-20-explicit-composition.md) объясняют принятый состав. Контейнер, autowiring и providers удалены.
 
 ## Композиция
 
@@ -48,6 +48,6 @@ Storage.transaction владеет одной транзакцией, откло
 
 Runtime/codegen/quality distributions остаются [автономными](../design/autonomous-core.md). verify не требует внешних сервисов; verify:full добавляет SQL tool и реальный PostgreSQL. http:check отдельно проверяет FPM/RR. Для изменения выполнены [проверки и ограниченное сравнение](../history/2026-10-20-explicit-composition.md); основной runtime, production readiness и длительная устойчивость не установлены.
 
-## Принятое расширение
+## Генерация API из контракта
 
-[API из protobuf-контракта](../design/protobuf-contract-generation.md) — DTO, endpoint contracts, HTTP adapters и явные routes. Генератора пока нет. Его output должен принимать ручные реализации и зависимости конструкторами, не возвращая контейнер, autowiring или сервисные registries.
+[API из protobuf-контракта](../design/protobuf-contract-generation.md) реализован для proto3 string messages и unary POST JSON. tools/proto-gen читает сохранённый descriptor, генерирует readonly DTO, endpoint interface и HTTP adapter с route(); protoc нужен для изменения контракта/полной сверки. [Пример](../../examples/contract-echo/config.php) явно создаёт ручной endpoint и adapter. Runtime archive содержит готовый PHP без contracts/tools; /health не загружает DTO/codec и не открывает БД. Контейнер и сервисные registries не вводились.

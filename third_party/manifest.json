@@ -21,7 +21,8 @@
       "http": "PHP SAPI/FPM or RoadRunner >=3.0 <4.0",
       "development": [
         "docker",
-        "k6"
+        "k6",
+        "protoc >=26.1 (proto:gen and proto:compile:check only)"
       ]
     },
     "roadrunner_extensions": [
@@ -43,6 +44,11 @@
       "name": "tools",
       "manifest": "tools/manifest.json",
       "sha256": "6c0343e11a137ed6b82fbbb08b1e112faf8f8813eecdb3d610b37cfd849f0dc2"
+    },
+    {
+      "name": "codegen/proto",
+      "manifest": "codegen/proto/manifest.json",
+      "sha256": "72073989ff3ae793d318f8ad40169b012d71fe42ed0220e53420072097694d2b"
     }
   ]
 }

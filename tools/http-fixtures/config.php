@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Generated\Echo\EchoSendHttp;
 use App\Platform\Http\JsonResponse;
 use App\Platform\Http\Middleware\ErrorHandlerMiddleware;
 use App\Platform\Http\Middleware\HttpLoggingMiddleware;
@@ -15,16 +16,20 @@ use App\Platform\Routing\Router;
 use App\Platform\Runtime\App;
 use App\Platform\Runtime\RandomRequestIdGenerator;
 use App\Platform\Runtime\RequestContextFactory;
+use Examples\ContractEcho\EchoEndpoint;
 use Examples\DocumentCatalog\Errors;
 use Examples\DocumentCatalog\Html;
 use Examples\JsonEcho\EchoHandler;
 use Project\HttpFixtures\AttachmentHandler;
+use Project\HttpFixtures\ContractEndpoint;
 use Project\HttpFixtures\FixtureHandler;
 
 require_once __DIR__ . '/FixtureHandler.php';
 require_once __DIR__ . '/../../examples/json-echo/EchoHandler.php';
 require_once __DIR__ . '/AttachmentHandler.php';
 require_once __DIR__ . '/AttachmentFiles.php';
+require_once __DIR__ . '/../../examples/contract-echo/EchoEndpoint.php';
+require_once __DIR__ . '/ContractEndpoint.php';
 
 return static function (Logger $logger): App {
     if (getenv('WIRE_ERROR_FORMAT') === 'html') {
@@ -36,6 +41,7 @@ return static function (Logger $logger): App {
     $fixture = new FixtureHandler();
     $attachment = new AttachmentHandler();
     $routes = [
+        new EchoSendHttp(new ContractEndpoint(new EchoEndpoint()), 65_536)->route(),
         new RouteEntry('POST', '/__wire/echo', new EchoHandler(65_536)),
         new RouteEntry('GET', '/__wire/input', $fixture),
         new RouteEntry('POST', '/__wire/input', $fixture),
