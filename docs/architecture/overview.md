@@ -18,17 +18,17 @@ RequestContext → ErrorHandler → Routing → RouteHandlerResolver → гот�
 
 ## Транспорт и ресурсы
 
-[public/http.php](../../public/http.php) строит SAPI request, загружает выбранную APP_CONFIG функцию, передаёт ReadableOutputLogger и отправляет response. [public/index.php](../../public/index.php) передаёт RoadRunnerLogger, явно создаёт transport worker и запускает RoadRunnerRuntime с тем же приложением. Default APP_CONFIG для обоих — config/core.php.
+[public/index.php](../../public/index.php) — единственная HTTP-точка входа. Она передаёт RoadRunnerLogger в APP_CONFIG функцию, явно создаёт native transport и запускает RoadRunnerRuntime. Default APP_CONFIG — config/core.php. CLI commands строят собственные графы без HTTP loop.
 
 Целевой server — RoadRunner 3.x (проверен 3.0.0), отдельный executable платформы. Обновлены native transport sources: worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0, API DTO 2.1.0. PHP namespaces сохранены upstream, пути packages следуют roadrunner/*.
 
-RoadRunnerRuntime::createWorker(transport, chunkSize) создаёт собственный [RoadRunnerHttpWorker](../../src/Platform/Runtime/RoadRunnerHttpWorker.php) поверх нативного RR HttpWorker, без PSR factories/adapters. RR_HTTP_CHUNK_SIZE задаётся в server env: default 0 материализует body, каталог/HTTP fixtures выбирают 8192. Чтение частями удерживает текущий и следующий chunk; seekable body перематывается, non-seekable читается с текущей позиции. SAPI читает по 8192 bytes. Native transport завершает поток при ошибке генератора; адаптер сохраняет и повторно выбрасывает read failure. Полного охвата отмены клиента и произвольных потоков нет.
+RoadRunnerRuntime::createWorker(transport, chunkSize) создаёт собственный [RoadRunnerHttpWorker](../../src/Platform/Runtime/RoadRunnerHttpWorker.php) поверх нативного RR HttpWorker, без PSR factories/adapters. RR_HTTP_CHUNK_SIZE задаётся в server env: default 0 материализует body, каталог/HTTP fixtures выбирают 8192. Чтение частями удерживает текущий и следующий chunk; seekable body перематывается, non-seekable читается с текущей позиции. Native transport завершает поток при ошибке генератора; адаптер сохраняет и повторно выбрасывает read failure. Полного охвата отмены клиента и произвольных потоков нет.
 
 [Request](../../src/Platform/Http/Request.php), [Response](../../src/Platform/Http/Response.php), [Body](../../src/Platform/Http/Body.php), [Uri](../../src/Platform/Http/Uri.php) и [UploadedFile](../../src/Platform/Http/UploadedFile.php) — concrete types ядра. Handler принимает Request и возвращает Response; дополнительных interfaces/factories для сообщений нет. Копии metadata неизменяемы через with-методы; Body разделяет позицию/владение. Строковый Body не открывает php://temp; файловый владеет переданным PHP resource. Nyholm/PSR HTTP/factory/log packages удалены.
 
 RequestContext содержит request ID; middleware добавляет X-Request-ID, X-Response-Time и Server-Timing. ErrorResponse передаётся непосредственно ErrorHandlerMiddleware/RoutingMiddleware: default JSON, в каталоге HTML. Приватный Throwable остаётся в logger. В RR configs общий logs.level=error, но channels.server.level=info сохраняет PHP stderr, включая ошибки приложения; production envelope теперь содержит time и uppercase level. Это внешний server envelope, PHP Logger не меняется. HttpLogging добавляется объектом middleware там, где нужен; payload не читает.
 
-AttachmentResponse принимает stream/размер, создаёт безопасные headers и передаёт тот же body. SAPI/RR закрывают response streams после отправки/ошибки, включая HEAD. App::handle ничего не отправляет и не закрывает. Подробности — [lifecycle](request-lifecycle.md).
+AttachmentResponse принимает stream/размер, создаёт безопасные headers и передаёт тот же body. RoadRunnerRuntime закрывает response streams после отправки/ошибки, включая HEAD. App::handle ничего не отправляет и не закрывает. Подробности — [lifecycle](request-lifecycle.md).
 
 ## PostgreSQL и CLI
 
@@ -44,9 +44,9 @@ Storage.transaction владеет одной транзакцией, откло
 
 ## Время жизни и проверки
 
-Граф объектов принадлежит функции сборки: SAPI создаёт его на запрос, RR — на worker. Готовые handlers могут разделять repository/storage; request state передаётся attributes. Автоматического service reset нет, requests/bodies не должны удерживаться между вызовами. Ленивость касается PDO, а не наличия графа PHP-объектов.
+Граф объектов принадлежит функции сборки: RoadRunner создаёт его один раз на worker. Готовые handlers могут разделять repository/storage; request state передаётся attributes. Автоматического service reset нет, requests/bodies не должны удерживаться между вызовами. Ленивость касается PDO, а не наличия графа PHP-объектов.
 
-Runtime/codegen/quality distributions остаются [автономными](../design/autonomous-core.md). verify не требует внешних сервисов; verify:full добавляет SQL tool и реальный PostgreSQL. http:check отдельно проверяет FPM/RR. Для изменения выполнены [проверки и ограниченное сравнение](../history/2026-10-20-explicit-composition.md); основной runtime, production readiness и длительная устойчивость не установлены.
+Runtime/codegen/quality distributions остаются [автономными](../design/autonomous-core.md). verify не требует внешних сервисов; verify:full добавляет SQL tool и реальный PostgreSQL. http:check отдельно проверяет RR3. Для изменения выполнены [проверки и ограниченное сравнение](../history/2026-10-20-explicit-composition.md); выбор RR теперь задан продуктом; production readiness и длительная устойчивость не установлены.
 
 ## Генерация API из контракта
 

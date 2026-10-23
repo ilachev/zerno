@@ -7,7 +7,7 @@
 ```text
 .proto → protoc → descriptor → DTO + endpoint interface + HTTP adapter/route
                                    ↑ ручная реализация и явный new
-                                 общий App → SAPI/FPM или RoadRunner
+                                 общий App → RoadRunner 3.x
 ```
 
 SQL, доступ, транзакции и бизнес-политика остаются в приложении. Генератор не создаёт repositories, domain models, контейнер, registry или service providers. Обычный RequestHandler остаётся самостоятельным способом добавить маршрут.
@@ -17,14 +17,14 @@ SQL, доступ, транзакции и бизнес-политика ост�
 1. Изменить contracts/echo.proto: messages и RPC с POST binding.
 2. Выполнить `php tools/project.php proto:gen`. Нужен установленный protoc; проверена версия 26.1. Ничего не скачивается.
 3. Реализовать generated EchoSendEndpoint, явно передать реализацию и предел тела в EchoSendHttp, подключить `$adapter->route()` к Router. Поля и HTTP path повторять вручную не требуется; изменение имени RPC потребует явной правки реализации и композиции.
-4. Выполнить verify и реальные HTTP checks. Несовместимая сигнатура реализации отклоняется PHP/PHPStan.
+4. Выполнить verify и реальные RR3 HTTP checks. Несовместимая сигнатура реализации отклоняется PHP/PHPStan.
 
 ```bash
 php tools/project.php proto:gen
 php tools/project.php proto:check
 php tools/project.php proto:compile:check
 php tools/project.php verify
-php tools/project.php http:check --rr=/path/to/rr3 --caddy=/path/to/caddy
+php tools/project.php http:check --rr=/path/to/rr3
 ```
 
 `proto:check` входит в verify и не требует compiler executable: он сверяет хеши .proto и bundled imports, хеш сохранённого [descriptor](../../contracts/echo.pb), заново генерирует PHP и сравнивает весь каталог output. Отсутствующий, лишний или изменённый файл означает ошибку. Эта проверка сама не доказывает происхождение descriptor из источника: полную сверку выполняет `proto:compile:check` через protoc. [echo.inputs.json](../../contracts/echo.inputs.json) — generated snapshot, не вручную поддерживаемый lockfile.
@@ -63,7 +63,7 @@ Runner намеренно собирает один конкретный кон�
 
 Content-Type сравнивается без регистра до `;`, параметры не меняют UTF-8 decoding. Глубина JSON ограничена 32. Ошибки decode преобразуются в 400 только вокруг fromJson; InvalidArgumentException реализации не выдаётся за ошибку клиента. Adapter закрывает входной Body в finally, transport закрывает response body. Adapter не хранит request/DTO между вызовами.
 
-Body::readLimited проверяет реально прочитанные байты от текущего cursor без доверия Content-Length. Он ограничивает последующий decode, а не уже выполненную буферизацию входа в RR/SAPI. Серверный ingress cap — отдельная настройка; профили и ограничения описаны в [ручном JSON-примере](../../examples/json-echo/README.md).
+Body::readLimited проверяет реально прочитанные байты от текущего cursor без доверия Content-Length. Он ограничивает последующий decode, а не уже выполненную буферизацию входа в RR. Серверный ingress cap — отдельная настройка; профили и ограничения описаны в [ручном JSON-примере](../../examples/json-echo/README.md).
 
 ## Runtime и поставка
 
@@ -75,9 +75,9 @@ Body::readLimited проверяет реально прочитанные ба�
 
 Обычные readonly DTO выбраны для проверенного string subset: прямая PHP-сигнатура, builtin JSON и отсутствие descriptor pool при API-запросе. Стандартные protobuf messages дают существенно более широкий контракт и binary codec; новые типы потребуют отдельно оценить их преимущество, а не расширять собственный codec без проверки.
 
-[Данные этапа](../history/2026-10-23-contract-generation.json) содержат пять отдельных процессов на вариант, по 20 000 операций, PHP 8.5.9, CLI OPcache off, одинаковый непустой JSON 254 байта. Варианты: прямые DTO, стандартные messages от protoc 26.1 с bundled Google runtime, ручной и generated HTTP handlers. Для protobuf сравниваются только те же messages, без HTTP annotations/services. Для handler-сравнения вход находится в общей поддержанной области; ручной пример требует message и выводит пустую строку явно, поэтому поведение за её пределами различается.
+Исторические [данные первого этапа](../history/2026-10-23-contract-generation.json), полученные до выбора RR единственным runtime, содержат пять отдельных процессов на вариант, по 20 000 операций, PHP 8.5.9, CLI OPcache off, одинаковый непустой JSON 254 байта. Варианты: прямые DTO, стандартные messages от protoc 26.1 с bundled Google runtime, ручной и generated HTTP handlers. Для protobuf сравниваются только те же messages, без HTTP annotations/services. Для handler-сравнения вход находится в общей поддержанной области; ручной пример требует message и выводит пустую строку явно, поэтому поведение за её пределами различается.
 
-Измеряются холодная первая операция, число загруженных классов, PHP memory и steady decode/encode/handler. Это не native RSS и не доказательство отсутствия утечек. `http:check --measure-contract --caddy=... --rr=...` отдельно сравнивает по 100 последовательных запросов после прогрева через Caddy/FPM и RR, чередуя порядок. В него входят сокет, routing и metadata logging. Короткая серия не выбирает основной runtime и не доказывает выигрыш в throughput. Генерация сокращает дублирование контракта; сама по себе она не ускоряет ручной handler.
+Измеряются холодная первая операция, число загруженных классов, PHP memory и steady decode/encode/handler. Это не native RSS и не доказательство отсутствия утечек. `http:check --measure-contract --rr=...` отдельно сравнивает по 100 последовательных запросов после прогрева через RR, чередуя порядок. В него входят сокет, routing и metadata logging. Короткая серия не выбирает основной runtime и не доказывает выигрыш в throughput. Генерация сокращает дублирование контракта; сама по себе она не ускоряет ручной handler.
 
 ## Проверки и дальнейшая граница
 

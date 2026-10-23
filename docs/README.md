@@ -32,9 +32,9 @@
 ## Работа с репозиторием
 
 - [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
-- [HTTP и малый baseline](development/http-and-baseline.md) — реальные FPM/RR wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
-- [Запуск публичного каталога](../examples/document-catalog/README.md) — отдельная БД, миграция/seed, HTML и private PDF storage на SAPI/RR.
-- [Ограниченный POST JSON](../examples/json-echo/README.md) — Body::readLimited, ошибки 400/413/415 и серверные пределы FPM/RR.
+- [HTTP и малый baseline](development/http-and-baseline.md) — реальные RR3 wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
+- [Запуск публичного каталога](../examples/document-catalog/README.md) — отдельная БД, миграция/seed, HTML и private PDF storage на RR3.
+- [Ограниченный POST JSON](../examples/json-echo/README.md) — Body::readLimited, ошибки 400/413/415 и серверные пределы RR3.
 - [Правила кода](development/coding-guidelines.md) — законченные сценарии, небольшие границы, ошибки и владение ресурсами; адаптация принципов devctl к PHP.
 - [Правила документации](development/documentation.md) — статусы, источники истины, инвентаризация, ссылки и порядок обновления.
 - [Bundled distributions](../third_party/README.md) — карта включённых сторонних исходников и инструментов.
@@ -49,6 +49,8 @@
 
 ## Исторические материалы
 
+- [Выбор RoadRunner единственным runtime](history/2026-10-23-roadrunner-only.md).
+
 - [Однострочный SQL-путь от 2026-10-23](history/2026-10-23-query-one.md) — queryOne/fetchOne, проверки PostgreSQL, граница PHP/native памяти и [данные замера](history/2026-10-23-query-one.json).
 
 - [Переход на RoadRunner 3 от 2026-10-20](history/2026-10-20-roadrunner3.md) — upstream transport, patches, числовые headers, логирование и [данные проверки](history/2026-10-20-roadrunner3.json).
@@ -59,9 +61,9 @@
 
 - [Очистка состава от 2026-10-20](history/2026-10-20-core-scope.md) — удалённые подсистемы, несовместимость, размеры и [данные ревизии](history/2026-10-20-core-scope.json).
 
-- [Файловый ответ и прозрачная диагностика от 2026-10-18](history/2026-10-18-file-responses.md) — контракт, FPM/RR с логированием, CPU/память/I/O и [данные замера](history/2026-10-18-file-responses.json).
+- [Файловый ответ и прозрачная диагностика от 2026-10-18](history/2026-10-18-file-responses.md) — контракт, RR3 с логированием, CPU/память/I/O и [данные замера](history/2026-10-18-file-responses.json).
 - [Публичный каталог: проверки и замеры от 2026-10-17](history/2026-10-17-public-catalog.md) — HTML/SQL, потоковая выдача, ручная проверка страницы и [данные запуска](history/2026-10-17-public-catalog.json).
-- [Начальный HTTP/PDO baseline от 2026-10-17](history/2026-10-17-core-http-baseline.md) — ограниченное сравнение FPM/RR, условия, результаты и [данные запусков](history/2026-10-17-core-http-baseline.json).
+- [Начальный HTTP/PDO baseline от 2026-10-17](history/2026-10-17-core-http-baseline.md) — ограниченное сравнение RR3, условия, результаты и [данные запусков](history/2026-10-17-core-http-baseline.json).
 - [Ревизия трёх целей от 2026-10-17](history/2026-10-17-development-principles-review.md) — замечания к документации, ограничения исходного кода и основания обновлённого плана.
 - [Аудит и этапы автономной поставки от 2026-10-17](history/2026-10-17-autonomy-audit.md) — сохранённый снимок до реорганизации документации.
 - [Исходный аудит установленных зависимостей](history/dependency-inventory-2026-10-17.json) — прежний Composer-граф, размеры и hashes; **не текущая поставка**.

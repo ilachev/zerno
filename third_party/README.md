@@ -18,4 +18,4 @@ Original upstream metadata, including dependency declarations, is retained as so
 
 The fixed transport targets RoadRunner 3.x (tested 3.0.0): roadrunner/worker 3.8.0, roadrunner/http 4.2.1, roadrunner/goridge 4.6.0 and roadrunner/api-dto 2.1.0. The server executable and sockets extension are separate platform inputs; commands never download them.
 
-PHP, extensions, PostgreSQL and HTTP/development executables are separate platform requirements. Runtime archives include only the runtime distribution. See [delivery architecture](../docs/design/autonomous-core.md), [testing](../docs/development/infrastructure-and-testing.md) and the [documentation index](../docs/README.md).
+PHP, extensions, PostgreSQL and RoadRunner/development executables are separate platform requirements. Runtime archives include only the runtime distribution. See [delivery architecture](../docs/design/autonomous-core.md), [testing](../docs/development/infrastructure-and-testing.md) and the [documentation index](../docs/README.md).

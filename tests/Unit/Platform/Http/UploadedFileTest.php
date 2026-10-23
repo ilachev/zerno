@@ -17,7 +17,7 @@ final class UploadedFileTest extends TestCase
         file_put_contents($source, 'uploaded');
 
         try {
-            $upload = new UploadedFile($source, 8, UPLOAD_ERR_OK, '../client.txt', 'text/plain', sapiUpload: false);
+            $upload = new UploadedFile($source, 8, UPLOAD_ERR_OK, '../client.txt', 'text/plain');
             $body = $upload->getStream();
             self::assertSame('uploaded', (string) $body);
             $upload->moveTo($target);
@@ -36,17 +36,34 @@ final class UploadedFileTest extends TestCase
         }
     }
 
-    public function testSapiMoveRejectsAnOrdinaryFileEvenUnderCli(): void
+    public function testFailedMovePreservesTheUploadForAnotherDestination(): void
     {
         $source = tempnam(sys_get_temp_dir(), 'zerno-upload-');
         self::assertNotFalse($source);
+        $target = $source . '.moved';
+        file_put_contents($source, 'uploaded');
 
         try {
-            $upload = new UploadedFile($source, 0, UPLOAD_ERR_OK, 'file.txt', 'text/plain');
-            $this->expectException(\RuntimeException::class);
-            $upload->moveTo($source . '.moved');
+            $upload = new UploadedFile($source, 8, UPLOAD_ERR_OK, 'file.txt', 'text/plain');
+            $body = $upload->getStream();
+
+            try {
+                $upload->moveTo($source . '/missing');
+                self::fail('An invalid destination must fail');
+            } catch (\RuntimeException) {
+                self::assertFalse($body->isReadable());
+                self::assertFileExists($source);
+            }
+            self::assertSame('uploaded', (string) $upload->getStream());
+            $upload->moveTo($target);
+            self::assertSame('uploaded', file_get_contents($target));
         } finally {
-            unlink($source);
+            if (is_file($source)) {
+                unlink($source);
+            }
+            if (is_file($target)) {
+                unlink($target);
+            }
         }
     }
 

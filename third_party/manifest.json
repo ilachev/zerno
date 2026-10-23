@@ -18,7 +18,7 @@
       "pdo_sqlite"
     ],
     "executables": {
-      "http": "PHP SAPI/FPM or RoadRunner >=3.0 <4.0",
+      "http": "RoadRunner >=3.0 <4.0 only",
       "development": [
         "docker",
         "k6",

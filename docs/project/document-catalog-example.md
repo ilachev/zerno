@@ -1,6 +1,6 @@
 # Пример: публичный каталог документов
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 Каталог — потребитель HTTP/PDO-механизмов. application.php собирает граф обычными конструкторами из Logger/Storage/private directory, routes.php получает готовые handlers; контейнера нет. [Запуск и seed](../../examples/document-catalog/README.md) принадлежат примеру; развитие ядра определяется [roadmap](roadmap.md). Редактор, роли, формы публикации и CMS workflow в поставке отсутствуют.
 
@@ -18,7 +18,7 @@ Document, статусы draft/published/withdrawn, PDF-only, private FileStore,
 
 Opaque storage key выбирается из записи, не из пользовательского пути. FileStore проверяет containment/тип/размер и метаданные открытого файла. DownloadHandler передаёт новый поток AttachmentResponse; HEAD закрывает файл и возвращает пустой body с теми же representation headers. Range игнорируется, выдаётся полный 200.
 
-SAPI/RR закрывают body после отправки. Каталог выбирает RR chunk 8192 для seekable regular files; default RR 0 буферизует. Логирование не читает payload. Ограниченная память подтверждается [полным transport-путём](../development/http-and-baseline.md), а не самим наличием Body. Изменение файла во время передачи/client abort и долгосрочная устойчивость не объявляются проверенными.
+RoadRunnerRuntime закрывает body после отправки. Каталог выбирает RR chunk 8192 для seekable regular files; default RR 0 буферизует. Логирование не читает payload. Ограниченная память подтверждается [полным transport-путём](../development/http-and-baseline.md), а не самим наличием Body. Изменение файла во время передачи/client abort и долгосрочная устойчивость не объявляются проверенными.
 
 ## Проверки и границы
 

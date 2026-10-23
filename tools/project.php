@@ -25,7 +25,7 @@ function projectCommand(string $command, array $arguments = []): void
                 verify:full            All root, SQL-generator and PostgreSQL checks
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
-                http:check             Check real PHP-FPM/RoadRunner HTTP behavior; forwards runtime options
+                http:check             Check real RoadRunner 3 HTTP behavior; forwards RR options
                 lint | fixcs           Check or fix PHP style
                 phpstan                Run root static analysis
                 test                   Run root unit tests; forwards PHPUnit arguments

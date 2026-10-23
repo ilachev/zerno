@@ -376,7 +376,7 @@
       "path": "docs/development/http-and-baseline.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Реальные FPM/RR wire checks с логированием и файлами; воспроизведение JSON/SELECT и файловых замеров без installer.",
+      "summary": "Реальные RR3 wire checks с логированием и файлами; воспроизведение JSON/SELECT и файловых замеров без installer.",
       "read_when": [
         "Проверка HTTP adapters",
         "Измерение runtime и подготовка изолированной fixture"
@@ -413,7 +413,7 @@
       "path": "examples/document-catalog/README.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Запуск отдельного публичного HTML/PDO-каталога: миграция/seed, SAPI/RR и private PDF storage.",
+      "summary": "Запуск отдельного публичного HTML/PDO-каталога: миграция/seed, RR3 и private PDF storage.",
       "read_when": [
         "Запуск и изменение примера каталога",
         "Проверка границ приложения и core"
@@ -456,7 +456,6 @@
       "source_paths": [
         "src/Platform/Http/AttachmentResponse.php",
         "src/Platform/Http/Middleware/HttpLoggingMiddleware.php",
-        "src/Platform/Runtime/SapiResponseEmitter.php",
         "tools/check-http.php",
         "tools/http-fixtures",
         "load-tests/files",
@@ -640,7 +639,7 @@
       "path": "examples/contract-echo/README.md",
       "kind": "tool-guide",
       "status": "current",
-      "summary": "Запуск Echo из .proto, ручная реализация и явное подключение generated adapter на SAPI/RR.",
+      "summary": "Запуск Echo из .proto, ручная реализация и явное подключение generated adapter на RR3.",
       "read_when": [
         "Разработка API из контракта",
         "Запуск готового generated PHP без compiler"
@@ -650,6 +649,24 @@
         "gen/Generated/Echo",
         "examples/contract-echo",
         "tools/proto-gen"
+      ]
+    },
+    {
+      "id": "roadrunner-only-history",
+      "path": "docs/history/2026-10-23-roadrunner-only.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Пользователь выбрал только RR3: удалены SAPI/FPM entry point/adapters, upload mode, test branches и конфигурации.",
+      "read_when": [
+        "Разбор границы HTTP runtime и удаления FPM"
+      ],
+      "source_paths": [
+        "public/index.php",
+        "src/Platform/Runtime/RoadRunnerRuntime.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "src/Platform/Http/UploadedFile.php",
+        "tools/check-http.php",
+        "docs/architecture/request-lifecycle.md"
       ]
     }
   ],

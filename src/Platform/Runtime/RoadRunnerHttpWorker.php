@@ -140,7 +140,7 @@ final readonly class RoadRunnerHttpWorker
                 || !\is_string($file['mime'] ?? null) || !\is_int($file['size'] ?? null) || !\is_int($file['error'] ?? null)) {
                 throw new \InvalidArgumentException('Invalid RoadRunner upload metadata');
             }
-            $uploads[$index] = new UploadedFile($file['tmpName'], $file['size'], $file['error'], $file['name'], $file['mime'], sapiUpload: false);
+            $uploads[$index] = new UploadedFile($file['tmpName'], $file['size'], $file['error'], $file['name'], $file['mime']);
         }
 
         return $uploads;

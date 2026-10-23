@@ -16,7 +16,6 @@ final class UploadedFile
         private readonly int $error,
         private readonly string $name,
         private readonly string $mediaType,
-        private readonly bool $sapiUpload = true,
     ) {
         if ($size < 0 || !\in_array($error, [UPLOAD_ERR_OK, UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE, UPLOAD_ERR_PARTIAL, UPLOAD_ERR_NO_FILE, UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE, UPLOAD_ERR_EXTENSION], true)) {
             throw new \InvalidArgumentException('Invalid uploaded file metadata');
@@ -60,7 +59,7 @@ final class UploadedFile
         }
         $this->body?->close();
         $this->body = null;
-        $moved = $this->sapiUpload ? @move_uploaded_file($this->path, $target) : @rename($this->path, $target);
+        $moved = @rename($this->path, $target);
         if (!$moved) {
             throw new \RuntimeException('Cannot move uploaded file');
         }

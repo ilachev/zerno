@@ -14,7 +14,7 @@
 | API из контракта | Первый string/unary POST JSON этап: DTO, typed endpoint, HTTP adapter и явный route |
 | Разработка SQL | Типизированные queries/rows из читаемого SQL, LIMIT и PostgreSQL checker |
 | Диагностика | Request ID, время обработки, логи метаданных без чтения response body |
-| Исполнение | SAPI/FPM и RoadRunner для одного RequestHandler |
+| Исполнение | Только RoadRunner 3.x; App/RequestHandler отделены от worker loop |
 | Поставка | Фиксированные runtime/codegen/quality sources, работа без package installation/download |
 
 Это исчерпывающая текущая область поставки, а не стартовый набор обязательных модулей с коллекцией optional-функций. Источник фактов — [архитектура](../architecture/overview.md); правила оценки — [три принципа](principles.md).
@@ -25,7 +25,7 @@
 
 Код сохраняет HTTP-семантику и прямой PDO. HTTP-типы принадлежат ядру; зависимости Nyholm и PSR HTTP/factory/log удалены. Совместимость с PSR-7/17 не является контрактом. Новизна должна помогать разработке или проверяемым затратам; необычные названия и собственные замены библиотек ради отличия не являются целью.
 
-Поставляемые сторонние файлы имеют происхождение, notices и hashes. PHP, PostgreSQL, FPM/RR и инструменты стенда — платформа. Вендорский protobuf-runtime остаётся требованием зафиксированного RoadRunner HTTP; API Echo использует обычные readonly DTO и builtin JSON, не Google Message.
+Поставляемые сторонние файлы имеют происхождение, notices и hashes. PHP, sockets, PostgreSQL, RoadRunner и инструменты стенда — платформа. Вендорский protobuf-runtime остаётся требованием зафиксированного RoadRunner HTTP; API Echo использует обычные readonly DTO и builtin JSON, не Google Message.
 
 ## API из контракта: принятое направление
 
@@ -43,4 +43,4 @@ Session/anonymous visitor tracking, GeoIP, fingerprints, SQL-аналитика 
 
 [Каталог документов](../../examples/document-catalog/README.md) проверяет ограниченный SQL-список, HTML-карточку и файл. Его Document, published/draft/withdrawn, допустимый PDF, SQL schema и шаблоны принадлежат приложению. Пример не задаёт будущую CMS и не определяет последовательность задач ядра.
 
-Простота, полезная функциональность и эффективность оцениваются совместно. Количество встроенных подсистем не является мерой функциональности. Основной runtime, числовые бюджеты, лицензия собственного кода и политика версий остаются открытыми; конкретные следующие проверки — в [roadmap](roadmap.md).
+Простота, полезная функциональность и эффективность оцениваются совместно. Количество встроенных подсистем не является мерой функциональности. RoadRunner выбран как единственный HTTP runtime. Числовые бюджеты, лицензия собственного кода и политика версий остаются открытыми; конкретные следующие проверки — в [roadmap](roadmap.md).

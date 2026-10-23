@@ -4,7 +4,7 @@
 
 [PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. Runtime: PHP 8.5+, PDO; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
 
-Для HTTP check нужны установленные php-fpm и RoadRunner 3.x (проверен rr 3.0.0); RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, а для описанного front baseline — Caddy. Docker используется только при выборе локального PostgreSQL service. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
+Для HTTP check нужен установленный RoadRunner 3.x (проверен rr 3.0.0); RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, Docker используется только при выборе локального PostgreSQL service. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
 
 ## Команды
 
@@ -16,7 +16,7 @@
 | proto:gen / proto:compile:check | Компиляция/полная сверка Echo через platform protoc |
 | proto:check | Хеши contract sources/descriptor и точная сверка generated PHP без compiler |
 | tools:sql:check | Style, PHPStan и tests SQL generator |
-| http:check | Реальные FPM/RR, JSON/HTML ошибки и файлы с metadata logging |
+| http:check | Настоящий RR3, JSON/HTML ошибки и файлы с metadata logging |
 | build VERSION | Integrity и runtime tar.gz; не заменяет quality gate |
 | services:start | Только PostgreSQL Docker service с --pull never, без миграций |
 | services:stop / services:status | Остановка / статус compose-проекта |
@@ -35,7 +35,7 @@ Core migration path — пустой src/Migrations; пример имеет с�
 
 ## Unit и integration profiles
 
-[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. Проверки SAPI запускают emitter/factory, RR unit tests используют double внешнего WorkerInterface и реальный RoadRunnerHttpWorker/HttpWorker. HTTP-типы и ресурсы проверяются реальными объектами; ObservedStream — PHP stream wrapper для наблюдения чтений/seek/close.
+[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. RR unit tests используют double внешнего WorkerInterface и реальный RoadRunnerHttpWorker/HttpWorker. HTTP-типы и ресурсы проверяются реальными объектами; ObservedStream — PHP stream wrapper для наблюдения чтений/seek/close.
 
 [phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом. SqlExecutor и generated row mapping проверяются на настоящем PostgreSQL; прежний InMemorySqlExecutorStorage удалён. QueryOneTest отдельно проверяет one-row семантику, SQLSTATE/reuse и отсутствие полного PHP-массива; этот memory counter не включает native libpq buffers/RSS.
 

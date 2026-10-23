@@ -86,4 +86,4 @@ php tools/project.php verify:full
 
 [Данные ревизии от 2026-10-23](../history/2026-10-23-transaction-recovery.json) сохраняют наблюдавшиеся сбои до изменения и исправленные результаты. Исторический probe привязан к указанному Git-состоянию; старые string-сигнатуры из него не являются текущей инструкцией.
 
-Проверка этапа: verify:full — 265 unit / 167 SQL-tool / 58 PostgreSQL tests; распакованный архив — 68 HTTP-сценариев на SAPI/RR3 с PostgreSQL и явными CLI миграциями, плюс 5 HTTP-сценариев source baseline. Это проверки корректности, не длительный load test.
+Историческая проверка этапа до выбора RR единственным runtime: verify:full — 265 unit / 167 SQL-tool / 58 PostgreSQL tests; распакованный архив — 68 HTTP-сценариев на SAPI/RR3 с PostgreSQL и явными CLI миграциями, плюс 5 HTTP-сценариев source baseline. Это проверки корректности, не длительный load test.

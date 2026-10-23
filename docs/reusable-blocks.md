@@ -1,12 +1,12 @@
 # Карта блоков и границ
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
 
 Текущая область продукта определена [видением](project/vision.md). Здесь нет уровня optional capabilities: реализованные механизмы имеют конкретную роль, приложение задаёт их использование обычной композицией.
 
 | Код | Ответственность | Потребитель |
 | --- | --- | --- |
-| Platform/Runtime | App, request ID, SAPI emitter/factory и RR loop | Точки входа и реальные HTTP fixtures |
+| Platform/Runtime | App, request ID и RR loop | Точки входа и реальные HTTP fixtures |
 | Platform/Http | RequestHandler/Middleware, ErrorResponse/JSON, AttachmentResponse, metadata logging | Ядро и каталог |
 | Platform/Routing | RouteEntry с готовыми RequestHandler, method/path dispatch | config/routes.php и маршруты каталога |
 | Platform/Storage | PostgreSQL PDO, SQL contracts/executor, транзакции/миграции | Каталог и PostgreSQL regression tests |
@@ -15,7 +15,7 @@
 
 /health и ответы маршрутизатора 404/405 не открывают БД, не создают cookies и не выполняют аналитику посетителя. Объекты и middleware собираются обычным PHP через конструкторы, без DI-контейнера; добавление HttpLogging не читает body. Регистрация autoload maps/bootstrap files имеет собственную стоимость, поэтому нулевая стоимость загрузки не заявляется.
 
-SAPI/FPM и RR — адаптеры одного приложения. Default RR буферизует body; каталог явно выбирает chunk 8192 для seekable файлов. Поток и helper сами по себе не гарантируют ограниченную память: проверяется [полный путь](development/http-and-baseline.md).
+RoadRunner 3.x — единственный HTTP runtime, App отделён от worker loop. Default RR буферизует body; каталог явно выбирает chunk 8192 для seekable файлов. Поток и helper сами по себе не гарантируют ограниченную память: проверяется [полный путь](development/http-and-baseline.md).
 
 ## Граница приложения
 
