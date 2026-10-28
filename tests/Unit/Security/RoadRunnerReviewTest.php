@@ -80,12 +80,20 @@ final class RoadRunnerReviewTest extends TestCase
         new RoadRunnerReview($this->directory)->notAffected('binary', 'GO-2026-5932', 'advisory', new \DateTimeImmutable('2026-10-28T00:00:00Z'));
     }
 
-    public function testPermanentAssessmentCannotPass(): void
+    #[DataProvider('provideOverlongAssessmentCannotPassCases')]
+    public function testOverlongAssessmentCannotPass(string $expires): void
     {
         $review = Inventory::read($this->directory . '/roadrunner.json');
-        $review['expires_on'] = '2099-01-01';
+        $review['expires_on'] = $expires;
         file_put_contents($this->directory . '/roadrunner.json', json_encode($review, JSON_THROW_ON_ERROR));
         self::assertFalse(new RoadRunnerReview($this->directory)->notAffected('binary', 'GO-2026-5932', 'advisory', new \DateTimeImmutable('2026-10-28T00:00:00Z')));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function provideOverlongAssessmentCannotPassCases(): iterable
+    {
+        yield '32 inclusive UTC calendar dates' => ['2026-11-28'];
+        yield 'permanent exemption' => ['2099-01-01'];
     }
 
     /** @param array<string, mixed> $evidence */

@@ -21,7 +21,8 @@ final readonly class RoadRunnerReview
         $reviewed = self::date($review['reviewed_on'] ?? null);
         $expires = self::date($review['expires_on'] ?? null);
         $today = $now->setTimezone(new \DateTimeZone('UTC'))->setTime(0, 0);
-        if ($today < $reviewed || $today > $expires || $expires < $reviewed || $expires->getTimestamp() - $reviewed->getTimestamp() > 31 * 86_400) {
+        // Both endpoint dates are valid, so 30 days between them cover 31 UTC dates.
+        if ($today < $reviewed || $today > $expires || $expires < $reviewed || $expires->getTimestamp() - $reviewed->getTimestamp() > 30 * 86_400) {
             return false;
         }
         $advisories = $review['advisories'] ?? null;
