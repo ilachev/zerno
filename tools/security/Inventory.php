@@ -59,6 +59,13 @@ final readonly class Inventory
         if ($bytes === false || \strlen($bytes) > 4_194_304) {
             throw new \RuntimeException('Cannot read security input: ' . $path);
         }
+
+        return self::decode($bytes);
+    }
+
+    /** @return array<string, mixed> */
+    public static function decode(string $bytes): array
+    {
         $value = json_decode($bytes, true, 64, JSON_THROW_ON_ERROR);
         if (!\is_array($value) || array_is_list($value)) {
             throw new \RuntimeException('Invalid security input object');

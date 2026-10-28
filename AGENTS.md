@@ -1,6 +1,6 @@
 # Agent instructions
 
-Type: `instructions`. Status: `current`. Reviewed: 2026-10-23.
+Type: `instructions`. Status: `current`. Reviewed: 2026-10-28.
 
 These rules apply throughout the repository. Communicate with the user in Russian. Write code comments in English. This is the canonical instruction file; `CLAUDE.md` is a compatibility entry point.
 
@@ -60,7 +60,7 @@ php tools/project.php verify:full
 - Changes to database behavior require actual PostgreSQL checks, not just unit tests. Use `verify:integration`; generator changes also require SQL tool checks. `verify:full` includes all of these.
 - Default `verify` must not require external services. Use real internal implementations in tests rather than mocking internal services. Test each layer's responsibilities.
 - `services:start` starts only the PostgreSQL development service and never runs migrations. Integration tests use `TEST_DB_*` and isolated random schemas independently of application `DB_*`; their bootstrap does not create a shared application/database. See [infrastructure and testing](docs/development/infrastructure-and-testing.md) before changing test setup.
-- CI runs the separate online security workflow; releases require its success before packaging/upload. Findings and advisory-service failures fail closed. CI and releases run `verify:full` and build a runtime archive. Committed SQL artifacts are packaged; generator/quality distributions and test fixtures are excluded from runtime.
+- CI runs the separate online security workflow; releases require its success before packaging/upload. Unresolved findings and advisory-service failures fail closed. Confirmed not-affected conclusions must be scoped to the exact binary/advisory hashes, checked import evidence and at most 31 days; see the security document. Never add blanket advisory/module ignores. CI and releases run `verify:full` and build a runtime archive. Committed SQL artifacts are packaged; generator/quality distributions and test fixtures are excluded from runtime.
 
 ## Database conventions
 

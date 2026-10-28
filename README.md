@@ -1,6 +1,6 @@
 # Зерно
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 **Зерно** (`zerno`) — небольшое автономное PHP HTTP/PDO-ядро для сайтов и веб-приложений. Муниципальные и государственные проекты — приоритетная аудитория; назначение остаётся универсальным. Цели: [простота, полезная функциональность и производительность](docs/project/principles.md).
 
@@ -52,7 +52,7 @@ php tools/project.php security:platform --rr=/path/to/rr3
 php tools/project.php build local
 ```
 
-verify не требует внешних сервисов или protoc. verify:full добавляет SQL-tool checks и PostgreSQL через TEST_DB_*. Отдельные [security checks](docs/development/security.md) читают advisory data без скачивания пакетов; CI выполняет их ежедневно и блокирует релиз при ошибке. Текущий RR finding требует разрешения перед релизом. http:check запускает только настоящий RR3 и проверяет HTTP, ресурсы и состояние следующего запроса. [Инфраструктура](docs/development/infrastructure-and-testing.md) описывает требования и изоляцию. Runtime archive содержит готовый PHP и SQL/API-artifacts без генераторов, contracts и quality tools.
+verify не требует внешних сервисов или protoc. verify:full добавляет SQL-tool checks и PostgreSQL через TEST_DB_*. Отдельные [security checks](docs/development/security.md) читают advisory data без скачивания пакетов; CI выполняет их ежедневно и блокирует релиз при ошибке. Разбор findings и ограничения подтверждённых not-affected assessments описаны в security guide. http:check запускает только настоящий RR3 и проверяет HTTP, ресурсы и состояние следующего запроса. [Инфраструктура](docs/development/infrastructure-and-testing.md) описывает требования и изоляцию. Runtime archive содержит готовый PHP и SQL/API-artifacts без генераторов, contracts и quality tools.
 
 Bundled RR использует protobuf/DTO libraries для своего транспорта; API Echo их не загружает как codec. Notices, происхождение и hashes описаны в [автономной поставке](docs/design/autonomous-core.md).
 

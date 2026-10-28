@@ -1,0 +1,48 @@
+{
+  "format_version": 1,
+  "binary_sha256": "1584e42a826596cb31fa70479bc4d6169ad658415e0db955f36bdf7239e8bf94",
+  "artifact_url": "https://github.com/roadrunner-server/roadrunner/releases/download/v3.0.1/roadrunner-3.0.1-linux-amd64.tar.gz",
+  "archive_sha256": "a6156d34a08cfdfba4934e737ed3208b11c6eab666def5c81f1b640ef43568e7",
+  "source_revision": "ed89c2ec991f64b072297fcbee5ad7f058779199",
+  "reviewed_on": "2026-10-28",
+  "expires_on": "2026-11-27",
+  "evidence_sha256": "03863e0349cb4c6d53c786f15038e57b21cffb72023d803f50a23f2c61617f03",
+  "advisories": {
+    "GO-2026-5932": {
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "advisory_url": "https://vuln.go.dev/ID/GO-2026-5932.json",
+      "advisory_sha256": "f277b0400996200a7d5034c676661cd8cf18adeab1fdc5d0dc369e456ddf1fad",
+      "advisory_modified": "2026-07-07T22:15:29Z",
+      "affected_packages": [
+        "golang.org/x/crypto/openpgp",
+        "golang.org/x/crypto/openpgp/armor",
+        "golang.org/x/crypto/openpgp/clearsign",
+        "golang.org/x/crypto/openpgp/elgamal",
+        "golang.org/x/crypto/openpgp/errors",
+        "golang.org/x/crypto/openpgp/packet",
+        "golang.org/x/crypto/openpgp/s2k"
+      ]
+    },
+    "GO-2026-6860": {
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "advisory_url": "https://vuln.go.dev/ID/GO-2026-6860.json",
+      "advisory_sha256": "443304c129b9540dc46d28392b973a136db90644019dc20c3e25941833d49df3",
+      "advisory_modified": "2026-10-27T21:16:18Z",
+      "affected_packages": [
+        "golang.org/x/net/html"
+      ]
+    },
+    "GO-2026-6866": {
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "advisory_url": "https://vuln.go.dev/ID/GO-2026-6866.json",
+      "advisory_sha256": "c0d687be9779f000941b6c847646075598b659cdd51476951559208956bd0f82",
+      "advisory_modified": "2026-10-27T21:16:18Z",
+      "affected_packages": [
+        "golang.org/x/net/html"
+      ]
+    }
+  }
+}

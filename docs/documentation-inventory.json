@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-10-23",
+  "reviewed_at": "2026-10-28",
   "scope": "Собственные repository guides, design/architecture/planning docs и связанные reference artifacts. Пути относительны корню; current/accepted-plan описывают статус документа, не реализацию каждой идеи.",
   "documents": [
     {
@@ -674,7 +674,7 @@
       "path": "docs/development/security.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Уязвимости включённого кода и платформы: PHP floor, OSV, RR binary scan, Dependabot и CI/release gates.",
+      "summary": "Аудит PHP/RR, ограничения подтверждённых not-affected заключений с import evidence, Dependabot и CI/release gates.",
       "read_when": [
         "Изменение CI или bundled dependencies",
         "Обновление PHP/RoadRunner и разбор advisories"
@@ -685,7 +685,9 @@
         "public/index.php",
         ".github/workflows/security.yml",
         ".github/dependabot.yml",
-        "third_party/manifest.json"
+        "third_party/manifest.json",
+        "tools/security/assessments/roadrunner.json",
+        "tools/security/assessments/roadrunner-imports.json"
       ]
     }
   ],
