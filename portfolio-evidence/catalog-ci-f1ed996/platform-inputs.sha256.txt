@@ -1,0 +1,4 @@
+7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  var/security/platform/go.tar.gz
+b27ce771605a203a0119747fb9d71f4aa2997e24227a3861e9e3b63acc3dd624  var/security/platform/source.tar.gz
+4f86f69390be87e9e3b4d920969d428e7914950d6b284cdbf5c8ff5ac15ccbe7  var/security/platform/source/go.mod
+5acbc6a5b97a8a190515344b1e3d1ae50629b38bddfb38fcc7c4368d3fafad00  var/security/platform/source/go.sum

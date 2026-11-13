@@ -777,7 +777,7 @@
       "path": "docs/portfolio/scope-and-composition.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Case study of removed scope, explicit composition, owner correction, and costs.",
+      "summary": "Source-backed case of over-broad API-generation removal, recorded owner correction, bounded Echo implementation and pending personal review.",
       "read_when": [
         "Reviewing the engineering portfolio",
         "Following claims into implementation and verification evidence"
@@ -786,7 +786,12 @@
         "docs/history/2026-10-20-core-scope.md",
         "docs/history/2026-10-20-explicit-composition.md",
         "config/core.php",
-        "examples/document-catalog/application.php"
+        "examples/document-catalog/application.php",
+        "docs/design/protobuf-contract-generation.md",
+        "contracts/echo.proto",
+        "examples/contract-echo/config.php",
+        "tests/Unit/Codegen",
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
       ]
     },
     {
@@ -856,7 +861,7 @@
       "path": "docs/design/adr-2026-11-13-tech-lead-evidence.md",
       "kind": "design",
       "status": "current",
-      "summary": "Proposed Tech Lead / Lead Engineer portfolio evidence: source-backed owner decisions, real technical review, one durable CI snapshot and a short reading path.",
+      "summary": "Partially implemented Tech Lead / Lead Engineer evidence: factual scope-correction case and permanent CI snapshot; owner review and employer reading path pending.",
       "read_when": [
         "Planning the next portfolio stage",
         "Assessing owner/agent attribution and technical leadership evidence"
@@ -875,7 +880,30 @@
         ".github/workflows/ci.yml",
         "tools/check-catalog.php",
         "tools/project.php",
-        "README.md"
+        "README.md",
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-guide",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/README.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Permanent CI baseline at f1ed996: import provenance, immutable payloads, outcomes, integrity instructions and scope limits.",
+      "read_when": [
+        "Inspecting retained catalog CI evidence after artifact expiry",
+        "Checking payload integrity and historical source binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/report.json",
+        "portfolio-evidence/catalog-ci-f1ed996/artifact.json",
+        "portfolio-evidence/catalog-ci-f1ed996/run.json",
+        "portfolio-evidence/catalog-ci-f1ed996/SHA256SUMS",
+        ".github/workflows/ci.yml",
+        ".github/platform/build-roadrunner.sh",
+        "tools/check-catalog.php",
+        "tools/project.php",
+        "docs/portfolio/scope-and-composition.md"
       ]
     }
   ],
@@ -1101,6 +1129,110 @@
         "load-tests/soak/scenario.js",
         "load-tests/soak/sample.php",
         "load-tests/soak/rr.yaml"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-report",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/report.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Original format-2 catalog report at clean f1ed996, with source/archive assertions and cleanup.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-console",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/console.txt",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Original bounded console from the retained successful catalog CI run.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-platform-buildinfo",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/platform-buildinfo.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Original Go build/module information for the retained CI RoadRunner executable.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-platform-inputs",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/platform-inputs.sha256.txt",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Original CI external platform input hashes; referenced inputs are not retained.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-platform-binary",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/platform-sha256.txt",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Original CI RoadRunner executable hash; the executable is not retained.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-artifact-metadata",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/artifact.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Captured GitHub artifact metadata: digest, expiry, run and source binding.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-run-metadata",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/run.json",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Captured gh run metadata: revision, attempt, job and step outcomes.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+      ]
+    },
+    {
+      "id": "catalog-ci-f1ed996-payload-hashes",
+      "path": "portfolio-evidence/catalog-ci-f1ed996/SHA256SUMS",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Import-time SHA-256 for the seven retained original/API payload files.",
+      "read_when": [
+        "Checking retained catalog CI evidence and its historical binding"
+      ],
+      "source_paths": [
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
       ]
     }
   ],

@@ -4,7 +4,7 @@ Type: `roadmap`. Status: `accepted-plan`. Reviewed: 2026-11-13.
 
 The current purpose is an [engineering portfolio](../portfolio/overview.md) backed by the working [HTTP/PDO system](vision.md). [Simplicity, useful functionality, and measured efficiency](principles.md) still govern technical changes. A plan does not establish that a capability exists.
 
-The owner selected **Tech Lead / Lead Engineer** as the portfolio audience. Reconciliation against clean revision `f1ed996` and [CI run 43423876614](https://github.com/ilachev/zerno/actions/runs/43423876614) confirmed the completed catalog milestone: source/archive execution, 251 successful assertions, cleanup and retained evidence. The next gap is a concise, source-backed account of owner decisions and technical review, plus evidence that survives CI retention.
+The owner selected **Tech Lead / Lead Engineer** as the portfolio audience. Reconciliation against clean revision `f1ed996` and [CI run 43423876614](https://github.com/ilachev/zerno/actions/runs/43423876614) confirmed the completed catalog milestone: source/archive execution, 251 successful assertions, cleanup and retained evidence. The first evidence slice adds a source-backed scope-correction case and a permanent copy of that CI baseline. Personal technical review and the employer reading path are next.
 
 ## Portfolio priorities
 
@@ -12,7 +12,7 @@ The owner selected **Tech Lead / Lead Engineer** as the portfolio audience. Reco
 | --- | --- | --- |
 | Implemented presentation | English entry points, contribution boundaries, workflow, and three case studies | README links to decisions, code, tests, and raw measurements |
 | Implemented | [Reproducible catalog walkthrough](../design/adr-2026-11-13-reviewer-walkthrough.md) | catalog:check repeats migration/seed/HTML/PDF/errors against source and a fresh runtime archive; CI supplies PostgreSQL/RR and retains report/diagnostics/platform provenance for fourteen days |
-| Proposed; not implemented | [Technical-leadership evidence](../design/adr-2026-11-13-tech-lead-evidence.md) | One existing case with linked decisions/agent work, a real dated owner review, one durable CI snapshot and a short employer reading path |
+| Partially implemented: slice 1 | [Technical-leadership evidence](../design/adr-2026-11-13-tech-lead-evidence.md) | [Scope-correction case](../portfolio/scope-and-composition.md) with linked commits/attribution and a [durable CI snapshot](../../portfolio-evidence/catalog-ci-f1ed996/README.md); dated owner review and employer reading path remain pending |
 | Ongoing | Keep the working example and verification reproducible | Checkout instructions, service-free verify, separately documented PostgreSQL/RR requirements |
 | Open | Exercise the portfolio with a reviewer | A reviewer can follow a case into code, reproduce a check, and discuss the tradeoff |
 | Awaiting consumer | Extend an application or the core | A concrete scenario and a gap in existing primitives; no feature expansion solely for presentation |
@@ -51,4 +51,4 @@ The [correctness ADR](../design/adr-2026-10-28-contract-correctness.md) records 
 
 RoadRunner is selected by scope, without a benchmark-victory claim. Multi-day behavior requires relevant measurements. Sessions, editing, an auth framework, and generic caches do not follow automatically from this plan.
 
-The new ADR is a proposal. Its review record and durable snapshot are planned outputs. Historical reports already attribute owner interventions, including correction of over-broad protobuf removal; their sources and dates must remain explicit. Independent reader feedback, deployment readiness, productivity gains and human-team leadership are not established by the existing CI result.
+The owner authorized the ADR's first slice. Its factual case and durable snapshot are implemented; the personal review record remains pending. Historical attribution and retrospective agent analysis are labelled separately. Independent reader feedback, deployment readiness, productivity gains and human-team leadership are not established by the existing CI result.

@@ -4,7 +4,7 @@ Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
 Zerno is a working PHP HTTP/PostgreSQL system used to demonstrate engineering with LLM assistance. The portfolio follows decisions through implementation and verification, including defects and limits that a successful default check did not reveal.
 
-The owner is targeting **Tech Lead / Lead Engineer** roles. The [next proposed ADR](../design/adr-2026-11-13-tech-lead-evidence.md) focuses on a source-backed owner decision/review trail and one durable CI baseline; these outputs are not implemented yet.
+The owner is targeting **Tech Lead / Lead Engineer** roles. The [technical-leadership ADR](../design/adr-2026-11-13-tech-lead-evidence.md) has its first slice implemented: a source-backed scope-correction case and a durable CI baseline. The personal owner review and employer reading path remain pending.
 
 The project began as an autonomous PHP foundation for websites and applications, with municipal and public-sector developers as a priority audience. Its current presentation focuses on the engineering process. This change does not establish adoption, production readiness, or a reason for every team to build a framework.
 
@@ -20,7 +20,7 @@ The portfolio makes no percentage claim about human-written code and no measured
 
 | Case | Engineering question | Evidence |
 | --- | --- | --- |
-| [Scope and composition](scope-and-composition.md) | Can removing infrastructure make dependencies and costs easier to inspect? | Removal history, composition roots, lazy connections, bounded measurements |
+| [Scope correction and composition](scope-and-composition.md) | How was an over-broad agent removal corrected while preserving the smaller scope? | Linked removal/correction/Echo commits, explicit attribution, composition and a permanent catalog CI snapshot |
 | [Contract correctness](contract-correctness.md) | What can a passing default suite miss? | Failures, an ADR, regression tests, PostgreSQL, HTTP, and archive checks |
 | [Runtime measurement](runtime-measurement.md) | What does a persistent-worker test establish? | Workload source, raw summaries, process samples, and limited conclusions |
 
@@ -30,7 +30,7 @@ A reviewer can challenge the choices: why normalize booleans, why reject outer j
 
 Start with [README](../../README.md), then follow a case into its code and tests. Run `php tools/project.php verify` for service-free checks. PostgreSQL integration and real RoadRunner checks have separate [platform requirements](../development/infrastructure-and-testing.md).
 
-The [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) now checks source and runtime delivery together in CI. Its live artifacts have fourteen-day retention. A permanent, curated copy is part of the next proposal.
+The [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) checks source and runtime delivery together in CI. Its live artifacts have fourteen-day retention. A [permanent snapshot](../../portfolio-evidence/catalog-ci-f1ed996/README.md) preserves one clean historical run with provenance and payload checksums.
 
 Historical reports identify their source state and platform. The 2026-10-28 report includes uncommitted changes and records source hashes. Its results belong to that snapshot; later checkouts are not automatically covered.
 

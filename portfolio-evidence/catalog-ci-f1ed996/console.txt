@@ -1,0 +1,1 @@
+Catalog check: source and runtime archive passed; migration, repeated seed, HTML, PDF, errors and cleanup.

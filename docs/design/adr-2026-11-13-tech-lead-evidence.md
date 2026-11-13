@@ -2,13 +2,13 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **proposed**. Implementation status: **not started**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience. This ADR proposes the next scope; the case changes, personal review record and durable snapshot below remain planned.
+Decision status: **accepted for slice 1**. Implementation status: **slice 1 implemented; slices 2–3 pending**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience and authorized the factual case and CI snapshot on 2026-11-13. The personal review record and employer reading path remain planned.
 
 ## Context and roadmap reconciliation
 
 The [purpose](../project/vision.md) is an engineering portfolio backed by a working PHP system. The [catalog ADR](adr-2026-11-13-reviewer-walkthrough.md) is complete. Reopening that work or expanding the core is not the next portfolio requirement.
 
-This review inspected clean revision `f1ed9967c89bb3c63339d0c1171ae58f3231460a`, the roadmap, portfolio cases, implementation/verification entry points, and [CI run 43423876614](https://github.com/ilachev/zerno/actions/runs/43423876614). The table records that baseline, before this documentation change.
+The initial review inspected clean revision `f1ed9967c89bb3c63339d0c1171ae58f3231460a`, the roadmap, portfolio cases, implementation/verification entry points, and [CI run 43423876614](https://github.com/ilachev/zerno/actions/runs/43423876614). The table records that baseline, before this ADR was proposed; later implementation is recorded below.
 
 | Roadmap area | Observed state | Implication |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ This review inspected clean revision `f1ed9967c89bb3c63339d0c1171ae58f3231460a`,
 | Independent assessment | No independent reader assessment is recorded in the reviewed portfolio | Keep this roadmap item open until a real read-through occurs |
 | Distribution and operations | Repository is public, no root own-code license or GitHub release was found; version/support decisions and deployment budgets remain open | Track these owner decisions separately from repository visibility and portfolio presentation |
 
-The inspected [catalog artifact](https://github.com/ilachev/zerno/actions/runs/43423876614/artifacts/14037125141) contains a 364,336-byte report with SHA-256 `ac5a24681224142d608ddf51b480fa4114b626f15135ae9328fae5987858cc94`. This identifies the inspected raw report, not a snapshot already committed by this proposal. The historical soak remains a bounded past measurement; current CI does not establish current capacity or multi-day operation.
+The inspected [catalog artifact](https://github.com/ilachev/zerno/actions/runs/43423876614/artifacts/14037125141) contains a 364,336-byte report with SHA-256 `ac5a24681224142d608ddf51b480fa4114b626f15135ae9328fae5987858cc94`. Slice 1 preserves that report unchanged in the [permanent snapshot](../../portfolio-evidence/catalog-ci-f1ed996/README.md). The historical soak remains a bounded past measurement; current CI does not establish current capacity or multi-day operation.
 
 ## Why this priority fits the target role
 
@@ -29,7 +29,7 @@ Public role descriptions provide a useful lens. [GitLab's Tech Lead responsibili
 
 The inference for this portfolio is to make the owner's framing, boundary decisions, critical review and acceptance reasoning observable. Existing green checks establish useful technical outcomes. A linked account of who challenged which choice would let a reviewer assess technical leadership more directly. No employer assessment or hiring outcome has been obtained.
 
-## Proposed decision
+## Decision
 
 Deepen **one existing scope/composition case**, add one durable verification snapshot, and give a reviewer a short route through both. Use ordinary Markdown, Git links, the existing JSON report and documentation inventory. Keep runtime capabilities and the current verification commands unchanged.
 
@@ -39,7 +39,7 @@ The preferred episode is the distinction between removing an obsolete applicatio
 2. [e6ae4f6](https://github.com/ilachev/zerno/commit/e6ae4f66b6940c850454af2c269b01a8965ff274) recorded the subsequent correction and scoped generation direction.
 3. [5fe818f](https://github.com/ilachev/zerno/commit/5fe818f53f4084383c1f47a60fc55d33a6f2128c) implemented the limited Echo consumer.
 
-The [existing case](../portfolio/scope-and-composition.md), historical report and [generation contract](protobuf-contract-generation.md) already provide starting evidence. The future case should identify the initial boundary, the agent's overreach as attributed by the report, the recorded clarification, the resulting narrower implementation and its checks. It must not assign every detail of the later design to the owner.
+The [case](../portfolio/scope-and-composition.md) now links the initial boundary, the agent's overreach as attributed by the historical report, the recorded clarification, the narrower implementation and its checks. It distinguishes facts from retrospective agent analysis and leaves personal review pending. The [generation contract](protobuf-contract-generation.md) owns the implemented behavior; no claim assigns every later design detail to the owner.
 
 Current catalog CI can demonstrate that the present repository remains executable. It does not retroactively validate the old scope snapshot or independently prove who made the historical decision.
 
@@ -61,11 +61,11 @@ Briefs and prompt excerpts use available source text or a labelled retrospective
 
 ## Durable verification evidence
 
-Preserve one inspected CI bundle under a proposed root path such as `portfolio-evidence/catalog-ci-<source-revision>/`. Keep it outside the existing runtime archive allowlist; verify that exclusion when implementing this slice. This static directory has one concrete case consumer and introduces no evidence registry, new command or dependency download in ordinary checks.
+Slice 1 preserves one inspected CI bundle under [portfolio-evidence/catalog-ci-f1ed996](../../portfolio-evidence/catalog-ci-f1ed996/README.md), outside the existing runtime archive allowlist. Check exclusion against an actual build. This static directory has one concrete case consumer and introduces no evidence registry, new command or dependency download in ordinary checks.
 
 Retain the original report plus the small console/platform-provenance files, with a combined initial budget of 1 MiB. The case records run/artifact identifiers, capture time, source revision, original file hashes, executed phases, cleanup and limitations. Check the actual bundle size and contents before committing it. Keep raw bytes immutable; label any necessary redacted derivative explicitly and preserve its relationship to the original hash.
 
-The import is a later documentation commit. The captured report remains bound to its original source revision and archive digest. Future successful runs do not replace it or make its results current. Live CI remains the route to checking a later revision.
+The import follows the original CI revision in a later documentation change. The captured report remains bound to its original source revision and archive digest. Future successful runs do not replace it or make its results current. Live CI remains the route to checking a later revision.
 
 Use the existing inventory for navigation. Snapshot validation should check JSON readability, known format, reported revision/dirty state, both phase outcomes, cleanup and recorded hashes. Publishing a snapshot does not turn it into a security, capacity or reproducible-build attestation.
 
@@ -73,15 +73,17 @@ Use the existing inventory for navigation. Snapshot validation should check JSON
 
 | Slice | Result | Acceptance |
 | --- | --- | --- |
-| 1. Factual review package | Condense the existing case around the linked scope-correction episode and preserve one CI baseline | Facts have sources; historical attribution is labelled; unknown owner reasoning remains pending; the raw snapshot matches its recorded hashes/revision, fits the size budget and stays excluded from runtime |
-| 2. Owner technical review | Add a dated, substantive owner review of the specified revision | Notes explain a design choice, an alternative and a risk/limit; confirm their attribution. Resolve any genuine finding through an ordinary bounded change and relevant checks, or record reasoned acceptance |
-| 3. Employer reading path | README/overview lead to the case, review and evidence in one short route | A reader can locate the owner constraint, agent work, correction/acceptance, relevant diff and reproduction command; keep the case compact and separate current checks from historical results |
+| 1. Factual review package — implemented | Existing case follows the linked scope-correction episode; one CI baseline is preserved | Facts have sources; historical attribution is labelled; unknown owner reasoning remains pending; the raw snapshot matches its recorded hashes/revision, fits the size budget and stays excluded from runtime |
+| 2. Owner technical review — pending | Add a dated, substantive owner review of the specified revision | Notes explain a design choice, an alternative and a risk/limit; confirm their attribution. Resolve any genuine finding through an ordinary bounded change and relevant checks, or record reasoned acceptance |
+| 3. Employer reading path — pending | README/overview lead to the case, review and evidence in one short route | A reader can locate the owner constraint, agent work, correction/acceptance, relevant diff and reproduction command; keep the case compact and separate current checks from historical results |
 
-The agent can prepare slice 1 using repository facts. Slice 2 requires the owner's actual technical input; an agent-authored approval cannot satisfy it. Technical documentation work and routine authorized delivery continue under the existing repository rules.
+Slice 1 uses repository facts: the original five artifact entries plus captured run/artifact metadata and payload checksums. Import validation checked the ZIP digest, report/run/platform/cleanup bindings and all 1,777 selected source hashes against Git blobs at f1ed996. The complete bundle fits the 1 MiB budget. The snapshot guide records provenance and a PHP-only payload integrity check. Raw historical reports remain unchanged.
+
+Slice 2 requires the owner's actual technical input; an agent-authored approval cannot satisfy it. Technical documentation work and routine authorized delivery continue under the existing repository rules.
 
 After the reading path exists, arrange a voluntary 15–20 minute read-through with a relevant engineer through the owner. Ask what decision they could attribute to the owner, what the agent did, what they would challenge, and whether the evidence/reproduction route was clear. Record actual feedback and resulting changes. Until then, independent validation remains open; a second agent is not an independent human reader.
 
-Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. The current task creates this proposal and reconciles the roadmap; it does not start these slices.
+Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check and inspect a built archive for snapshot exclusion; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. Slice 1 does not claim completion of the owner's technical review or the employer reading path.
 
 ## Alternatives and tradeoffs
 
