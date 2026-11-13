@@ -36,6 +36,7 @@ Start with the portfolio to understand the engineering process, then follow its 
 - [Autonomous delivery](design/autonomous-core.md): bootstrap, distributions, manifests, packaging.
 - [Correctness ADR](design/adr-2026-10-28-contract-correctness.md): review defects and implemented decisions.
 - [Reproducible catalog ADR](design/adr-2026-11-13-reviewer-walkthrough.md): implemented source/archive walkthrough, CI execution and retained scoped evidence.
+- [Technical-leadership evidence ADR](design/adr-2026-11-13-tech-lead-evidence.md): proposed owner review, traceable scope-correction case, durable CI baseline and employer reading path.
 - [Protobuf generation](design/protobuf-contract-generation.md): the first limited Echo slice and accepted direction.
 - [Transactions and migrations](design/transactions-and-migrations.md): atomicity, errors, recovery, metadata upgrade.
 - [SQL-generation contract](design/sql-gen-product.md) and [tool guide](../tools/sql-gen/README.md).

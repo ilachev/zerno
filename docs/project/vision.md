@@ -4,6 +4,8 @@ Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
 Zerno is an engineering portfolio case study in LLM-assisted development. A working PHP HTTP/PostgreSQL core supplies the concrete system: HTTP → handler → explicit SQL or stream → response. The [portfolio](../portfolio/overview.md) explains contributions and evidence; the [workflow](../portfolio/workflow.md) explains task boundaries and verification.
 
+The owner's current audience is **Tech Lead / Lead Engineer** reviewers. Prioritize inspectable technical direction, task boundaries, tradeoffs, review and delivery evidence. The [proposed next ADR](../design/adr-2026-11-13-tech-lead-evidence.md) defines the remaining evidence work.
+
 The earlier product direction targeted a small autonomous foundation for websites and applications, prioritizing municipal and public-sector developers. That motivation remains historical context. Independent adoption and the value of maintaining a separate framework have not been validated.
 
 ## Implemented system

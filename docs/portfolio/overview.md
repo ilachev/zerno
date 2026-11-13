@@ -4,6 +4,8 @@ Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
 Zerno is a working PHP HTTP/PostgreSQL system used to demonstrate engineering with LLM assistance. The portfolio follows decisions through implementation and verification, including defects and limits that a successful default check did not reveal.
 
+The owner is targeting **Tech Lead / Lead Engineer** roles. The [next proposed ADR](../design/adr-2026-11-13-tech-lead-evidence.md) focuses on a source-backed owner decision/review trail and one durable CI baseline; these outputs are not implemented yet.
+
 The project began as an autonomous PHP foundation for websites and applications, with municipal and public-sector developers as a priority audience. Its current presentation focuses on the engineering process. This change does not establish adoption, production readiness, or a reason for every team to build a framework.
 
 ## Owner and agent contributions
@@ -27,6 +29,8 @@ A reviewer can challenge the choices: why normalize booleans, why reject outer j
 ## Inspect the result
 
 Start with [README](../../README.md), then follow a case into its code and tests. Run `php tools/project.php verify` for service-free checks. PostgreSQL integration and real RoadRunner checks have separate [platform requirements](../development/infrastructure-and-testing.md).
+
+The [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) now checks source and runtime delivery together in CI. Its live artifacts have fourteen-day retention. A permanent, curated copy is part of the next proposal.
 
 Historical reports identify their source state and platform. The 2026-10-28 report includes uncommitted changes and records source hashes. Its results belong to that snapshot; later checkouts are not automatically covered.
 

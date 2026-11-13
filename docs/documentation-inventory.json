@@ -850,6 +850,33 @@
         "docs/portfolio/overview.md",
         "docs/project/roadmap.md"
       ]
+    },
+    {
+      "id": "adr-tech-lead-evidence-2026-11-13",
+      "path": "docs/design/adr-2026-11-13-tech-lead-evidence.md",
+      "kind": "design",
+      "status": "current",
+      "summary": "Proposed Tech Lead / Lead Engineer portfolio evidence: source-backed owner decisions, real technical review, one durable CI snapshot and a short reading path.",
+      "read_when": [
+        "Planning the next portfolio stage",
+        "Assessing owner/agent attribution and technical leadership evidence"
+      ],
+      "source_paths": [
+        "docs/project/roadmap.md",
+        "docs/project/vision.md",
+        "docs/portfolio/overview.md",
+        "docs/portfolio/workflow.md",
+        "docs/portfolio/scope-and-composition.md",
+        "docs/history/2026-10-20-core-scope.md",
+        "docs/history/2026-10-20-core-scope.json",
+        "docs/history/2026-10-20-explicit-composition.md",
+        "docs/design/protobuf-contract-generation.md",
+        "docs/design/adr-2026-11-13-reviewer-walkthrough.md",
+        ".github/workflows/ci.yml",
+        "tools/check-catalog.php",
+        "tools/project.php",
+        "README.md"
+      ]
     }
   ],
   "artifacts": [
