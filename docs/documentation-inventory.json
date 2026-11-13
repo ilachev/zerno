@@ -8,7 +8,7 @@
       "path": "README.md",
       "kind": "navigation",
       "status": "current",
-      "summary": "Portfolio entry, contribution boundaries, runnable system, platform, and verification.",
+      "summary": "Short employer route through owner direction, correction, attributed assessment and evidence, with runnable system/platform checks.",
       "read_when": [
         "Working on README",
         "Inspecting the contracts or evidence described in this document"
@@ -18,7 +18,11 @@
         "tools/project.php",
         "config/core.php",
         "public/index.php",
-        ".github/workflows"
+        ".github/workflows",
+        "docs/portfolio/overview.md",
+        "docs/portfolio/scope-and-composition.md",
+        "docs/portfolio/api-generation-review-2026-11-13.md",
+        "portfolio-evidence/catalog-ci-f1ed996/README.md"
       ]
     },
     {
@@ -745,7 +749,7 @@
       "path": "docs/portfolio/overview.md",
       "kind": "design",
       "status": "current",
-      "summary": "Purpose, owner and agent contributions, evidence, and unresolved questions.",
+      "summary": "Short Tech Lead / Lead Engineer reading path, owner/agent attribution, separate API/catalog evidence and current reproduction commands.",
       "read_when": [
         "Reviewing the engineering portfolio",
         "Following claims into implementation and verification evidence"
@@ -754,7 +758,11 @@
         "README.md",
         "docs/project/vision.md",
         "docs/project/roadmap.md",
-        "docs/portfolio/api-generation-review-2026-11-13.md"
+        "docs/portfolio/api-generation-review-2026-11-13.md",
+        "docs/portfolio/scope-and-composition.md",
+        "portfolio-evidence/catalog-ci-f1ed996/README.md",
+        "examples/document-catalog/README.md",
+        "docs/development/infrastructure-and-testing.md"
       ]
     },
     {
@@ -863,7 +871,7 @@
       "path": "docs/design/adr-2026-11-13-tech-lead-evidence.md",
       "kind": "design",
       "status": "current",
-      "summary": "Implemented case/CI package and partial review slice: owner direction and delegated technical assessment recorded; personal design/risk review and employer reading path open.",
+      "summary": "Implemented factual case/CI package and employer reading path; owner direction/delegated assessment recorded, with personal design/risk review and independent read-through open.",
       "read_when": [
         "Planning the next portfolio stage",
         "Assessing owner/agent attribution and technical leadership evidence"

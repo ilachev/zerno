@@ -8,11 +8,13 @@ The working system is a small PHP HTTP/PostgreSQL core running on RoadRunner. It
 
 ## Start with the case study
 
-- [Overview and contribution boundaries](docs/portfolio/overview.md): purpose, the owner's role, delegated work, and evidence.
-- [Working with an LLM](docs/portfolio/workflow.md): context, bounded tasks, decisions, verification, and handoff.
-- [Scope and explicit composition](docs/portfolio/scope-and-composition.md): removing subsystems and inspecting construction and I/O.
-- [Defects beyond a passing suite](docs/portfolio/contract-correctness.md): PostgreSQL booleans, uploads, generator failures, and archive instructions.
-- [Persistent runtime measurement](docs/portfolio/runtime-measurement.md): workload, process resources, results, and limits.
+For **Tech Lead / Lead Engineer** reviewers, the [short reading path](docs/portfolio/overview.md#short-reading-path) connects owner direction, agent work, review and evidence:
+
+1. [Follow the scope correction](docs/portfolio/scope-and-composition.md#decision-trail): the agent removed API generation with the legacy stack; a recorded owner correction retained contract-first generation. Inspect the linked removal, clarification and bounded Echo implementation diffs.
+2. [Read the attributed review](docs/portfolio/api-generation-review-2026-11-13.md#owner-input-and-attribution): the owner confirms .proto as the source of truth for endpoints and delegates DTO/risk assessment. Alternatives and technical judgments are attributed to the agent; personal owner design/risk review remains open.
+3. [Inspect the evidence](docs/portfolio/overview.md#inspect-the-result): generated-API checks have their own dated record; the permanent catalog CI snapshot covers source/archive delivery at f1ed996. Use [Run and verify](#run-and-verify) below for a current checkout and [current CI runs](https://github.com/ilachev/zerno/actions/workflows/ci.yml) for later revisions.
+
+The overview also links the [workflow](docs/portfolio/workflow.md), correctness case and runtime measurements for deeper inspection.
 
 The owner directs the project and authorizes its scope. LLM agents assist with investigation, implementation, tests, and documentation. Individual discoveries are attributed only where the record supports attribution. No measured productivity improvement is claimed.
 
@@ -49,7 +51,7 @@ For a finite application walkthrough, [prepare the separate test database and pl
 php tools/project.php catalog:check --rr=/path/to/rr3 --report=var/catalog-check.json
 ```
 
-CI runs this source-and-runtime-archive scenario on pushes/PRs to master. Its [catalog evidence](examples/document-catalog/README.md#ci-evidence) includes both phase results, cleanup, input/archive hashes and platform provenance, retained for fourteen days.
+CI runs this source-and-runtime-archive scenario on pushes/PRs to master. Its [catalog evidence](examples/document-catalog/README.md#ci-evidence) includes both phase results, cleanup, input/archive hashes and platform provenance, retained for fourteen days. One [permanent baseline](portfolio-evidence/catalog-ci-f1ed996/README.md) preserves the original report and provenance for clean revision f1ed996; it stays bound to that historical run.
 
 ```bash
 php tools/project.php verify:full

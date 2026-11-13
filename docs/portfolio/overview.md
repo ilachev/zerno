@@ -4,7 +4,14 @@ Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
 Zerno is a working PHP HTTP/PostgreSQL system used to demonstrate engineering with LLM assistance. The portfolio follows decisions through implementation and verification, including defects and limits that a successful default check did not reveal.
 
-The owner is targeting **Tech Lead / Lead Engineer** roles. The [technical-leadership ADR](../design/adr-2026-11-13-tech-lead-evidence.md) has its factual case/CI slice implemented and review slice partially implemented. The [dated record](api-generation-review-2026-11-13.md) captures owner direction and delegated agent assessment. Personal owner design/risk review and the employer reading path remain open.
+The intended audience is **Tech Lead / Lead Engineer** reviewers. Start with one scope-correction episode, then inspect its attribution, implementation and verification through the route below.
+
+## Short reading path
+
+1. **Owner direction:** read the [owner's statement](api-generation-review-2026-11-13.md#owner-input-and-attribution). The intended constraint is .proto as the source of truth for endpoints; other possible artifacts remain unspecified.
+2. **Agent work and correction:** follow the [decision trail](scope-and-composition.md#decision-trail), with diffs for removal (bde3c3d), recorded clarification (e6ae4f6), and the bounded Echo implementation (5fe818f). The case links the manual endpoint and explicit composition.
+3. **Review and tradeoffs:** inspect the [delegated assessment](api-generation-review-2026-11-13.md#delegated-design-assessment) and its risk table. The owner supplied direction and delegated DTO/risk choices; the agent compared alternatives and recommended retaining the current narrow DTO design. Personal owner design/risk review remains open.
+4. **Evidence and reproduction:** inspect the [dated generation/HTTP checks](api-generation-review-2026-11-13.md#verification-and-disposition) at 765cf2d and the [permanent catalog CI snapshot](../../portfolio-evidence/catalog-ci-f1ed996/README.md) at f1ed996. The latter checks catalog source/archive behavior, not Echo API semantics. The commands below check a current checkout.
 
 The project began as an autonomous PHP foundation for websites and applications, with municipal and public-sector developers as a priority audience. Its current presentation focuses on the engineering process. This change does not establish adoption, production readiness, or a reason for every team to build a framework.
 
@@ -30,12 +37,14 @@ A reviewer can challenge the choices: why normalize booleans, why reject outer j
 
 ## Inspect the result
 
-Start with [README](../../README.md), then follow a case into its code and tests. Run `php tools/project.php verify` for service-free checks. PostgreSQL integration and real RoadRunner checks have separate [platform requirements](../development/infrastructure-and-testing.md).
+From a checkout with the [required PHP platform/extensions](../development/infrastructure-and-testing.md), start with service-free `php tools/project.php verify`. `php tools/project.php proto:check` checks the generated Echo artifacts without protoc. Full recompilation and actual HTTP require the separate compiler/RoadRunner platform; use the [generation check commands](api-generation-review-2026-11-13.md#verification-and-disposition).
 
-The [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) checks source and runtime delivery together in CI. Its live artifacts have fourteen-day retention. A [permanent snapshot](../../portfolio-evidence/catalog-ci-f1ed996/README.md) preserves one clean historical run with provenance and payload checksums.
+For catalog delivery, [prepare the separate PostgreSQL test database and RoadRunner](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive), then run `php tools/project.php catalog:check --rr=/absolute/path/to/rr3 --report=var/catalog-check.json` from the checkout root. Its live CI artifacts have fourteen-day retention. The permanent snapshot includes original report/console/platform provenance, source binding and payload checksums; its guide provides a PHP-only integrity check.
 
-Historical reports identify their source state and platform. The 2026-10-28 report includes uncommitted changes and records source hashes. Its results belong to that snapshot; later checkouts are not automatically covered.
+Historical reports identify their source state and platform. The 2026-10-28 report includes uncommitted changes and records source hashes. Results belong to their recorded snapshots; [current CI runs](https://github.com/ilachev/zerno/actions/workflows/ci.yml) and fresh commands provide evidence for later revisions.
 
 ## Remaining questions
+
+The [technical-leadership ADR](../design/adr-2026-11-13-tech-lead-evidence.md) records the factual case/CI package and this reading path as implemented. The personal owner design/risk-review criterion and an independent engineer's read-through remain open; the dated record documents owner direction and delegated assessment.
 
 The core has examples rather than validated independent adoption. The workload does not determine capacity or multi-day stability. License and public support commitments remain unresolved. Additional features should follow an actual application need.

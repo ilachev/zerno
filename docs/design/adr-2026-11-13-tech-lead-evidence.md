@@ -2,7 +2,7 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **accepted for slices 1–2**. Implementation status: **slice 1 implemented; slice 2 partial; slice 3 pending**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience and authorized both the factual package and the review stage on 2026-11-13. The review record captures owner direction and delegated agent assessment; the original personal design/risk-review criterion remains open.
+Decision status: **accepted for slices 1–3**. Implementation status: **slices 1 and 3 implemented; slice 2 partial**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience and authorized the factual package, review stage and reading path on 2026-11-13. The review record captures owner direction and delegated agent assessment; the original personal design/risk-review criterion remains open.
 
 ## Context and roadmap reconciliation
 
@@ -75,7 +75,7 @@ Use the existing inventory for navigation. Snapshot validation should check JSON
 | --- | --- | --- |
 | 1. Factual review package — implemented | Existing case follows the linked scope-correction episode; one CI baseline is preserved | Facts have sources; historical attribution is labelled; unknown owner reasoning remains pending; the raw snapshot matches its recorded hashes/revision, fits the size budget and stays excluded from runtime |
 | 2. Owner technical review — partial | Dated record at 765cf2d captures the owner's source-of-truth direction and delegated technical assessment | Original acceptance remains open: personal owner notes explain a design choice, an alternative and a risk/limit. Resolve any genuine finding through an ordinary bounded change and relevant checks, or record reasoned acceptance |
-| 3. Employer reading path — pending | README/overview lead to the case, review and evidence in one short route | A reader can locate the owner constraint, agent work, correction/acceptance, relevant diff and reproduction command; keep the case compact and separate current checks from historical results |
+| 3. Employer reading path — implemented | README leads to a short overview route through owner direction, the correction case, attributed review and verification | Direct links locate the constraint, agent work, recorded correction, delegated judgments, relevant diffs and reproduction commands; personal review stays visibly open and current checks remain distinct from historical results |
 
 Slice 1 uses repository facts: the original five artifact entries plus captured run/artifact metadata and payload checksums. Import validation checked the ZIP digest, report/run/platform/cleanup bindings and all 1,777 selected source hashes against Git blobs at f1ed996. The complete bundle fits the 1 MiB budget. The snapshot guide records provenance and a PHP-only payload integrity check. Raw historical reports remain unchanged.
 
@@ -83,9 +83,11 @@ During slice 2, the owner confirmed that .proto should be the source of truth fo
 
 This completes the delegated assessment, while leaving the original personal owner design/risk-review criterion open. An instruction to delegate does not establish the owner's detailed technical reasoning. Do not fill that gap with an agent-authored personal approval. Technical documentation work and routine authorized delivery continue under the existing repository rules.
 
-After the reading path exists, arrange a voluntary 15–20 minute read-through with a relevant engineer through the owner. Ask what decision they could attribute to the owner, what the agent did, what they would challenge, and whether the evidence/reproduction route was clear. Record actual feedback and resulting changes. Until then, independent validation remains open; a second agent is not an independent human reader.
+Slice 3 is available from [README](../../README.md#start-with-the-case-study) and the [overview's short reading path](../portfolio/overview.md#short-reading-path). It leads to the owner's source-of-truth statement, the three removal/correction/Echo diffs, attributed alternatives/risks, and scoped evidence. The verification section distinguishes generated-API checks at 765cf2d from catalog delivery at f1ed996 and provides current checkout commands with platform requirements. Navigation was inspected against those destinations; no independent reader assessment or measured reading time is claimed.
 
-Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check and inspect a built archive for snapshot exclusion; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. The recorded delegation does not close the personal review criterion or the employer reading path.
+Arrange a voluntary 15–20 minute read-through with a relevant engineer through the owner. Ask what decision they could attribute to the owner, what the agent did, what they would challenge, and whether the evidence/reproduction route was clear. Record actual feedback and resulting changes. Until then, independent validation remains open; a second agent is not an independent human reader.
+
+Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check and inspect a built archive for snapshot exclusion; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. Implemented navigation does not close the personal review criterion or independent read-through.
 
 ## Alternatives and tradeoffs
 

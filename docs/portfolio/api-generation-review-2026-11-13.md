@@ -64,4 +64,4 @@ php tools/project.php http:check --rr=/absolute/path/to/rr3
 
 The documentation delivery also requires docs:check and verify. No code defect requiring a change was established by this scoped assessment; this is not an exhaustive audit. Original historical JSON and the permanent CI payload remain unchanged.
 
-The [ADR](../design/adr-2026-11-13-tech-lead-evidence.md#delivery-slices-and-acceptance) records slice 2 as partial: owner direction and delegation are documented, while the original criterion of a personal owner design/risk review remains open. The employer reading path remains a later slice.
+At the time of this record, slice 2 was partial: owner direction and delegation were documented, while the original criterion of a personal owner design/risk review remained open. The employer reading path was a later slice; follow the [ADR](../design/adr-2026-11-13-tech-lead-evidence.md#delivery-slices-and-acceptance) for current delivery status.
