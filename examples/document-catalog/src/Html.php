@@ -15,7 +15,7 @@ final readonly class Html
         $template = require __DIR__ . '/../templates/list.php';
         $content = self::capture(static fn() => $template($documents, $next));
 
-        return $this->page('Документы', $content);
+        return $this->page('Documents', $content);
     }
 
     public function detail(Document $document): Response
@@ -30,10 +30,10 @@ final readonly class Html
     public function error(int $status): Response
     {
         [$title, $message] = match ($status) {
-            400 => ['Некорректный запрос', 'Проверьте адрес страницы и параметры запроса.'],
-            404 => ['Документ не найден', 'Страница или документ отсутствует либо недоступен для публикации.'],
-            405 => ['Метод не поддерживается', 'Для этой страницы доступны только указанные в ответе HTTP-методы.'],
-            default => ['Ошибка сервера', 'Не удалось выполнить запрос. Попробуйте позже.'],
+            400 => ['Invalid request', 'Check the page address and query parameters.'],
+            404 => ['Document not found', 'The page or document does not exist or is not publicly available.'],
+            405 => ['Method not allowed', 'Use one of the HTTP methods listed in the response.'],
+            default => ['Server error', 'The request could not be completed. Please try again later.'],
         };
         /** @var \Closure(string, string): void $template */
         $template = require __DIR__ . '/../templates/error.php';
@@ -49,7 +49,7 @@ final readonly class Html
 
     public static function fileSize(int $bytes): string
     {
-        return number_format($bytes, 0, ',', ' ') . ' байт';
+        return number_format($bytes, 0, '.', ',') . ' bytes';
     }
 
     private function page(string $title, string $content, int $status = 200): Response

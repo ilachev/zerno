@@ -1,8 +1,8 @@
 # Agent instructions
 
-Type: `instructions`. Status: `current`. Reviewed: 2026-10-28.
+Type: `instructions`. Status: `current`. Reviewed: 2026-11-13.
 
-These rules apply throughout the repository. Communicate with the user in Russian. Write code comments in English. This is the canonical instruction file; `CLAUDE.md` is a compatibility entry point.
+These rules apply throughout the repository. Communicate with the user in Russian. Write project documentation, user-facing example text, and code comments in English. Preserve multilingual protocol fixtures and immutable historical data. This is the canonical instruction file; `CLAUDE.md` is a compatibility entry point.
 
 ## Start here
 
@@ -13,7 +13,8 @@ These rules apply throughout the repository. Communicate with the user in Russia
 
 ## Product and architecture
 
-- Zerno (Зерно), repository `zerno`, is a small autonomous PHP HTTP/PDO core for general-purpose websites and web applications. Municipal and public-sector developers are a priority audience. Keep CMS workflows, editorial roles and other product policy in application code.
+- Zerno, repository `zerno`, is an engineering portfolio case study in LLM-assisted development, backed by a working autonomous PHP HTTP/PDO core. Start with [the portfolio](docs/portfolio/overview.md) for purpose and contribution boundaries. The earlier product direction prioritized municipal and public-sector developers; independent adoption is not established. Keep CMS workflows, editorial roles and other application policy in application code.
+- Prioritize clear case studies, accurate human/agent attribution, reproducible checks and a runnable example. Do not expand the core merely to enlarge the portfolio. Do not invent personal authorship, productivity gains, production adoption or performance comparisons. Raw historical JSON and third-party provenance remain unchanged by editorial translation.
 - The shipped scope is HTTP requests/responses, explicit routing/composition, error responses, attachments, request IDs/metadata logging, PostgreSQL PDO/SQL/transactions/migrations, SQL generation and RoadRunner-only HTTP execution. The catalog is an application consumer, not a CMS module. Do not retain speculative subsystems as optional capabilities. Sessions, GeoIP/fingerprints, analytics, caches, hydration/mapping and the outgoing HTTP client have been removed.
 - The legacy application protobuf API/generator was also removed, but contract-first generation from `.proto` into DTOs, endpoint contracts, HTTP adapters and explicit routes is an accepted product direction; see [the scoped contract](docs/design/protobuf-contract-generation.md). The first string/unary POST JSON Echo slice is implemented with plain readonly DTOs; reject unsupported declarations during generation. Do not restore the old API stack wholesale.
 - Develop Zerno's own model of ordinary PHP, explicit composition, visible SQL and autonomous delivery. Do not use Laravel feature parity or API imitation as the product specification. Distinctive design must improve the developer path or measured costs; retain useful standards and bundled components instead of inventing substitutes for novelty alone.

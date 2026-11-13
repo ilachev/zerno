@@ -1,73 +1,61 @@
-# Принципы развития «Зерна»
+# Development principles
 
-Тип: `instructions`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `instructions`. Status: `current`. Reviewed: 2026-11-13.
 
-Максимальная простота, максимальная полезная функциональность и максимальная производительность — совместные обязательные цели проекта. Они применяются при планировании, реализации и ревью. Этот документ задаёт правила выбора решений; работающие возможности описывает [архитектура](../architecture/overview.md), очередность реализации — [roadmap](roadmap.md). [Правила кода](../development/coding-guidelines.md) применяют эти цели к законченным сценариям, границам, ошибкам и ресурсам.
+Simplicity, useful functionality, and runtime efficiency are joint requirements for Zerno's technical work. Apply them during planning, implementation, and review. [Architecture](../architecture/overview.md) describes what exists; [roadmap](roadmap.md) prioritizes work. [Coding guidelines](../development/coding-guidelines.md) apply these principles to complete scenarios and resource ownership.
 
-## Как понимать три цели
+## Three goals
 
-| Цель | Что максимизируем | Чем проверяем |
-|---|---|---|
-| Простота | Понятность использования и сопровождения, предсказуемость поведения, лёгкость изменения | Путь от checkout до первого ответа; шаги добавления маршрута/SQL/формы; обязательные понятия, настройки и сервисы; явность зависимостей и времени жизни |
-| Функциональность | Широкий набор законченных веб-сценариев, который можно собрать из небольших совместимых блоков | Работающий поток запроса, данных и ответа; полезность API; число ручных обходов и повторяемой работы в приложении; проверенные ошибки и ограничения |
-| Производительность | Полезную работу при минимальных затратах CPU, памяти, I/O и времени | Задержки p50/p95/p99, пропускная способность при указанной нагрузке и ошибках, CPU, память всех процессов и её рост, SQL/request и соединения |
+| Goal | Optimize for | Evidence |
+| --- | --- | --- |
+| Simplicity | Understandable use/maintenance, predictable behavior, easy changes | Checkout-to-response steps; route/SQL/form integration; necessary concepts and settings; explicit dependencies/lifetimes |
+| Functionality | Complete useful scenarios built from small compatible parts | Working input/data/response flow, error behavior, resource bounds, reduced manual work |
+| Efficiency | Useful work with minimal CPU, memory, I/O, and time | p50/p95/p99, throughput at specified load/errors, all-process CPU/RSS/growth, SQL/request and connections |
 
-Цели относятся к универсальному PHP HTTP/PDO-ядру. Приоритетная аудитория и границы продукта описаны в [видении](vision.md). Количество классов, функций, строк кода или пунктов roadmap само по себе не показывает результат ни по одной из трёх целей.
+Class count, code volume, test count, or roadmap length alone proves none of these goals. The current [portfolio purpose](vision.md) prioritizes clear evidence over adding capabilities for display.
 
-## Как выбирать решение
+## Choose between alternatives
 
-Корректность HTTP и данных, защита доступа и сохранение заявленного поведения — условия сравнения. Ускорение, полученное потерей данных, исключением нужной проверки или изменением ответа, не принимается как улучшение того же сценария.
+Correctness, data integrity, access protection, and preservation of promised behavior are prerequisites. Dropping a check or changing the response is not an optimization of the same scenario.
 
-Из решений с сопоставимой функциональностью выбирать вариант, который проще понять, подключить и обслуживать. При расширении возможностей учитывать всю работу разработчика: настройку, обработку ошибок, тестирование и обновление приложения. Общий небольшой механизм оправдан, если он уменьшает эту суммарную работу.
+For comparable functionality, prefer the design that is easier to understand, connect, and maintain. Include setup, error handling, tests, and application upgrades in the cost. A shared mechanism should reduce total developer work.
 
-Рост функциональности может потребовать нового контракта или дополнительных вычислений. Нужно назвать полученный сценарий, определить границу подключения и показать цену. Если один критерий ухудшается, объяснить пользу по остальным, рассмотренный более простой вариант и практические пределы компромисса. Пока стоимость не измерена, она остаётся неизвестной; выигрыш не объявляется доказанным. Обоснование компромисса помещается в описание изменения.
+Name the new scenario and the boundary/cost of enabling it. Explain tradeoffs, a simpler alternative, and practical limits when one goal worsens. Unmeasured costs stay unknown; do not announce a gain before measuring it.
 
-## Простой путь разработчика
+## Developer path
 
-- Публичный API проектируется под собственную модель «Зерна»: обычный PHP, явная композиция, видимый SQL и самостоятельная поставка. Список возможностей или устройство другого фреймворка не задают архитектуру и очередность работ. Отличие должно помогать разработчику или уменьшать проверяемые затраты; общепринятые стандарты и удачные компоненты сохраняются, новые названия и самописные замены ради необычности не нужны.
-- Обычный маршрут получает готовый объект обработчика и имеет понятный путь до ответа. Зависимости собираются обычными PHP-конструкторами; контейнер, autowiring и service locator не используются. Сложность приложения определяет необходимость domain/application services, repositories и mappers. Для небольшой операции не требуется повторять полный набор слоёв и однотипных обёрток.
-- Общие контракты вводятся по существующей потребности и должны уменьшать повторение или сложность. Новые interfaces, registries, DSL, facade и extension points требуют объяснения конкретной пользы.
-- Настройки имеют понятное назначение и предсказуемые defaults. Механизм с побочными эффектами должен явно выражать намерение вызывающего кода; это особенно важно для повторов записи, сессий, кеша и миграций.
-- Типовой сценарий должен быть выполним по короткому примеру и диагностироваться по явной ошибке. Простота учитывает и работу сопровождающего разработчика после первого запуска.
+- Design for ordinary PHP, explicit composition, visible SQL, and autonomous delivery. Other frameworks do not specify Zerno's architecture or backlog. Keep useful standards and components.
+- Routes receive constructed handlers. Use constructors and typed composition functions; no container, autowiring, or service locator. Add domain/application services, repositories, and mappers only where policy, reuse, or a real boundary needs them.
+- New interfaces, registries, DSLs, facades, and extension points need a consumer and a reduction in duplication or complexity.
+- Settings need meaningful defaults. Side effects, especially retries, sessions, caches, and migrations, must be explicit to callers.
+- A short example should complete an ordinary scenario and report useful errors. Consider maintenance after the first run.
 
-## Функции и границы подключения
+## Capabilities and application boundaries
 
-В основе остаются HTTP, маршруты, обработчики, композиция, базовая диагностика и полноценная работа с БД: параметры SQL, транзакции и миграции. Явный SQL доступен непосредственно; typed generation помогает разработке и не выполняется при запросе.
+The technical scope includes HTTP, routing/composition, diagnostics, and database access with SQL parameters, transactions, and migrations. Typed generation runs during development. HTML/forms/validation/files/protected areas/API coverage grows through complete scenarios; this direction does not establish implemented capabilities.
 
-HTML, формы, валидация, файлы, защищённые разделы и API развиваются через законченные сценарии. Это направление функционального покрытия, а не утверждение, что все эти функции уже реализованы. Результат должен включать ошибки, ограничения ресурсов и понятный пример использования.
+The catalog verifies mechanisms; its editorial backlog does not automatically become the core backlog. Its Html/FileStore are local implementations, rather than public core APIs. Generalize necessary mechanics without Document, publication statuses, or PDF-only rules. See the [boundary map](../reusable-blocks.md).
 
-Текущий приоритет — переиспользуемые возможности ядра. Пример служит потребителем и проверкой общего механизма; его прикладной backlog не определяет следующую итерацию проекта. После проверки публичного каталога сначала устраняются выявленные ограничения HTTP, файлового pipeline и SQL. Редактор и публикационный workflow отложены. Локальная реализация Html или FileStore в примере не является готовым публичным API ядра; обобщается только нужная механика, без Document, статусов публикации и PDF-only правил.
+Ship only the scope in [vision](vision.md). Remove unused subsystems instead of hiding them as optional. A public route does not connect to storage until needed. Check startup and request costs: bootstrap and autoload registration already have a cost, even with lazy I/O.
 
-В поставку входит только конкретный текущий состав, определённый видением. Неиспользуемые подсистемы удаляются, а не переносятся в optional. Публичная страница не открывает БД до обращения к Storage. Проверять реальные startup/request costs: autoload maps и bootstrap files уже имеют цену, поэтому абсолютная нулевая стоимость загрузки не обещается.
+## Measure the complete scenario
 
-[Карта блоков](../reusable-blocks.md) определяет границы механизмов и приложения. Сущности каталога, роли, публикационная политика и оформление принадлежат приложению. Блоки остаются совместимыми и не требуют от каждого сайта protobuf, фонового worker или frontend toolchain.
+Compare the same result with comparable data, warmup, and load. Record PHP/extensions, OPcache, server settings, worker count, database, and CPU/RSS method. Include RoadRunner and every PHP worker, plus other processes needed by the scenario. Choose budgets after a reproducible baseline.
 
-## Производительность как свойство полного сценария
+Bound SQL lists in the database with stable ordering. `fetchOne` does not itself bound SQL scanning or native buffering. Check file delivery through middleware and the server adapter; a stream abstraction alone proves no memory bound.
 
-Измерять один и тот же результат на сопоставимых данных, прогреве и нагрузке. Фиксировать PHP/расширения, OPcache, server settings, worker count, БД и способ сбора CPU/RSS. Замеры RoadRunner учитывают server, все PHP workers и необходимые конкретному сценарию фоновые процессы. Числовые бюджеты выбираются после воспроизводимого baseline.
+Bound caches and mutable state; check sequential requests with different data and sustained operation. Introduce caching/precomputation only with known cost, invalidation, and failure behavior. Preserve verified semantics.
 
-Горячий путь должен выполнять только нужную работу. SQL-списки ограничиваются на стороне БД и имеют устойчивый порядок; объём чтения не определяется названием `fetchOne`. Файловая выдача проверяется через весь pipeline, включая middleware и server adapter. Наличие потокового body не является доказательством ограниченной памяти.
+Begin with a small response and one parameterized SELECT, then a working HTML/SQL/file application. Building a universal benchmark framework is not a prerequisite for useful application work.
 
-Долгоживущие caches и mutable state имеют определённые пределы и время жизни. Проверять длинный прогон и последовательные запросы с разными данными. Кеш и предварительная генерация вводятся, когда известны стоимость, инвалидация и поведение отказа. Оптимизации сохраняют проверенную семантику.
+## Autonomous delivery
 
-Начальный стенд ограничивается малым ответом и одним параметризованным SELECT. Затем измерения расширяются на работающем HTML/SQL/файловом приложении. Подготовка идеального benchmark framework не является условием начала полезного приложения.
+Runtime, development, generation, checks, and builds need no package installation/download. Fixed third-party sources/tools may be bundled with provenance, notices, and hashes. PHP, extensions, database, and executables are separate platform requirements.
 
-## Автономность сохраняется
+Evaluate bundled updates and patches against the same goals. Replacing a component needs a working consumer and verified benefit; fewer vendor files alone proves neither simplicity nor speed. See [delivery architecture](../design/autonomous-core.md).
 
-Runtime, разработка, генерация, проверки и сборка не требуют установки пакетов или скачивания зависимостей. Нужные сторонние исходники и инструменты допускаются в фиксированной поставке с происхождением, notices и hashes. Платформенные PHP, расширения, СУБД и executables учитываются отдельно.
+## Record significant changes
 
-Обновление bundled code оценивается по тем же трём целям, включая сопровождение patches и совместимость. Собственная замена стороннего компонента требует работающего потребителя и проверяемого результата; само уменьшение числа сторонних файлов не доказывает простоту или ускорение. Текущий механизм описан в [архитектуре поставки](../design/autonomous-core.md).
+For a public contract, core scope, or hot path, state the scenario/problem, developer steps, behavior/errors/compatibility, enabled/unused costs, checks, and limits. Show minimal integration code and trace it to SQL or response I/O. A familiar framework feature is not sufficient justification.
 
-## Что фиксировать при значимом изменении
-
-Для изменения публичного контракта, состава ядра или горячего пути в описании задачи/PR достаточно кратко указать:
-
-1. Какой законченный сценарий появляется или какая наблюдаемая проблема устраняется.
-2. Как меняется путь разработчика: понятия, шаги подключения, конфигурация и сопровождение.
-3. Как меняется функциональность, включая ошибки и совместимость.
-4. Какова цена при использовании и без подключения функции; какие измерения выполнены или ещё нужны.
-5. Какие проверки подтверждают результат и какие ограничения остаются.
-
-При проектировании API дополнительно показать минимальный код подключения и проследить исполнение до SQL/потока/ответа. Объяснить, что общая возможность даёт по сравнению с прямой реализацией имеющимися примитивами и какая работа выполняется без её подключения. Новая подсистема не становится нужной только потому, что она привычна в других фреймворках.
-
-Отдельный ADR, новая система оценок и benchmark для текстовой правки не требуются. Нужны проверки, соответствующие изменению; обязательный repository gate остаётся в [AGENTS.md](../../AGENTS.md). Правила документации требуют обновлять источник факта и инвентарь, не размножая эту спецификацию по всем файлам.
+A text edit does not need a new ADR, score system, or benchmark. Run appropriate checks and the mandatory [repository gate](../../AGENTS.md). Update the canonical fact and inventory without copying the specification everywhere.

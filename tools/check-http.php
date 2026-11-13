@@ -351,7 +351,7 @@ function wireMatrix(int $port, string $errorFormat): int
         } elseif ($status >= 400) {
             if ($errorFormat === 'html') {
                 wireSame(['no-store'], $response->headers['cache-control'] ?? [], $context . ' error cache policy');
-                wireSame(true, str_contains($response->body, '<html lang="ru">'), $context . ' HTML document');
+                wireSame(true, str_contains($response->body, '<html lang="en">'), $context . ' HTML document');
                 wireSame(true, str_contains($response->body, '<h1>'), $context . ' HTML title');
                 wireSame(false, str_contains($response->body, 'wire-private-exception-details'), $context . ' private details');
             } else {

@@ -1,26 +1,26 @@
-# Echo из API-контракта
+# Echo from an API contract
 
-Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `tool-guide`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-[Контракт](../../contracts/echo.proto) → [generated PHP](../../gen/Generated/Echo) → [ручной endpoint](EchoEndpoint.php) → [явная композиция](config.php). Запросы обслуживает обычный App, без descriptor/генератора в runtime и без БД. Поведение JSON, поддержанные объявления и стоимость определяет [контракт генерации](../../docs/design/protobuf-contract-generation.md).
+[Contract](../../contracts/echo.proto) → [generated PHP](../../gen/Generated/Echo) → [manual endpoint](EchoEndpoint.php) → [composition](config.php). Ordinary App handles requests without runtime descriptors/generation or a database. The [generation contract](../../docs/design/protobuf-contract-generation.md) defines subset, JSON, and costs.
 
 ```bash
 php tools/project.php proto:gen
 php tools/project.php verify
-rr serve -c examples/contract-echo/rr.yaml
+rr serve -w "$PWD" -c examples/contract-echo/rr.yaml
 ```
 
-В другом терминале:
+In another terminal:
 
 ```bash
-curl -i http://127.0.0.1:8082/api/echo -H 'Content-Type: application/json' --data '{"message":"Привет"}'
+curl -i http://127.0.0.1:8082/api/echo -H 'Content-Type: application/json' --data '{"message":"Hello"}'
 curl -i http://127.0.0.1:8082/health
 ```
 
-POST /api/echo возвращает JSON 200, `/health` — обычный GET/HEAD. Отсутствие message, null и пустая строка дают `{}`. Неизвестные поля/неверный JSON — 400, тело больше 65 536 байтов — 413, неверный media type — 415. Ошибки реализации проходят общий 500.
+POST /api/echo returns JSON 200; /health supports GET/HEAD. Missing/null/empty message returns {}. Unknown fields/bad JSON return 400; input over 65,536 bytes returns 413; wrong media type returns 415. Endpoint failures use generic 500.
 
-RoadRunner 3 — единственный HTTP runtime; rr.yaml задаёт APP_CONFIG и cap 1 MiB до PHP. Лимит adapter 64 KiB относится к дальнейшему чтению/decode. HTTP checks сами создают временный RR-профиль и используют endpoint через fixture composition.
+RR3 is the sole runtime. Its config sets APP_CONFIG and a 1 MiB ingress cap. Adapter 64 KiB bounds later reading/decoding. HTTP checks create their own RR fixture profile.
 
-В checkout protoc нужен только для изменения контракта и полной повторной компиляции; проверена 26.1. `proto:check` и verify используют сохранённый descriptor и hashes без compiler. В runtime archive отсутствуют contracts и tools: пропустите команды генерации/verify и запускайте готовый PHP с APP_CONFIG.
+Checkout generation/full compilation requires installed protoc (26.1 checked). proto:check/verify use saved descriptors/hashes without a compiler. Runtime archives exclude contracts/tools: skip generation/verify there and run ready PHP with APP_CONFIG.
 
-Локальное сравнение представлений: `php tools/proto-gen/measure.php` (нужен protoc, либо PROTOC=/path/to/protoc). HTTP-сравнение: `php tools/project.php http:check --measure-contract --rr=/path/to/rr3`. Эти короткие замеры не являются нагрузочным испытанием.
+Local representation comparison: `php tools/proto-gen/measure.php`, with protoc or PROTOC set. HTTP comparison: `php tools/project.php http:check --measure-contract --rr=/path/to/rr3`. These are short comparisons, not load tests.

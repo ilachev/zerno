@@ -1,44 +1,46 @@
-# Направления развития ядра
+# Portfolio and maintenance roadmap
 
-Тип: `roadmap`. Статус: `accepted-plan`. Сверено с кодом: 2026-10-28.
+Type: `roadmap`. Status: `accepted-plan`. Reviewed: 2026-11-13.
 
-Продукт — конкретная [HTTP/PDO-основа](vision.md). [Простота, полезная функциональность и эффективность](principles.md) обязательны вместе. Сохранение наследства API-шаблона и накопление optional-подсистем не являются направлением развития.
+The current purpose is an [engineering portfolio](../portfolio/overview.md) backed by the working [HTTP/PDO system](vision.md). [Simplicity, useful functionality, and measured efficiency](principles.md) still govern technical changes. A plan does not establish that a capability exists.
 
-## Проверенная база
+## Portfolio priorities
 
-- [Только RoadRunner](../history/2026-10-23-roadrunner-only.md): удалены SAPI/FPM entry point, adapters, upload mode, fixtures и конфигурации; App и CLI остаются независимы от loop.
-
-- [API из контракта](../design/protobuf-contract-generation.md): первый string/unary POST JSON Echo, readonly DTO, typed endpoint, adapter/routes, автономные snapshots и реальные RR3 checks.
-
-- [RoadRunner 3](../history/2026-10-20-roadrunner3.md): native transport, фиксированные upstream sources и проверки RR3 без Composer/PSR.
-- [Восстановление транзакций и миграций](../design/transactions-and-migrations.md): исходные ошибки, атомарность каждой версии, явные SQL-списки и native PostgreSQL/CLI checks.
-- [Однострочный SQL-путь](../history/2026-10-23-query-one.md): queryOne/fetchOne без полного PHP-массива, сохранение SQL, проверки PostgreSQL и измеренная граница PHP/native памяти.
-- [Границы JSON input](../../examples/json-echo/README.md): явный Body::readLimited, ручной POST с 400/413/415, серверный cap и реальные RR3/chunked проверки.
-
-- [Явная сборка без контейнера](../history/2026-10-20-explicit-composition.md): конструкторы, готовые handlers, общий HTTP config для RR3 и lazy PDO.
-- Автономные runtime, SQL codegen и quality tools; проверки и runtime archive без package installation/download.
-- Общие App/RequestHandler, RoadRunner 3.x, явные маршруты, 404/405/Allow/HEAD, выбор ErrorResponse.
-- AttachmentResponse, прозрачная metadata-диагностика и завершение streams; [проверки/замер](../history/2026-10-18-file-responses.md) выбранного файлового пути.
-- PostgreSQL PDO/параметры/транзакции/миграции, typed queries и явный LIMIT; [границы SQL](../design/sql-gen-product.md) проверяются через настоящий PostgreSQL.
-- Каталог как потребитель: ограниченный список, карточка, private PDF attachment. Это приложение, а не направление CMS.
-- [Очистка состава](../history/2026-10-20-core-scope.md): удалены старый API, sessions/GeoIP/fingerprints/statistics/cache, protobuf generation, hydration/mapping и outgoing HTTP. Общие точки входа согласованы.
-
-Начальные [JSON/SELECT](../history/2026-10-17-core-http-baseline.md) и [catalog](../history/2026-10-17-public-catalog.md) отчёты описывают прежние состояния кода. Они предшествуют выбору RoadRunner единственным runtime и не гарантируют production readiness.
-
-## Следующие ограниченные задачи
-
-Порядок закреплён в [ADR корректности контрактов](../design/adr-2026-10-28-contract-correctness.md). Этапы не объявляют наличие будущих функций.
-
-| Порядок / состояние | Задача и потребитель | Проверяемый результат |
+| Status | Work | Completion evidence |
 | --- | --- | --- |
-| 1 — implemented | Исправить пять дефектов ревью и закрыть небезопасный outer JOIN subset | Корректные bool-параметры, строковые upload keys, отказ коллизий, сохранение SQL output, рабочий runtime quickstart; PostgreSQL/CLI/RR/archive checks |
-| После первого этапа — implemented | Закрыть оставшиеся локальные HTTP/DDL ограничения | Подавление тела HTTP 205; BIGINT executed_at и проверенное явное обновление существующей migrations table |
-| 2 — measured-limited | Выполнен [15-минутный mixed RR soak](../history/2026-10-28-runtime-soak.md) после прогрева | 16 564 HTTP requests, checks без отказов; RSS/CPU/FD server и обоих workers. Локальный baseline сохранён; многодневная устойчивость и deployment SLO остаются непроверенными |
-| Следующая эксплуатационная проверка — awaiting-profile | Выбрать профиль реального deployment и длительность | Сравнимые нагрузка/данные, бюджеты latency/RSS/CPU, длинный прогон и сценарии отказа на целевой платформе |
-| Постоянный gate | Поддерживать security evidence выбранного deployment binary | Актуальные advisory/binary/evidence hashes и срок assessment; неизвестный или просроченный результат блокирует релиз |
-| 3 — awaiting-consumer | Выбрать следующую реальную API/SQL-операцию | Полный сценарий с ручной реализацией, ошибками, wire compatibility и сравнимыми затратами; presence/types/transcoding только по его потребности |
-| Перед публичным релизом — open | Определить лицензию, версионирование и поддержку собственного кода | Явные условия распространения, совместимости и сроков поддержки |
+| Implemented presentation | English entry points, contribution boundaries, workflow, and three case studies | README links to decisions, code, tests, and raw measurements |
+| Ongoing | Keep the working example and verification reproducible | Checkout instructions, service-free verify, separately documented PostgreSQL/RR requirements |
+| Open | Exercise the portfolio with a reviewer | A reviewer can follow a case into code, reproduce a check, and discuss the tradeoff |
+| Awaiting consumer | Extend an application or the core | A concrete scenario and a gap in existing primitives; no feature expansion solely for presentation |
 
-Это отдельные задачи, не заказ на новую подсистему. Для каждой сначала показать текущего потребителя, минимальный API, шаги разработчика и сравнимые затраты, затем реализовывать. Сессии, редактор, auth framework и общий cache не следуют автоматически из таблицы. Protobuf-генерация имеет отдельное прямое основание — уточнённый пользователем API-контракт; старый API-шаблон целиком не восстанавливается.
+The portfolio attributes owner direction and agent execution explicitly. It makes no measured productivity claim or unsupported statement of personal authorship.
 
-RoadRunner 3.x выбран единственным HTTP runtime по продуктовому решению. Бюджеты определяются по сравнимым данным, включая CPU/RSS server и всех workers. Для долгоживущего worker нужны длительные проверки памяти/состояния; короткие локальные серии недостаточны. Лицензия, версия/срок поддержки и политика обновлений собственного кода пока открыты.
+## Established technical baseline
+
+- [RoadRunner only](../history/2026-10-23-roadrunner-only.md): SAPI/FPM paths removed; App and CLI remain separate from the loop.
+- [Contract Echo](../design/protobuf-contract-generation.md): string/unary POST JSON, readonly DTOs, endpoint, adapter/routes, snapshots, and real HTTP checks.
+- [RoadRunner 3](../history/2026-10-20-roadrunner3.md): native transport and pinned upstream sources.
+- [Transaction recovery](../design/transactions-and-migrations.md): per-version atomicity, explicit SQL lists, and PostgreSQL/CLI checks.
+- [One-row SQL](../history/2026-10-23-query-one.md): queryOne/fetchOne, visible SQL, PostgreSQL checks, and PHP/native memory boundaries.
+- [Bounded JSON](../../examples/json-echo/README.md): 400/413/415, server cap, and chunked-input checks.
+- [Explicit composition](../history/2026-10-20-explicit-composition.md): constructors, ready handlers, and lazy PDO.
+- Autonomous runtime/codegen/quality delivery; attachments and metadata diagnostics; catalog list/detail/private PDF consumer.
+- [Scope reduction](../history/2026-10-20-core-scope.md): speculative subsystems and legacy API removed.
+
+Early [JSON/SELECT](../history/2026-10-17-core-http-baseline.md) and [catalog](../history/2026-10-17-public-catalog.md) measurements describe earlier states before the single-runtime decision.
+
+## Correctness and operational work
+
+The [correctness ADR](../design/adr-2026-10-28-contract-correctness.md) records the implemented sequence.
+
+| Status | Work | Result or acceptance condition |
+| --- | --- | --- |
+| Implemented | Review defects and unsafe outer-join subset | Correct booleans/uploads, rejected collisions, preserved output, usable archive instructions; SQL/HTTP/archive checks |
+| Implemented | HTTP/DDL follow-up | Bodyless HTTP 205, BIGINT executed_at, explicit upgrade of existing metadata |
+| Measured, limited | [15-minute mixed soak](../history/2026-10-28-runtime-soak.md) after warmup | 16,564 requests; successful checks; server/worker RSS/CPU/FD; no deployment SLO established |
+| Awaiting deployment profile | Longer operational checks | Target platform, workload/data, latency/resource budgets, longer duration and failure scenarios |
+| Continuous release gate | Security evidence for the selected binary | Current advisory/binary/evidence hashes and bounded assessment validity; unknown/expired results block release |
+| Awaiting consumer | Next API/SQL operation | Manual implementation, errors, wire checks, comparable costs; new protobuf features only as required |
+| Open before public release | Own-code license, versions, and support | Explicit distribution terms, compatibility policy, and support periods |
+
+RoadRunner is selected by scope, without a benchmark-victory claim. Multi-day behavior requires relevant measurements. Sessions, editing, an auth framework, and generic caches do not follow automatically from this plan.

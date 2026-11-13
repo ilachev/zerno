@@ -1,27 +1,27 @@
-# Пример: публичный каталог документов
+# Public document catalog example
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `architecture`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-Каталог — потребитель HTTP/PDO-механизмов. application.php собирает граф обычными конструкторами из Logger/Storage/private directory, routes.php получает готовые handlers; контейнера нет. [Запуск и seed](../../examples/document-catalog/README.md) принадлежат примеру; развитие ядра определяется [roadmap](roadmap.md). Редактор, роли, формы публикации и CMS workflow в поставке отсутствуют.
+The catalog consumes HTTP/PDO mechanisms. application.php composes Logger/Storage/private directory with ordinary constructors; routes.php receives ready handlers. [Startup and seed](../../examples/document-catalog/README.md) belong to the example. Editing, roles, publishing forms, and CMS workflows are absent.
 
-## Реализованный поток
+## Implemented flow
 
-GET/HEAD /documents → HTML-список; /documents/{id} → карточка; /documents/{id}/download → PDF attachment. /health использует общий handler. Неподдерживаемый метод получает HTML 405 с Allow, неизвестный/закрытый документ — одинаковую 404. Ошибка инфраструктуры получает общую 500 без приватных деталей.
+GET/HEAD /documents serves a list; /documents/{id} a detail page; /documents/{id}/download a PDF attachment. /health uses the common handler. Unsupported methods return HTML 405 with Allow; unknown and hidden documents share 404. Infrastructure errors return generic 500 without private details.
 
-Document, статусы draft/published/withdrawn, PDF-only, private FileStore, шаблоны и no-store принадлежат приложению. Общие ErrorResponse, AttachmentResponse и metadata logging не знают публикационную политику.
+Document, draft/published/withdrawn, PDF-only files, private FileStore, templates, and no-store are application policy. Core errors, attachments, and metadata logging do not know that policy.
 
-[CatalogRepository](../../examples/document-catalog/src/CatalogRepository.php) выполняет прямой SQL с фиксированным published-фильтром. Список использует ORDER BY id DESC и LIMIT 21, интерфейс показывает 20 строк. before — положительный канонический ID. Lookup использует status/id. Проверки целостности published metadata остаются в repository, поскольку schema допускает nullable draft-поля.
+[CatalogRepository](../../examples/document-catalog/src/CatalogRepository.php) uses direct SQL with a fixed published predicate, ORDER BY id DESC and LIMIT 21 to display 20 rows. before is a positive canonical ID. Lookup filters status/id. The repository validates published metadata because draft columns may be null.
 
-Фактический DDL находится в [migration](../../examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php). Partial index published/id обслуживает фиксированный predicate. SQL generator пока не поддерживает string literals в WHERE: ради его подключения каталог не переводится на параметр status, который меняет доступность partial index в generic prepared plans. [Основные inputs генератора](../../sql/queries/catalog.sql) — отдельный пример ограниченного typed SQL с параметром status, не runtime-источник каталога.
+The [migration](../../examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php) contains the actual DDL and partial published/id index. The generator does not support string literals in WHERE. Replacing the fixed predicate with a parameter merely to use generation would affect partial-index availability in generic prepared plans. [Generator inputs](../../sql/queries/catalog.sql) are a separate typed-SQL example.
 
-## Файл и ресурсы
+## Files and ownership
 
-Opaque storage key выбирается из записи, не из пользовательского пути. FileStore проверяет containment/тип/размер и метаданные открытого файла. DownloadHandler передаёт новый поток AttachmentResponse; HEAD закрывает файл и возвращает пустой body с теми же representation headers. Range игнорируется, выдаётся полный 200.
+A database record selects an opaque storage key, never a user-supplied path. FileStore checks containment, type, size, and opened-file metadata. DownloadHandler transfers the stream to AttachmentResponse. HEAD closes the file and returns an empty body with representation headers. Range is ignored, returning a full 200.
 
-RoadRunnerRuntime закрывает body после отправки. Каталог выбирает RR chunk 8192 для seekable regular files; default RR 0 буферизует. Логирование не читает payload. Ограниченная память подтверждается [полным transport-путём](../development/http-and-baseline.md), а не самим наличием Body. Изменение файла во время передачи/client abort и долгосрочная устойчивость не объявляются проверенными.
+RoadRunnerRuntime closes bodies after sending. The catalog selects 8192-byte chunks for seekable regular files; default 0 buffers. Logging does not read payload. [Full-path checks](../development/http-and-baseline.md) establish the measured memory behavior; file changes during transmission, aborts, and long-term operation are not established.
 
-## Проверки и границы
+## Verification and limits
 
-[PostgreSQL integration](../../tests/Integration/Examples/DocumentCatalog/CatalogApplicationTest.php) использует свои случайные схемы и временные файлы: published/hidden, курсор, пустые данные, LIMIT, один SELECT на полезный запрос, отсутствующий/неверный файл, HEAD и headers. SQL fixture отдельно проверяет LIMIT/native parameter types. /health/404/405 не разрешают Storage. Unit HTML tests проверяют escaping и семантическую структуру.
+[PostgreSQL integration](../../tests/Integration/Examples/DocumentCatalog/CatalogApplicationTest.php) uses isolated schemas/files to check publication, cursors, empty results, LIMIT, one SELECT per useful request, invalid files, HEAD, and headers. /health/404/405 do not resolve storage. HTML unit tests check escaping and semantic structure.
 
-Тексты/верстка без JavaScript остаются примером, не шаблонизатором ядра. [Отчёт публичного этапа](../history/2026-10-17-public-catalog.md) фиксирует прежнее состояние и результаты запуска; действующие integration tests проверяют текущие SQL constants, страницы и файлы. Каталог не предоставляет login, sessions, upload UI, редактирование, публикацию через HTTP, антивирус или аудит действий.
+The pages require no JavaScript and are an application example. The [historical report](../history/2026-10-17-public-catalog.md) describes an earlier snapshot; current tests check current SQL/pages/files. Login, sessions, upload UI, editing, HTTP publishing, antivirus, and action auditing are absent.

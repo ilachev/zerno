@@ -1,49 +1,49 @@
-# POST JSON с ограниченным body
+# JSON POST with a bounded body
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `operations`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-Небольшой потребитель [`Body::readLimited`](../../src/Platform/Http/Body.php): один [`EchoHandler`](EchoHandler.php), явный маршрут и [композиция](config.php). БД, контейнер, DTO, общий JSON-parser или validation framework не нужны. Пример включён в runtime-архив; это ручной HTTP-сценарий, не protobuf-генерация.
+A small consumer of [Body::readLimited](../../src/Platform/Http/Body.php): one [EchoHandler](EchoHandler.php), explicit route, and [composition](config.php). It needs no database/container/DTO/general parser or validation framework. The runtime archive includes this manual example; it is separate from contract generation.
 
-## Контракт операции
+## Operation
 
-`POST /echo` принимает UTF-8 JSON-объект с единственным строковым полем `message`, включая пустую строку. Успех — `200 application/json` с тем же полем. Неизвестные поля, другой корневой тип, неверный тип поля, пустой body, некорректные JSON/UTF-8 дают 400. Используется штатный `json_decode` с depth 32: повторяющиеся ключи имеют его обычную семантику последнего значения.
+POST /echo accepts a UTF-8 JSON object with exactly one string message field, including empty text, and returns 200 application/json with that field. Unknown fields, wrong root/field types, empty input, invalid JSON/UTF-8 fail. Builtin json_decode uses depth 32 and last-value duplicate-key semantics.
 
-| Условие | Ответ обработчика |
+| Condition | Response |
 | --- | --- |
-| Некорректный JSON или структура | `400 {"error":"Invalid JSON request"}` |
-| Body больше 65 536 байт | `413 {"error":"Request body too large"}` |
-| Нет единственного `Content-Type: application/json` или передана другая кодировка содержимого | `415 {"error":"Unsupported media type"}` |
-| Ошибка I/O | Общий 500 через ErrorHandler; подробности в logger |
+| Invalid JSON/shape | 400 {"error":"Invalid JSON request"} |
+| More than 65,536 bytes | 413 {"error":"Request body too large"} |
+| No single application/json Content-Type or unsupported encoding | 415 {"error":"Unsupported media type"} |
+| I/O failure | Public 500; private details in logger |
 
-Media type сравнивается без учёта регистра, параметры после `;` игнорируются; JSON всегда декодируется как UTF-8. `Content-Encoding` отсутствует либо равен `identity`: распаковки нет. Сначала проверяется тип, затем размер, затем JSON и поля. Поэтому большой `text/plain` получает 415. `Content-Length` не определяет лимит обработчика: проверяются прочитанные байты. Handler закрывает input body в `finally`, в том числе при раннем отказе. Response body закрывает транспорт.
+Media type comparison ignores case/parameters; JSON stays UTF-8. Content-Encoding must be absent or identity; no decompression occurs. Validation order is type → size → JSON/fields, so large text/plain returns 415. Actual read bytes determine the limit, not Content-Length. Input closes in finally, including early failure; transport closes output.
 
-В ядре добавлен только `readLimited(int $maxBytes): string`: чтение с текущей позиции без rewind/close, `LengthException` при превышении, `InvalidArgumentException` для отрицательного лимита, `RuntimeException` для ошибки или отсутствия прогресса до EOF. Нулевой лимит принимает только пустой остаток. При превышении потребляется не больше limit + 1 логических байт, частичный результат не возвращается. PHP stream wrapper может предварительно буферизовать дополнительные байты. Метод синхронный; таймаут чтения задаётся транспортом.
+readLimited reads from the current position without rewind/close. Negative limits fail; zero accepts only an empty remainder. Overflow consumes at most limit+1 logical bytes and returns no partial result. I/O/no progress before EOF throws. Stream wrappers may prefetch. Reading is synchronous; transport owns timeout.
 
-## RoadRunner 3
+## Run
 
-Команды выполняются из корня обычным пользователем. Нужны PHP 8.5.12+, PDO, sockets и установленный RR 3.0.1+ в ветке 3.x; действуют общие [security checks](../../docs/development/security.md).
+Use upstream PHP 8.5.12+, PDO, sockets, and installed RR 3.0.1+ in the 3.x line. [Security rules](../../docs/development/security.md) apply.
 
 ```bash
-rr serve -c examples/json-echo/rr.yaml
+rr serve -w "$PWD" -c examples/json-echo/rr.yaml
 ```
 
-В другом терминале:
+In another terminal:
 
 ```bash
 curl -i http://127.0.0.1:8082/echo \
   -H 'Content-Type: application/json' \
-  --data-binary '{"message":"Привет"}'
+  --data-binary '{"message":"Hello"}'
 ```
 
-[rr.yaml](rr.yaml) задаёт APP_CONFIG и серверный cap 1 MiB. Тело больше cap получает 413 до вызова PHP и без его JSON/request ID; handler отдельно ограничивает вход 64 KiB. Native RR transport уже материализует payload до handler, поэтому readLimited не делает приём потоковым. /health работает без БД.
+[rr.yaml](rr.yaml) selects APP_CONFIG and a 1 MiB ingress cap. Larger input receives server 413 before PHP, without its JSON/request ID. Handler limit is separately 64 KiB. Native RR buffers input first; readLimited does not make reception streaming. /health needs no database.
 
-## Проверка и стоимость
+## Verification and cost
 
 ```bash
 php tools/project.php verify
 php tools/project.php http:check --rr=/path/to/rr3
 ```
 
-Матрица RR3 покрывает 65 535/65 536/65 537 байт, ошибки входа, размеры 1 MiB / 1 MiB + 1 с Content-Length и chunked, request ID и следующий запрос того же worker после отказа. [Общий guide](../../docs/development/http-and-baseline.md) описывает весь набор.
+Checks cover 65,535/65,536/65,537 bytes, malformed input, 1 MiB and +1 with Content-Length/chunked, IDs, and the next request. See [HTTP guide](../../docs/development/http-and-baseline.md).
 
-Чтение ограничивает накопленную строку и последующий JSON-разбор; вызов проверяется на строках, seekable-файле и non-seekable stream. Файл 1 MiB при лимите 64 KiB останавливается на позиции 65 537. Прямое неограниченное `getContents` прочитало бы весь остаток. Это ресурсная граница, не обещание ускорения: JSON создаёт собственные PHP-объекты, RR предварительно буферизует payload. Без вызова метода циклы чтения не выполняются; стоимость загрузки класса и поставки примера не нулевая.
+String/seekable/non-seekable checks establish the read bound. A 1 MiB file with 64 KiB limit stops at position 65,537; unbounded getContents would read the remainder. This is a resource bound, not a speedup: JSON allocates objects and RR already buffers. Unused reading adds no loop; loading/delivery costs are not zero.

@@ -1,46 +1,46 @@
-# ADR: корректность текущих контрактов перед расширением ядра
+# ADR on contract correctness before core expansion
 
-Тип: `design`. Статус: `accepted-plan`. Сверено с кодом: 2026-10-28.
+Type: `design`. Status: `accepted-plan`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-## Контекст
+## Context
 
-Ревью HTTP/PDO-ядра подтвердило явную композицию, автономную поставку и законченные примеры. При успешном штатном verify дополнительные сценарии выявили пять дефектов: коллизии имён SQL-запросов, передачу boolean false в PostgreSQL, вложенный upload с ключом name, удаление рабочего SQL output при ошибке генерации и неработающий quickstart распакованного архива. SQL-контракт отдельно признаёт неверную nullability внешних JOIN.
+Review confirmed explicit composition, autonomous delivery, and complete examples. Despite a passing default verify, additional cases found five defects: SQL-name collisions, PostgreSQL false parameters, nested uploads named name, destructive failed generation, and unusable archive quickstart commands. SQL documentation separately acknowledged incorrect outer-join nullability.
 
-Решение относится к существующим потребителям и [трём целям](../project/principles.md). Состав продукта, границы приложения и единственный HTTP runtime сохраняются. Текущее поведение компонентов описывают их design/architecture документы; последовательность дальнейших задач — [roadmap](../project/roadmap.md).
+This decision concerns current consumers and the [three goals](../project/principles.md). Application boundaries and the single runtime remain. Component documents own current behavior; [roadmap](../project/roadmap.md) owns priorities.
 
-## Решение
+## Decision
 
-Первый этап завершает корректность текущих контрактов до расширения SQL/protobuf subset:
+Complete correctness before expanding SQL/protobuf support:
 
-| Сценарий | Решение | Проверяемый результат | Состояние |
+| Scenario | Decision | Observable result | State |
 | --- | --- | --- | --- |
-| Имена SQL | Отвергать повтор имени без учёта регистра, коллизии модулей и конечных PHP-путей до записи | Генерация и check завершаются ошибкой с источником конфликта; прежний output сохраняется | implemented |
-| PostgreSQL boolean | В общем execution path преобразовывать bool в канонические PostgreSQL true/false и передавать полный набор параметров PDO | true/false/null проходят через query/queryOne/execute и generated query; повторный вызов не сохраняет пропущенные параметры | implemented |
-| Вложенные uploads | Отличать лист метаданных от группы по типу name, проверять остальные поля листа | files[0], files[name] и другие строковые ключи работают через native transport и настоящий RR | implemented |
-| SQL output | Сначала построить полный набор, записать его в соседний staging-каталог, затем заменить выделенный output с восстановлением при ошибке публикации | Невалидный SQL и ошибка записи сохраняют старый набор; успешная генерация удаляет устаревшие артефакты | implemented |
-| Runtime quickstart | В README разделить checkout и архив, дать прямые команды RR/CLI | Распакованная поставка загружается без tools/codegen; документированный запуск даёт /health | implemented |
-| Outer JOIN | Явно отклонять LEFT/RIGHT/FULL на семантической границе до реализации корректной nullability | Генерация отказывает с именем запроса; INNER JOIN сохраняет поведение | implemented |
+| SQL names | Reject case-insensitive query/module/final-path collisions before writing | Generation/check identifies the source; old output remains | implemented |
+| PostgreSQL bool | Normalize to canonical true/false and execute with a complete parameter array | true/false/null work on all paths; missing parameters do not reuse stale bindings | implemented |
+| Nested uploads | Separate groups/leaves by name shape, validate leaf metadata | Numeric/name/other keys work through native transport and RR | implemented |
+| SQL publication | Build/stage all files, replace dedicated output, restore on publication failure | Parse/write failures preserve old files; success removes retired artifacts | implemented |
+| Runtime quickstart | Separate checkout/archive commands | Extracted delivery loads without tools/codegen and serves /health | implemented |
+| Outer JOIN | Reject LEFT/RIGHT/FULL until correct nullability | Named generation failure; INNER JOIN preserved | implemented |
 
-Генератор владеет целиком явно выбранным output-каталогом. Одновременные генерации в один output и устойчивость к принудительному завершению между переименованиями этим этапом не устанавливаются; генерация выполняется при разработке, не в активном HTTP worker.
+The generator owns its entire output directory. Concurrent writers and forced termination between renames are unsupported. Generation is development work, not active-worker behavior.
 
-## Альтернативы и цена
+## Alternatives and costs
 
-- Связывание всех параметров через bindValue требует отдельно исключить сохранение старых bindings у cached statement. Нормализация только bool перед execute с полным массивом сохраняет существующую PDO-семантику остальных scalar/null и не требует состояния второго кеша. На SQL-вызов добавляется линейный проход по параметрам; без SQL эта работа не выполняется. Ускорение не заявляется.
-- Проверка одних имён запросов не закрывает совпадение модулей, query/row names и PHP-классов разного регистра. Проверяется и окончательный набор путей. Дополнительная работа остаётся в codegen-процессе.
-- Пофайловая запись после проверки SQL всё ещё допускает частичный набор при I/O error. Staging требует временно хранить старый и новый output на одном filesystem, но сохраняет доступный результат при обычном отказе.
-- Поддержка outer JOIN потребовала бы согласованного вывода типов и PostgreSQL mapping checks. Пока нового потребителя нет, явный отказ проще и предотвращает ложный non-null контракт. Это намеренное сужение ранее принимаемого небезопасного subset.
-- Общая библиотека публикации для двух генераторов, новый контейнер, ORM и отдельная платформа проверок не вводятся. SQL CLI получает небольшой конкретный writer; protobuf сохраняет собственное владение output.
+- Binding every parameter via bindValue would require preventing stale cached bindings. Boolean-only normalization plus full-array execute preserves other scalar/null semantics without a second binding cache. SQL calls add a linear parameter pass; no speedup is claimed.
+- Query names alone miss module/final-class collisions. Final paths are checked too, within codegen.
+- Per-file publication can still leave partial output on I/O failure. Staging temporarily needs old/new trees on one filesystem and preserves usable output on ordinary failure.
+- Proper outer joins need nullability and PostgreSQL mapping checks. Explicit refusal prevents false non-null contracts while no consumer justifies implementation.
+- No shared cross-generator publication platform, container, ORM, or new testing platform is introduced. SQL gets a concrete writer; protobuf retains its output ownership.
 
-Путь разработчика сохраняется: изменить SQL/контракт, запустить генерацию, проверить и включить готовый PHP. При ошибке он получает диагностику и предыдущий набор, а получатель runtime-архива — команды, существующие в поставке.
+Developers still edit SQL/contracts, generate, check, and ship PHP. Failure supplies diagnostics and prior output. Archive users receive commands actually present in delivery.
 
-## Проверки и границы этапа
+## Verification and stage limits
 
-Обязательны verify, tools:sql:check, verify:integration на настоящем PostgreSQL, proto:check и реальные RR HTTP checks. Регрессии проверяют публичные результаты, включая SQL CLI и повторный запрос worker. Распакованный runtime проверяется отдельно от checkout. PHP не поддерживается установленными UB complexity/mutation tools; PHPStan, PHPUnit и repository checks остаются детерминированными gates без установки зависимостей.
+Required checks are verify, tools:sql:check, PostgreSQL integration, proto:check, and actual RR HTTP. Regressions exercise public outcomes, CLI, subsequent worker requests, and extracted delivery. Installed UB complexity/mutation tools do not support PHP; PHPStan/PHPUnit/repository gates run without installation.
 
-Первый этап реализован. Проверены полный verify:full на PostgreSQL, настоящий RR 3.0.1/PHP 8.5.12 (142 JSON + 142 HTML cases), generated boolean roundtrip false/true/null и запуск распакованного архива через rr serve с успешным /health. SQL-артефакты регенерированы без изменения их содержимого.
+The first stage completed verify:full, RR 3.0.1/PHP 8.5.12 with 142 JSON+142 HTML cases, generated boolean false/true/null round trips, and extracted-archive RR /health. SQL regenerated byte-identically.
 
-Следующий этап реализовал подавление body для HTTP 205 и BIGINT для новой migrations table. Существующую историю оператор обновляет отдельно через bin/migrate.php upgrade-metadata: обычный migrate/HTTP не делает ALTER. Контракт и ограничения обслуживания принадлежат [документу миграций](transactions-and-migrations.md#bigint-времени-и-явное-обновление-метаданных).
+The next stage suppressed HTTP 205 bodies and used BIGINT for new migration timestamps. Existing history needs explicit bin/migrate.php upgrade-metadata; ordinary migrate/HTTP never ALTERs it. See [migration contract](transactions-and-migrations.md#bigint-timestamps-and-explicit-metadata-upgrade).
 
-Смешанный длительный прогон выполнен отдельным test-only графом на существующих baseline/HTTP fixtures; [методика](../development/http-and-baseline.md#смешанный-длительный-прогон) задаёт реальные результаты, RSS/CPU всех процессов и границы утверждений. [Отчёт и данные](../history/2026-10-28-runtime-soak.md) фиксируют 15 минут после прогрева, 16 564 HTTP requests, 99 384 успешных checks и CPU/RSS/FD обоих workers без рестартов. Это ограниченный baseline, не доказательство многодневной устойчивости или production SLO. Выбор следующей прикладной операции и политика публичных версий/лицензия остаются отдельными решениями.
+A separate test graph reused baseline/HTTP fixtures for a sustained mixed run. The [method](../development/http-and-baseline.md#mixed-sustained-run) and [report](../history/2026-10-28-runtime-soak.md) record fifteen measured minutes, 16,564 requests, 99,384 successful checks, and worker CPU/RSS/FD without restarts. This is limited evidence rather than multi-day/deployment certification. Another application operation and own-code release/license policy remain separate decisions.
 
-Security-состояние изменилось после исходного ревью: [заключение от 2026-10-28](../development/security.md#разбор-rr-301-от-2026-10-28) ограничено точным Linux amd64 binary, advisory/evidence hashes и сроком. Оно не распространяется на другой artifact. Действует существующий fail-closed gate; blanket ignores и изменение security-политики не входят в этот этап.
+Security state changed after the original review. The [2026-10-28 assessment](../development/security.md#rr-301-assessment-from-2026-10-28) is restricted to an exact Linux amd64 binary, advisory/evidence hashes, and validity period. Other artifacts are not covered. Existing fail-closed policy remains; blanket ignores are outside this decision.

@@ -4,7 +4,7 @@ import { check } from 'k6';
 const baseUrl = (__ENV.BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
 const benchmarkCase = __ENV.CASE || 'list';
 const documentId = __ENV.DOCUMENT_ID || '1';
-const expectedTitle = __ENV.EXPECTED_TITLE || `Документ №${documentId}`;
+const expectedTitle = __ENV.EXPECTED_TITLE || `Document ${documentId}`;
 const vus = Number(__ENV.VUS || '1');
 if (!['list', 'detail'].includes(benchmarkCase)) {
     throw new Error('CASE must be list or detail. File transfers are measured separately with a bounded streaming client.');
@@ -26,7 +26,7 @@ function escapeHtml(value) {
     })[character]);
 }
 
-const title = benchmarkCase === 'list' ? 'Документы' : escapeHtml(expectedTitle);
+const title = benchmarkCase === 'list' ? 'Documents' : escapeHtml(expectedTitle);
 const path = benchmarkCase === 'list' ? '/documents' : `/documents/${documentId}`;
 
 export const options = {
@@ -52,7 +52,7 @@ export default function () {
         'status is 200': (result) => result.status === 200,
         'content type is HTML': (result) => result.headers['Content-Type'] === 'text/html; charset=utf-8',
         'page title is exact': (result) => typeof result.body === 'string'
-            && result.body.includes(`<title>${title} — Каталог документов</title>`),
+            && result.body.includes(`<title>${title} — Document catalog</title>`),
         'heading is exact': (result) => typeof result.body === 'string' && result.body.includes(`<h1>${title}</h1>`),
         'page contains the expected catalog content': (result) => typeof result.body === 'string' && (benchmarkCase === 'list'
             ? result.body.includes('<ol>') && /href="\/documents\/[1-9][0-9]*"/.test(result.body)

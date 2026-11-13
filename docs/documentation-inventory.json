@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-10-28",
-  "scope": "Собственные repository guides, design/architecture/planning docs и связанные reference artifacts. Пути относительны корню; current/accepted-plan описывают статус документа, не реализацию каждой идеи.",
+  "reviewed_at": "2026-11-13",
+  "scope": "Project-authored English portfolio, repository guides, architecture/design/plans, and related artifacts. Paths are root-relative. Document status does not establish every proposed capability. Raw historical artifacts retain their original contents.",
   "documents": [
     {
       "id": "project-readme",
       "path": "README.md",
       "kind": "navigation",
       "status": "current",
-      "summary": "Быстрый старт, требования платформы, команды и профили запуска.",
+      "summary": "Portfolio entry, contribution boundaries, runnable system, platform, and verification.",
       "read_when": [
-        "Первое знакомство",
-        "Запуск и сборка"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "bootstrap.php",
@@ -26,9 +26,10 @@
       "path": "AGENTS.md",
       "kind": "instructions",
       "status": "current",
-      "summary": "Канонические правила агентов: собственная модель разработки, активный приоритет core, три цели, границы исходников и проверки.",
+      "summary": "Canonical agent rules, portfolio purpose, source boundaries, composition, and required checks.",
       "read_when": [
-        "Любая работа агента"
+        "Working on AGENTS",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/project.php",
@@ -44,9 +45,10 @@
       "path": "CLAUDE.md",
       "kind": "instructions",
       "status": "compatibility",
-      "summary": "Совместимая точка входа Claude Code, подключающая AGENTS.md.",
+      "summary": "Compatibility entry point importing canonical AGENTS instructions.",
       "read_when": [
-        "Запуск Claude Code"
+        "Working on CLAUDE",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "AGENTS.md"
@@ -57,9 +59,10 @@
       "path": "docs/README.md",
       "kind": "navigation",
       "status": "current",
-      "summary": "Карта актуальной архитектуры, планов, инструментов и истории.",
+      "summary": "Navigation across portfolio, implementation, plans, tools, and historical evidence.",
       "read_when": [
-        "Поиск документа по задаче"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "docs/documentation-inventory.json"
@@ -70,10 +73,10 @@
       "path": "docs/llm-onboarding.md",
       "kind": "navigation",
       "status": "current",
-      "summary": "Минимальный контекст для LLM и порядок чтения по области изменений.",
+      "summary": "Minimal agent context and task-specific sources.",
       "read_when": [
-        "Первая задача агента",
-        "Восстановление контекста"
+        "Working on llm onboarding",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "AGENTS.md",
@@ -90,10 +93,10 @@
       "path": "docs/project/principles.md",
       "kind": "instructions",
       "status": "current",
-      "summary": "Три совместные цели и правила проектирования самостоятельного core API: явность, минимальное подключение и проверяемая польза.",
+      "summary": "Joint simplicity, useful functionality, and measured efficiency requirements.",
       "read_when": [
-        "Планирование и ревью значимого изменения",
-        "Изменение контракта, состава ядра или горячего пути"
+        "Working on principles",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "AGENTS.md",
@@ -109,10 +112,10 @@
       "path": "docs/project/vision.md",
       "kind": "design",
       "status": "current",
-      "summary": "Конкретный состав HTTP/PDO-ядра, принятое направление API из protobuf-контракта и правило включения функций.",
+      "summary": "Portfolio purpose, implemented system, historical motivation, and application boundaries.",
       "read_when": [
-        "Выбор направления",
-        "Определение core или прикладной политики"
+        "Working on vision",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "config/core.php",
@@ -126,10 +129,10 @@
       "path": "docs/project/roadmap.md",
       "kind": "roadmap",
       "status": "accepted-plan",
-      "summary": "Ближайшие core-задачи: принятая protobuf-генерация API, единичное чтение SQL, миграции и разбор входных данных; критерии готовности.",
+      "summary": "Portfolio priorities, completed corrections, and explicitly conditional future work.",
       "read_when": [
-        "Планирование следующей итерации",
-        "Проверка завершённости этапа"
+        "Working on roadmap",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "config/core.php",
@@ -143,10 +146,10 @@
       "path": "docs/project/document-catalog-example.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Публичный каталог как действующий потребитель ядра: явный SQL с partial index, прикладные модели и private file storage.",
+      "summary": "Catalog request flow, explicit SQL, publication policy, and private files.",
       "read_when": [
-        "Разработка первого сквозного примера",
-        "Границы файлов, прав и публикации"
+        "Working on document catalog example",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "examples/document-catalog",
@@ -159,10 +162,10 @@
       "path": "docs/architecture/overview.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Явные PHP-функции сборки без контейнера, готовые обработчики в маршрутах, транспорт, lazy PDO и самостоятельный CLI.",
+      "summary": "Application composition, entry points, native transport, SQL, and object lifetimes.",
       "read_when": [
-        "Изменение runtime",
-        "Поиск точки расширения"
+        "Working on overview",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "config/core.php",
@@ -183,10 +186,10 @@
       "path": "docs/architecture/request-lifecycle.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Готовые handlers, порядок middleware, ErrorResponse/AttachmentResponse, владение streams и время жизни без DI-контейнера.",
+      "summary": "HTTP messages, routing, errors, body ownership, attachments, and persistent state.",
       "read_when": [
-        "Изменение HTTP pipeline",
-        "Анализ состояния worker и запросов"
+        "Working on request lifecycle",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "config/core.php",
@@ -216,10 +219,10 @@
       "path": "docs/reusable-blocks.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Конкретные механизмы ядра и граница прикладной политики, подключение и затраты.",
+      "summary": "Core component responsibilities and application-owned policy.",
       "read_when": [
-        "Добавление компонента",
-        "Определение обязательности функции"
+        "Working on reusable blocks",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform",
@@ -232,10 +235,10 @@
       "path": "docs/design/autonomous-core.md",
       "kind": "architecture",
       "status": "current",
-      "summary": "Реализованная поставка без Composer: bootstrap, distributions, provenance, изоляция и архив.",
+      "summary": "Bundled distributions, provenance, adaptations, and runtime packaging.",
       "read_when": [
-        "Обновление bundled code",
-        "Изменение bootstrap или packaging"
+        "Working on autonomous core",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "bootstrap.php",
@@ -251,10 +254,10 @@
       "path": "docs/development/infrastructure-and-testing.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Окружение, команды, PostgreSQL-схемы, миграции, gates и границы CI.",
+      "summary": "Platform requirements, offline checks, PostgreSQL isolation, and real HTTP verification.",
       "read_when": [
-        "Подготовка проверки",
-        "Изменение БД, CI или окружения"
+        "Working on infrastructure and testing",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/project.php",
@@ -271,9 +274,10 @@
       "path": "docs/development/documentation.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Правила источников истины, статусов, inventory, ссылок и обновления знаний.",
+      "summary": "Canonical fact owners, English language policy, inventory, links, attribution, and historical integrity.",
       "read_when": [
-        "Любое добавление, перенос или пересмотр документации"
+        "Working on documentation",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "AGENTS.md",
@@ -287,10 +291,10 @@
       "path": "docs/design/sql-gen-product.md",
       "kind": "design",
       "status": "current",
-      "summary": "Реальный контракт SQL Query/Row, поддержанный subset, ограничения и отдельные предложения.",
+      "summary": "Supported SQL subset, types, LIMIT, execution semantics, safe publication, and checks.",
       "read_when": [
-        "Развитие typed SQL",
-        "Проверка возможностей generator"
+        "Working on sql gen product",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/sql-gen/src",
@@ -310,9 +314,10 @@
       "path": "tools/sql-gen/README.md",
       "kind": "tool-guide",
       "status": "current",
-      "summary": "Команды и bootstrap отдельного SQL-генератора.",
+      "summary": "SQL CLI commands, profiles, limits, inputs, outputs, and bundled implementation.",
       "read_when": [
-        "Запуск SQL generation или tool checks"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/sql-gen/bin",
@@ -326,10 +331,10 @@
       "path": "third_party/README.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Карта сторонних distributions, происхождение и правила обновления.",
+      "summary": "Bundled sources, original notices, integrity, platform, and update obligations.",
       "read_when": [
-        "Проверка состава поставки",
-        "Обновление стороннего кода"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "third_party/manifest.json",
@@ -342,10 +347,10 @@
       "path": "docs/history/2026-10-17-autonomy-audit.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Снимок аудитов и ручных проверок перехода к автономности до реорганизации документов.",
+      "summary": "Historical dependency audit and stages of removing mandatory installation.",
       "read_when": [
-        "Историческое расследование",
-        "Границы прежних offline/FPM/RR экспериментов"
+        "Working on 2026 10 17 autonomy audit",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "docs/history/dependency-inventory-2026-10-17.json"
@@ -356,10 +361,10 @@
       "path": "docs/history/2026-10-17-development-principles-review.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Датированная ревизия документации и ограничений кода на 4c59899, основания уточнения трёх целей и порядка развития.",
+      "summary": "Source review findings that established joint decision criteria and bounded milestones.",
       "read_when": [
-        "Историческое обоснование принципов и приоритетов",
-        "Проверка границ проведённой ревизии"
+        "Working on 2026 10 17 development principles review",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Routing/Router.php",
@@ -376,10 +381,10 @@
       "path": "docs/development/http-and-baseline.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Реальные RR3 wire checks с логированием и файлами; воспроизведение JSON/SELECT и файловых замеров без installer.",
+      "summary": "Real RR checks, bounded JSON, isolated fixtures, sustained workload, and resource sampling.",
       "read_when": [
-        "Проверка HTTP adapters",
-        "Измерение runtime и подготовка изолированной fixture"
+        "Working on http and baseline",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/check-http.php",
@@ -395,10 +400,10 @@
       "path": "docs/history/2026-10-17-core-http-baseline.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Условия и результаты начальных JSON/SELECT замеров FPM/RR, HTTP-регрессии и границы выводов.",
+      "summary": "Historical routing corrections and twelve short JSON/SELECT runs.",
       "read_when": [
-        "Сравнение с начальным baseline",
-        "Проверка свидетельств HTTP-итерации"
+        "Working on 2026 10 17 core http baseline",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "load-tests/baseline",
@@ -414,10 +419,10 @@
       "path": "examples/document-catalog/README.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Запуск отдельного публичного HTML/PDO-каталога: миграция/seed, RR3 и private PDF storage.",
+      "summary": "Prepare, seed, run, and check the English document catalog.",
       "read_when": [
-        "Запуск и изменение примера каталога",
-        "Проверка границ приложения и core"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "examples/document-catalog/config.php",
@@ -431,10 +436,10 @@
       "path": "docs/history/2026-10-17-public-catalog.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Проверки публичного HTML/SQL-каталога, потоковой выдачи и ограниченные FPM/RR измерения.",
+      "summary": "Historical HTML/SQL/PDF implementation, manual checks, latency, and process measurements.",
       "read_when": [
-        "Проверка свидетельств публичного этапа",
-        "Воспроизведение HTML/файлового замера"
+        "Working on 2026 10 17 public catalog",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "examples/document-catalog",
@@ -449,10 +454,10 @@
       "path": "docs/history/2026-10-18-file-responses.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Общий attachment и metadata logging: FPM/RR проверки, lifecycle, ограниченная память и сопоставимая стоимость диагностики.",
+      "summary": "Historical attachment/logging checks, resource costs, and measurement limits.",
       "read_when": [
-        "Ревью файлового HTTP-контракта",
-        "Воспроизведение файловых проверок и замеров"
+        "Working on 2026 10 18 file responses",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Http/AttachmentResponse.php",
@@ -468,9 +473,10 @@
       "path": "docs/history/2026-10-20-core-scope.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Удаление лишних подсистем API-шаблона, границы несовместимости, стоимость и проверки конкретного ядра.",
+      "summary": "Removed subsystems, compatibility impact, verification, and subsequent owner correction.",
       "read_when": [
-        "Проверка состава и истории удаления API"
+        "Working on 2026 10 20 core scope",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "docs/history/2026-10-20-core-scope.json",
@@ -485,10 +491,10 @@
       "path": "docs/development/coding-guidelines.md",
       "kind": "instructions",
       "status": "current",
-      "summary": "PHP-адаптация правил devctl: законченные сценарии, конкретные границы, явные эффекты, контракты, ресурсы и проверки.",
+      "summary": "Complete scenarios, visible execution, small boundaries, error semantics, and resource ownership.",
       "read_when": [
-        "Написание и ревью кода",
-        "Изменение границ, ошибок, ресурсов или генерации"
+        "Working on coding guidelines",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "AGENTS.md",
@@ -504,10 +510,10 @@
       "path": "docs/design/protobuf-contract-generation.md",
       "kind": "design",
       "status": "current",
-      "summary": "Первый реализованный proto3 string/unary POST JSON этап: readonly DTO, typed endpoint, adapter/routes, snapshot/compiler checks и стоимость.",
+      "summary": "Limited string/unary POST contract generation, JSON behavior, delivery, and measured costs.",
       "read_when": [
-        "Проектирование и восстановление генерации из protobuf",
-        "Проверка границы контракта, runtime и бизнес-логики"
+        "Working on protobuf contract generation",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "contracts",
@@ -523,9 +529,10 @@
       "path": "docs/history/2026-10-20-explicit-composition.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Удаление DI-контейнера, App/routes/CLI контракты, сохранение lazy PDO, проверки и ограниченное сравнение CLI.",
+      "summary": "Container removal, explicit graphs, lazy PDO, breaking contracts, and bounded CLI comparison.",
       "read_when": [
-        "Проверка границ явной сборки и стоимости изменения"
+        "Working on 2026 10 20 explicit composition",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "docs/history/2026-10-20-explicit-composition.json",
@@ -541,9 +548,10 @@
       "path": "docs/history/2026-10-20-native-http.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Переход на собственные HTTP-типы без Nyholm/PSR packages, native RR adapter, worker patch и проверки.",
+      "summary": "Own HTTP types, removed packages, maintenance cost, verification, and CLI samples.",
       "read_when": [
-        "Разбор breaking HTTP API и цены собственного HTTP"
+        "Working on 2026 10 20 native http",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Http/Request.php",
@@ -561,9 +569,10 @@
       "path": "docs/history/2026-10-20-roadrunner3.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Переход на RR3: fixed transport versions, provenance, patches, числовые headers, stderr и проверки.",
+      "summary": "Pinned RR3 transport update, provenance, patches, logs, and checks.",
       "read_when": [
-        "Обновление RR transport и воспроизведение миграции"
+        "Working on 2026 10 20 roadrunner3",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "third_party/runtime/manifest.json",
@@ -578,10 +587,10 @@
       "path": "examples/json-echo/README.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Явное чтение ограниченного body, ручной POST JSON с 400/413/415 и проверенные RR3/Caddy/FPM ingress-профили.",
+      "summary": "Manual JSON POST with explicit handler/server bounds and error behavior.",
       "read_when": [
-        "Приём JSON и ограничение входящего body",
-        "Проверка серверных лимитов и владельца input stream"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Http/Body.php",
@@ -596,10 +605,10 @@
       "path": "docs/history/2026-10-23-query-one.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Storage.queryOne и SqlExecutor.fetchOne: семантика, PostgreSQL checks, breaking Storage contract, PHP/native memory и короткое сравнение.",
+      "summary": "One-row SQL semantics, real PostgreSQL checks, PHP/native memory distinction, and reproduction.",
       "read_when": [
-        "Ревью one-row SQL пути",
-        "Воспроизведение сравнения fetchAll и queryOne"
+        "Working on 2026 10 23 query one",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Storage/Storage.php",
@@ -616,10 +625,10 @@
       "path": "docs/design/transactions-and-migrations.md",
       "kind": "design",
       "status": "current",
-      "summary": "Один transaction callback, сохранение ошибок, атомарная версия миграции, явный SQL-список, retry/connection ownership и native checks.",
+      "summary": "Transaction and per-migration atomicity, original errors, recovery, and BIGINT maintenance.",
       "read_when": [
-        "Изменение транзакций и миграций",
-        "Диагностика сбоя commit/rollback и повтор CLI"
+        "Working on transactions and migrations",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Storage/AbstractStorage.php",
@@ -641,10 +650,10 @@
       "path": "examples/contract-echo/README.md",
       "kind": "tool-guide",
       "status": "current",
-      "summary": "Запуск Echo из .proto, ручная реализация и явное подключение generated adapter на RR3.",
+      "summary": "Run the generated Echo with a manual endpoint and explicit composition.",
       "read_when": [
-        "Разработка API из контракта",
-        "Запуск готового generated PHP без compiler"
+        "Working on README",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "contracts/echo.proto",
@@ -658,9 +667,10 @@
       "path": "docs/history/2026-10-23-roadrunner-only.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Пользователь выбрал только RR3: удалены SAPI/FPM entry point/adapters, upload mode, test branches и конфигурации.",
+      "summary": "Owner-selected single runtime, removed SAPI paths, and archive/wire verification.",
       "read_when": [
-        "Разбор границы HTTP runtime и удаления FPM"
+        "Working on 2026 10 23 roadrunner only",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "public/index.php",
@@ -676,10 +686,10 @@
       "path": "docs/development/security.md",
       "kind": "operations",
       "status": "current",
-      "summary": "Аудит PHP/RR, ограничения подтверждённых not-affected заключений с import evidence, Dependabot и CI/release gates.",
+      "summary": "Advisory checks, platform floors, release gates, and narrowly scoped assessments.",
       "read_when": [
-        "Изменение CI или bundled dependencies",
-        "Обновление PHP/RoadRunner и разбор advisories"
+        "Working on security",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "tools/security",
@@ -697,10 +707,10 @@
       "path": "docs/design/adr-2026-10-28-contract-correctness.md",
       "kind": "design",
       "status": "accepted-plan",
-      "summary": "ADR: исправление контрактов SQL/PDO/uploads и runtime quickstart до расширения ядра.",
+      "summary": "Implemented SQL/PDO/upload/publication/archive corrections with alternatives and limits.",
       "read_when": [
-        "Реализация замечаний ревью от 2026-10-28",
-        "Планирование расширения SQL/API"
+        "Working on adr 2026 10 28 contract correctness",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "src/Platform/Storage/PostgreSQLStorage.php",
@@ -715,10 +725,10 @@
       "path": "docs/history/2026-10-28-runtime-soak.md",
       "kind": "history",
       "status": "historical",
-      "summary": "HTTP 205, явный BIGINT metadata upgrade и ограниченный 15-минутный mixed RR soak с RSS/CPU всех workers.",
+      "summary": "HTTP 205, explicit metadata upgrade, and a limited fifteen-minute mixed RR run.",
       "read_when": [
-        "Проверка длительности и границ runtime measurement",
-        "Сравнение повторного mixed workload"
+        "Working on 2026 10 28 runtime soak",
+        "Inspecting the contracts or evidence described in this document"
       ],
       "source_paths": [
         "load-tests/soak",
@@ -726,6 +736,87 @@
         "src/Platform/Storage/Migration/MigrationRepository.php",
         "bin/migrate.php",
         "docs/history/2026-10-28-runtime-soak.json"
+      ]
+    },
+    {
+      "id": "portfolio-overview",
+      "path": "docs/portfolio/overview.md",
+      "kind": "design",
+      "status": "current",
+      "summary": "Purpose, owner and agent contributions, evidence, and unresolved questions.",
+      "read_when": [
+        "Reviewing the engineering portfolio",
+        "Following claims into implementation and verification evidence"
+      ],
+      "source_paths": [
+        "README.md",
+        "docs/project/vision.md",
+        "docs/project/roadmap.md"
+      ]
+    },
+    {
+      "id": "llm-workflow",
+      "path": "docs/portfolio/workflow.md",
+      "kind": "operations",
+      "status": "current",
+      "summary": "Context, bounded delegation, verification, handoff, and attribution without productivity claims.",
+      "read_when": [
+        "Reviewing the engineering portfolio",
+        "Following claims into implementation and verification evidence"
+      ],
+      "source_paths": [
+        "AGENTS.md",
+        "docs/llm-onboarding.md",
+        "tools/project.php"
+      ]
+    },
+    {
+      "id": "portfolio-scope-composition",
+      "path": "docs/portfolio/scope-and-composition.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Case study of removed scope, explicit composition, owner correction, and costs.",
+      "read_when": [
+        "Reviewing the engineering portfolio",
+        "Following claims into implementation and verification evidence"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-20-core-scope.md",
+        "docs/history/2026-10-20-explicit-composition.md",
+        "config/core.php",
+        "examples/document-catalog/application.php"
+      ]
+    },
+    {
+      "id": "portfolio-contract-correctness",
+      "path": "docs/portfolio/contract-correctness.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Case study of defects beyond passing checks, bounded corrections, and regression evidence.",
+      "read_when": [
+        "Reviewing the engineering portfolio",
+        "Following claims into implementation and verification evidence"
+      ],
+      "source_paths": [
+        "docs/design/adr-2026-10-28-contract-correctness.md",
+        "tests/Unit/Codegen/SqlGenerationCommandTest.php",
+        "src/Platform/Storage/PostgreSQLStorage.php"
+      ]
+    },
+    {
+      "id": "portfolio-runtime-measurement",
+      "path": "docs/portfolio/runtime-measurement.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Case study of workload design, process measurements, results, and deployment limits.",
+      "read_when": [
+        "Reviewing the engineering portfolio",
+        "Following claims into implementation and verification evidence"
+      ],
+      "source_paths": [
+        "docs/history/2026-10-28-runtime-soak.md",
+        "docs/history/2026-10-28-runtime-soak.json",
+        "load-tests/soak"
       ]
     }
   ],
@@ -735,10 +826,10 @@
       "path": "docs/documentation-inventory.json",
       "kind": "inventory",
       "status": "current",
-      "summary": "Машинная карта собственных документов, их статусов и связанных исходников.",
+      "summary": "Machine-readable map of project guides, statuses, and related sources.",
       "read_when": [
-        "Программная навигация",
-        "Проверка полноты документации"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "tools/check-docs.php",
@@ -750,9 +841,10 @@
       "path": "docs/history/dependency-inventory-2026-10-17.json",
       "kind": "inventory",
       "status": "historical",
-      "summary": "Неизменённый снимок прежнего установленного Composer-графа; не текущая поставка.",
+      "summary": "Unchanged former Composer dependency snapshot, not the present distribution.",
       "read_when": [
-        "Историческое сравнение зависимостей"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-17-autonomy-audit.md"
@@ -763,10 +855,10 @@
       "path": "docs/history/2026-10-17-core-http-baseline.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Окружение, fingerprints измеренных исходников, fixture EXPLAIN и данные двенадцати коротких запусков k6.",
+      "summary": "Platform/source fingerprints, fixture EXPLAIN, and twelve initial k6 summaries.",
       "read_when": [
-        "Проверка чисел начального baseline",
-        "Сопоставление условий повторного измерения"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "load-tests/baseline",
@@ -779,9 +871,10 @@
       "path": "docs/history/2026-10-17-public-catalog.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Измеренные окружение/исходники, HTML k6 summaries и потоковые проверки PDF с CPU/RSS.",
+      "summary": "Catalog platform/sources, HTML summaries, and PDF resource measurements.",
       "read_when": [
-        "Проверка чисел и границ публичного каталога"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "examples/document-catalog",
@@ -794,9 +887,10 @@
       "path": "docs/history/2026-10-18-file-responses.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Файловая итерация: условия, server configs, source hashes, CPU/RSS/log bytes и k6 summaries.",
+      "summary": "File scenario configs, hashes, CPU/RSS/log bytes, and raw k6 summaries.",
       "read_when": [
-        "Анализ стоимости файловой диагностики"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-18-file-responses.md",
@@ -809,9 +903,10 @@
       "path": "docs/history/2026-10-20-core-scope.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Доочисточная Git-версия, удалённые пути и пакеты, измеренные размеры исходников и результаты проверок.",
+      "summary": "Pre-reduction Git state, removed paths/packages, source sizes, and checks.",
       "read_when": [
-        "Проверка точных границ очистки"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-20-core-scope.md"
@@ -822,9 +917,10 @@
       "path": "docs/history/2026-10-20-explicit-composition.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Версия до удаления контейнера, breaking contracts, raw CLI samples, исходник probe, hashes и итоговые проверки.",
+      "summary": "Pre-container-removal state, breaking contracts, CLI probe, hashes, and checks.",
       "read_when": [
-        "Анализ измерений и воспроизведение CLI comparison"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-20-explicit-composition.md"
@@ -835,9 +931,10 @@
       "path": "docs/history/2026-10-20-native-http.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Raw CLI comparison, probe source, hashes и результаты проверки собственного HTTP.",
+      "summary": "Raw native-HTTP CLI comparison, probe, hashes, and checks.",
       "read_when": [
-        "Воспроизведение ограниченного CLI comparison"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-20-native-http.md"
@@ -848,9 +945,10 @@
       "path": "docs/history/2026-10-20-roadrunner3.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Pinned refs, archive hashes, платформа и результаты проверки RR3.",
+      "summary": "RR3 refs, archive hashes, platform, and verification results.",
       "read_when": [
-        "Проверка provenance и фактического охвата миграции"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-20-roadrunner3.md"
@@ -861,9 +959,10 @@
       "path": "docs/history/2026-10-23-query-one.json",
       "kind": "history",
       "status": "historical",
-      "summary": "SQL one-row: fixture/probe/runner, source hashes, окружение и raw CLI measurements.",
+      "summary": "One-row SQL fixture/probe/runner, source hashes, platform, and raw measurements.",
       "read_when": [
-        "Проверка чисел и воспроизведение SQL one-row measurement"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/history/2026-10-23-query-one.md"
@@ -874,9 +973,10 @@
       "path": "docs/history/2026-10-23-transaction-recovery.json",
       "kind": "history",
       "status": "historical",
-      "summary": "Наблюдавшиеся сбои до изменения, исправленные PostgreSQL результаты, probes и hashes транзакций/миграций.",
+      "summary": "Original and corrected SQL/DDL recovery probes, outcomes, and hashes.",
       "read_when": [
-        "Проверка доказательств восстановления после SQL/DDL ошибок"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/design/transactions-and-migrations.md"
@@ -887,9 +987,10 @@
       "path": "docs/history/2026-10-23-contract-generation.json",
       "kind": "history",
       "status": "historical",
-      "summary": "First contract generation slice: reproducible DTO/handler cost, real Caddy/FPM/RR checks and autonomous archive.",
+      "summary": "First contract slice costs, historical HTTP checks, and autonomous archive evidence.",
       "read_when": [
-        "Проверка измерений первого API-контракта"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "docs/design/protobuf-contract-generation.md",
@@ -902,9 +1003,10 @@
       "path": "contracts/echo.pb",
       "kind": "reference",
       "status": "current",
-      "summary": "Compiled single-file Echo descriptor for compiler-free PHP regeneration checks.",
+      "summary": "Compiled single-file Echo descriptor for compiler-free regeneration checks.",
       "read_when": [
-        "Проверка автономной генерации API"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "contracts/echo.proto",
@@ -916,9 +1018,10 @@
       "path": "contracts/echo.inputs.json",
       "kind": "reference",
       "status": "current",
-      "summary": "Generated source/import/descriptor hashes for the Echo contract snapshot.",
+      "summary": "Generated source/import/descriptor hashes for the Echo snapshot.",
       "read_when": [
-        "Изменение API-контракта"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "contracts/echo.proto",
@@ -930,9 +1033,10 @@
       "path": "docs/history/2026-10-28-runtime-soak.json",
       "kind": "reference",
       "status": "historical",
-      "summary": "Полные k6 summaries, Linux process samples, source/platform hashes и агрегаты финального soak.",
+      "summary": "Full k6 summaries, Linux process samples, source/platform hashes, and soak aggregates.",
       "read_when": [
-        "Проверка числовых наблюдений длительного RR прогона"
+        "Checking the recorded data or snapshot",
+        "Reproducing the related report with equivalent inputs and platform"
       ],
       "source_paths": [
         "load-tests/soak/scenario.js",
@@ -944,27 +1048,27 @@
   "exclusions": [
     {
       "path": "third_party/**/packages/**",
-      "reason": "Неизменённые upstream sources и их README/notices учитываются distribution manifests, не редактируются как docs проекта."
+      "reason": "Upstream sources and notices are governed by distribution manifests, not project documentation edits."
     },
     {
       "path": "third_party/tools/**",
-      "reason": "PHAR, provenance и upstream notices учитываются tools manifest; third_party/README.md включён отдельно."
+      "reason": "PHARs, scanner binaries, and upstream provenance belong to the tools manifest; the project-authored third_party README is indexed separately."
     },
     {
       "path": "gen/**",
-      "reason": "Generated PHP, не собственные руководства; меняется через generators."
+      "reason": "Generated PHP is changed through source inputs and generators."
     },
     {
       "path": "var/**",
-      "reason": "Локальные outputs и кеши, не источник документации."
+      "reason": "Ignored local output and caches, not canonical documentation."
     },
     {
       "path": "dist/**",
-      "reason": "Runtime-архивы и build outputs, не источник документации."
+      "reason": "Built runtime archives, not documentation sources."
     },
     {
       "path": ".git/**",
-      "reason": "Git metadata, не документация проекта."
+      "reason": "Git metadata, not project guides."
     }
   ]
 }

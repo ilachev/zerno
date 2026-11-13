@@ -1,66 +1,49 @@
-# Зерно
+# Zerno
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `navigation`. Status: `current`. Reviewed: 2026-11-13.
 
-**Зерно** (`zerno`) — небольшое автономное PHP HTTP/PDO-ядро для сайтов и веб-приложений. Муниципальные и государственные проекты — приоритетная аудитория; назначение остаётся универсальным. Цели: [простота, полезная функциональность и производительность](docs/project/principles.md).
+**An engineering portfolio case study in developing and reviewing a PHP backend with LLM assistance.** Zerno makes the work inspectable: architecture decisions, implementation, regression tests, runtime checks, and measurements live in the same repository.
 
-## Что поставляется
+The working system is a small PHP HTTP/PostgreSQL core running on RoadRunner. It provides a concrete setting for examining explicit composition, SQL generation, resource ownership, and verification of agent-produced changes. Its usefulness as a standalone framework remains unvalidated by an independent production application.
 
-- Собственные Request/Response/Body/Uri/UploadedFile, явные маршруты и middleware без PSR/Nyholm.
-- Сборка зависимостей обычными PHP-конструкторами и функциями, без контейнера/autowiring.
-- JSON/прикладные HTML-ошибки через ErrorResponse, AttachmentResponse, ограниченное чтение входного Body.
-- Request ID, время обработки и metadata logging без чтения payload.
-- PostgreSQL PDO, явный параметризованный SQL, query/queryOne, транзакции и CLI-миграции.
-- SQL generation и первый `.proto → DTO/endpoint/HTTP adapter/route` этап.
-- **RoadRunner 3.x — единственный HTTP runtime.** App/RequestHandler отделены от worker loop для явной композиции и тестов.
+## Start with the case study
 
-Сессии, GeoIP/fingerprints, аналитика, cache-платформа, старый API/SDK, hydration/mapping и outgoing HTTP client удалены. Состав и границы описаны в [видении](docs/project/vision.md). [Echo из контракта](examples/contract-echo/README.md) использует обычные readonly DTO и builtin JSON; [поддержанный subset](docs/design/protobuf-contract-generation.md) ограничен string/unary POST.
+- [Overview and contribution boundaries](docs/portfolio/overview.md): purpose, the owner's role, delegated work, and evidence.
+- [Working with an LLM](docs/portfolio/workflow.md): context, bounded tasks, decisions, verification, and handoff.
+- [Scope and explicit composition](docs/portfolio/scope-and-composition.md): removing subsystems and inspecting construction and I/O.
+- [Defects beyond a passing suite](docs/portfolio/contract-correctness.md): PostgreSQL booleans, uploads, generator failures, and archive instructions.
+- [Persistent runtime measurement](docs/portfolio/runtime-measurement.md): workload, process resources, results, and limits.
 
-## Запуск
+The owner directs the project and authorizes its scope. LLM agents assist with investigation, implementation, tests, and documentation. Individual discoveries are attributed only where the record supports attribution. No measured productivity improvement is claimed.
 
-Для HTTP нужны PHP 8.5.12+, PDO, sockets и установленный RoadRunner 3.0.1+ в ветке 3.x. Для БД дополнительно нужны pdo_pgsql и PostgreSQL. PHP libraries включены в обе поставки; quality/codegen tools доступны только в исходном checkout. Установка пакетов не требуется.
+## Working system
 
-Из корня исходного checkout:
+- Concrete `Request`, `Response`, `Body`, `Uri`, and `UploadedFile` types; explicit routing and middleware.
+- Ordinary PHP constructors and composition functions, without a container or autowiring.
+- JSON/HTML errors, attachments, bounded input reading, request IDs, and metadata logging.
+- PostgreSQL PDO, parameterized SQL, transactions, and explicit CLI migrations.
+- Typed SQL generation and a limited `.proto → DTO → endpoint → HTTP adapter → route` example.
+- RoadRunner 3.x as the sole HTTP runtime, with application handling separate from the worker loop.
+- Bundled runtime, generator, and quality dependencies; no package installation during ordinary project commands.
+
+[Architecture](docs/architecture/overview.md) describes the implementation. [Scope](docs/project/vision.md) and [roadmap](docs/project/roadmap.md) separate present behavior from future work. Examples include [manual JSON Echo](examples/json-echo/README.md), [generated Echo](examples/contract-echo/README.md), and a [document catalog](examples/document-catalog/README.md).
+
+## Run and verify
+
+CLI checks require PHP 8.5+ and the documented extensions. HTTP requires upstream PHP 8.5.12+, sockets, and an installed RoadRunner 3.0.1+ from the 3.x line. Database scenarios also require pdo_pgsql and PostgreSQL. Platform executables are supplied separately; project commands do not download them.
+
+From a source checkout:
 
 ```bash
+php tools/project.php verify
+php tools/project.php help
 rr --version
 php tools/project.php run
 ```
 
-Из корня распакованного runtime-архива:
+[GET /health](http://127.0.0.1:8080/health) returns `{"status":"ok"}` without opening a database connection. HEAD is registered separately. `verify` needs no external services or protoc; `verify:full` adds SQL-tool checks and PostgreSQL integration through `TEST_DB_*`.
 
 ```bash
-rr --version
-rr serve -c .rr.yaml
-```
-
-Runtime-архив содержит готовые PHP-артефакты и примеры. В нём нет tools/project.php, генераторов, тестов и входных contracts/sql. Разделы документации об этих инструментах и ссылки на их исходники относятся к checkout.
-
-[GET /health](http://127.0.0.1:8080/health) возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Запрос не открывает БД. При нескольких установках выберите RR3 через PATH: команды проекта executable не скачивают. `version: '3'` в YAML обозначает формат конфигурации.
-
-Единственная HTTP-точка входа — [public/index.php](public/index.php). [.rr.yaml](.rr.yaml) выбирает [config/core.php](config/core.php): `Closure(Logger): App`. APP_CONFIG задаёт другую явную функцию сборки. Logger и transport создаются в точке входа, routes получают готовые RequestHandler objects. Примеры — [ручной POST JSON](examples/json-echo/README.md), [Echo из .proto](examples/contract-echo/README.md), [каталог документов](examples/document-catalog/README.md).
-
-## База данных
-
-[config/storage.php](config/storage.php) читает DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD и DB_SCHEMA. Поддерживается PostgreSQL. PDO открывается при первой SQL-операции/транзакции. HTTP startup не запускает миграции.
-
-```bash
-php bin/migrate.php migrate
-```
-
-Команда доступна и в checkout, и в runtime-архиве. Default migrations — пустой src/Migrations; второй аргумент задаёт каталог, например `php bin/migrate.php migrate examples/document-catalog/migrations`.
-
-Для существующей INTEGER-колонки истории выполните отдельно `php bin/migrate.php upgrade-metadata`; команда сохраняет версии и переводит executed_at в BIGINT. Подробности обслуживания — в [контракте миграций](docs/design/transactions-and-migrations.md#bigint-времени-и-явное-обновление-метаданных).
-
-Генерация выполняется только в checkout командой `php tools/project.php sql:gen`. [SQL inputs](sql/queries/catalog.sql) и [schema](sql/schema.sql) проверяют генератор отдельно от приложения, которое сохраняет прямой SQL. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
-
-## Проверки и поставка
-
-Следующие команды выполняются только в исходном checkout:
-
-```bash
-php tools/project.php help
-php tools/project.php verify
 php tools/project.php verify:full
 php tools/project.php http:check --rr=/path/to/rr3
 php tools/project.php security:audit
@@ -68,8 +51,32 @@ php tools/project.php security:platform --rr=/path/to/rr3
 php tools/project.php build local
 ```
 
-verify не требует внешних сервисов или protoc. verify:full добавляет SQL-tool checks и PostgreSQL через TEST_DB_*. Отдельные [security checks](docs/development/security.md) читают advisory data без скачивания пакетов; CI выполняет их ежедневно и блокирует релиз при ошибке. Разбор findings и ограничения подтверждённых not-affected assessments описаны в security guide. http:check запускает только настоящий RR3 и проверяет HTTP, ресурсы и состояние следующего запроса. [Инфраструктура](docs/development/infrastructure-and-testing.md) описывает требования и изоляцию. Runtime archive содержит готовый PHP и SQL/API-artifacts без генераторов, contracts и quality tools.
+The [verification guide](docs/development/infrastructure-and-testing.md) covers platform requirements and isolation. Separate [security checks](docs/development/security.md) retrieve advisory data; unresolved findings and service failures block release. Historical checks do not establish the security of a different binary or a later deployment.
 
-Bundled RR использует protobuf/DTO libraries для своего транспорта; API Echo их не загружает как codec. Notices, происхождение и hashes описаны в [автономной поставке](docs/design/autonomous-core.md).
+From an extracted runtime archive:
 
-Для агентов в checkout: [AGENTS.md](AGENTS.md), [правила кода](docs/development/coding-guidelines.md), [onboarding](docs/llm-onboarding.md), [индекс](docs/README.md). [Roadmap](docs/project/roadmap.md) задаёт ограниченные задачи; лицензия и политика публичных релизов собственного кода остаются открытыми.
+```bash
+rr --version
+rr serve -c .rr.yaml
+```
+
+The archive contains PHP sources, generated artifacts, and examples. Tools, tests, load scenarios, and contract/SQL inputs belong to the checkout and are excluded from the archive. Instructions for them assume a checkout.
+
+## Database and composition
+
+[config/core.php](config/core.php) returns a `Closure(Logger): App`; [public/index.php](public/index.php) constructs the transport and logger. `APP_CONFIG` selects another explicit composition function. Routes receive constructed handlers.
+
+[Storage configuration](config/storage.php) reads `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DB_SCHEMA`. PDO connects on the first SQL operation or transaction. HTTP startup never runs migrations.
+
+```bash
+php bin/migrate.php migrate
+php bin/migrate.php migrate examples/document-catalog/migrations
+```
+
+The default migration directory is the empty `src/Migrations`. Existing INTEGER migration timestamps have a separate maintenance command, `php bin/migrate.php upgrade-metadata`; see the [migration contract](docs/design/transactions-and-migrations.md). SQL generation runs in the checkout with `php tools/project.php sql:gen`.
+
+## Status
+
+The priority is a reviewable portfolio: concise cases, accurate attribution, reproducible checks, and a runnable example. Further core features require a concrete consumer. License, public versioning, and support policy for the project's own code remain open; bundled components retain their upstream notices.
+
+[Documentation index](docs/README.md) · [Agent instructions](AGENTS.md) · [LLM onboarding](docs/llm-onboarding.md) · [Dependency provenance](third_party/README.md)

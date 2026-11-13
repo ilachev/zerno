@@ -1,12 +1,12 @@
-# SQL PHP Generator
+# SQL PHP generator
 
-Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `tool-guide`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-`sql-gen` создаёт typed query и row classes из [sql/schema.sql](../../sql/schema.sql) и именованных запросов [sql/queries](../../sql/queries). Он запускается отдельно и не требуется при исполнении уже generated queries.
+sql-gen creates typed queries/rows from [schema](../../sql/schema.sql) and [named SQL](../../sql/queries). Generation runs separately and is unnecessary for executing ready queries.
 
-## Запуск
+## Run
 
-Из корня проекта «Зерно»:
+From the repository root:
 
 ```bash
 php tools/project.php sql:gen
@@ -15,9 +15,9 @@ php tools/project.php sql:check:pg
 php tools/project.php tools:sql:check
 ```
 
-`sql:gen` подготавливает полный набор в staging и заменяет выделенный `gen/Generated/Sql` после успешной записи. Ошибка генерации/staging сохраняет прежний набор; успешная замена удаляет устаревшие файлы. Не запускайте генерацию одновременно в один output или во время исполнения этого output приложением. `sql:check` без БД проверяет отсутствующие, устаревшие и лишние generated PHP-файлы. `sql:check:pg` использует `TEST_DB_*` и отдельную случайную schema; проверяет запросы через PostgreSQL `PREPARE`, не выполняя их. `tools:sql:check` запускает style, PHPStan и tests инструмента.
+sql:gen stages a full set and replaces dedicated gen/Generated/Sql only after writing. Failure preserves prior output; success removes retired files. Do not generate concurrently or while an application executes that directory. sql:check rejects missing/stale/extra PHP offline. sql:check:pg uses TEST_DB_* and an isolated schema for PREPARE without executing queries. Tool checks run style/PHPStan/tests.
 
-## Входы и выходы
+## Input and output
 
 ```sql
 -- name: FindPublished :one
@@ -27,13 +27,13 @@ WHERE status = :status AND id = :id
 LIMIT 1;
 ```
 
-Поддержаны markers `:one`, `:many`, `:exec`. Имена запросов уникальны в файле без учёта регистра; коллизии модулей и конечных PHP-путей отвергаются до записи. Input directory должен содержать хотя бы один SQL-файл. Результат — readonly `*Query` с typed constructor/`create()`, `sql()`, `params()` и, для result rows, `rowClass()`; row classes имеют типизированные поля. Отдельных `*Params` и `*Queries` facade сейчас нет.
+Markers are :one/:many/:exec. Query names, modules, and final paths must not collide case-insensitively. Input must contain a SQL file. Output is readonly Query with typed constructor/create, sql/params, and rowClass for typed rows. No Params/facade classes are generated.
 
-Основные конструкции: ограниченные SELECT/INNER JOIN/WHERE/ORDER BY/LIMIT, INSERT с placeholders/upsert/RETURNING, UPDATE с placeholder assignments/RETURNING и DELETE с WHERE. Полная grammar и известные ограничения, включая явный отказ LEFT/RIGHT/FULL JOIN до реализации nullability, описаны в [контракте sql-gen](../../docs/design/sql-gen-product.md). Поддержка всего PostgreSQL не заявляется. Текущие project SQL inputs показывают структуру каталога с параметризованным status; приложение сохраняет прямой SQL с published literal для partial index. Runtime DDL находится в migration приложения.
+The subset includes SELECT/INNER JOIN/WHERE/ORDER/LIMIT, INSERT placeholders/upsert/RETURNING, UPDATE placeholder assignment/RETURNING, and DELETE WHERE. See the [contract](../../docs/design/sql-gen-product.md) for grammar and explicit LEFT/RIGHT/FULL refusal until correct nullability. Full PostgreSQL is unsupported. Catalog uses direct published-literal SQL for a partial index; generator examples use parameterized status. Application migrations own runtime DDL.
 
-Generated queries используют [runtime SQL contracts](../../src/Platform/Storage/Sql). Nette, Phplrt и Typhoon нужны инструменту, а не приложению при исполнении queries.
+Ready queries use [runtime contracts](../../src/Platform/Storage/Sql), without Nette/Phplrt/Typhoon.
 
-## SELECT с LIMIT
+## SELECT LIMIT
 
 ```sql
 -- name: PageBefore :many
@@ -43,37 +43,35 @@ ORDER BY id DESC
 LIMIT :limit;
 ```
 
-При собственной schema с этими колонками generated `PageBeforeQuery::create(status: 'published', before: $before, limit: 21)` передаёт integer limit в PDO без interpolation. Для постоянного размера достаточно `LIMIT 21` без дополнительного параметра. Приложение показывает 20 строк и проверяет наличие 21-й; cursor и published-фильтр остаются явным SQL.
+With matching schema, PageBeforeQuery::create(status: 'published', before: $before, limit: 21) passes typed parameters to PDO without interpolation. A fixed LIMIT 21 needs no parameter. The application shows twenty rows and checks row twenty-one.
 
-Поддержаны десятичный literal `0..PHP_INT_MAX` (ведущие нули разрешены) и именованный placeholder, включая `:limit`. LIMIT стоит после WHERE/ORDER BY и перед необязательным `;`. Placeholder получает обязательный non-null `int`/PostgreSQL `BIGINT`. При reuse с integer-колонками SQL-тип и диапазон сохраняются из первого сравнения JOIN/WHERE, как при native prepare; например, INTEGER не расширяется до BIGINT. Reuse с другим типом отвергается. Nullable integer-колонка не делает LIMIT nullable. Ноль возвращает пустой результат, отрицательный параметр отклоняет PostgreSQL. Вызывающий код задаёт свой максимальный размер страницы.
+Decimal literals 0..PHP_INT_MAX allow leading zeros. Named LIMIT parameters are non-null int/BIGINT. Reuse with integer columns retains the first JOIN/WHERE comparison's SQL type/range, rather than silently widening INTEGER. Other-type reuse fails; nullable integer columns do not make LIMIT nullable. Zero is empty; PostgreSQL rejects negative parameters. Callers choose page caps.
 
-`ALL`, `NULL`, знаки/дроби/exponents, expressions/casts/parentheses, column LIMIT, повторные/переставленные clauses, OFFSET/comma pagination и LIMIT у DML отвергаются. Reuse LIMIT-параметра внутри projection expressions тоже отвергается: native PostgreSQL prepare может иначе вывести тип первого аргумента, чем checker с явными типами. Overflow literal даёт `LIMIT literal must be between 0 and PHP_INT_MAX.`. Существующий `:one` не добавляет ограничение SQL; порядок без ORDER BY не гарантируется.
+LIMIT follows WHERE/ORDER before optional semicolon. ALL/NULL, signs/fractions/exponents, expressions/casts/parentheses, column limits, repeated/misplaced clauses, OFFSET/comma pagination, and DML LIMIT fail. Projection reuse also fails because native prepare may infer differently from explicit checker types. Overflow reports `LIMIT literal must be between 0 and PHP_INT_MAX.` :one adds no SQL limit; order needs ORDER BY.
 
-Цена — обработка optional LIMIT в codegen; runtime сохраняет SQL и обычные typed params без новых зависимостей/guards. LIMIT ограничивает возвращённые строки, но не размер каждой строки и не объём сканирования БД. План и индекс нужно проверять на данных приложения. Подробности, границы применения к каталогу и воспроизводимые PostgreSQL проверки — в [дизайне](../../docs/design/sql-gen-product.md#ограниченная-select-выборка).
+Extra work stays in codegen; runtime gains no libraries/guards. LIMIT bounds returned rows, not scanning/row width. See [bounded SELECT](../../docs/design/sql-gen-product.md#bounded-select) and [measurement](../../docs/design/sql-gen-product.md#verification-and-measured-cost).
 
-`php tools/project.php verify:integration` включает [generated LIMIT regression](../../tests/Integration/Storage/SqlLimitTest.php). При настроенных отдельных `TEST_DB_*` команда `php tests/Fixtures/SqlLimit/measure.php --rows=50000` печатает JSON с планами/буферами, количеством строк, bytes результата, PHP memory counters и временем полной fixture generation. Она удаляет свои случайные схемы и временный generated PHP. Протокол, команды PREPARE и границы измерений — в [проверке стоимости](../../docs/design/sql-gen-product.md#проверка-границ-и-стоимости). Установка пакетов и загрузка зависимостей не нужны.
+verify:integration includes [LIMIT regressions](../../tests/Integration/Storage/SqlLimitTest.php). With separate TEST_DB_*, `php tests/Fixtures/SqlLimit/measure.php --rows=50000` outputs plans/buffers, rows, bytes, PHP memory, and full generation time, then cleans owned schemas/output.
 
-## Прямой CLI и profiles
+## Direct CLI and profiles
 
-`bin/sql-gen.php` и `bin/sql-check.php` принимают:
+bin/sql-gen.php and bin/sql-check.php accept:
 
-| Option | Назначение |
+| Option | Purpose |
 | --- | --- |
-| `--input-dir` | Каталог именованных SQL files |
-| `--output-dir` | Каталог generated PHP |
-| `--namespace` | Базовый generated namespace |
-| `--schema` | Schema source для type resolution |
-| `--runtime-namespace` | Runtime contracts namespace для default profile |
-| `--bootstrap`, `--profile-class` | Подключение внешнего `SqlGenerationProfile` |
+| --input-dir | Named SQL directory |
+| --output-dir | Generated PHP directory |
+| --namespace | Generated base namespace |
+| --schema | Type-resolution schema |
+| --runtime-namespace | Default-profile runtime contracts |
+| --bootstrap / --profile-class | External SqlGenerationProfile |
 
-Первые четыре обязательны. Если выбран внешний profile, именно он определяет runtime contracts и naming. Корневой runner передаёт --runtime-namespace=App\Platform\Storage\Sql напрямую, без project-profile обёртки. Внешний profile нужен только потребителю с собственной политикой contracts/naming.
+The first four are required. An external profile owns naming/contracts. Root passes App\Platform\Storage\Sql directly without a wrapper. Use a custom profile only for a concrete consumer's policy.
 
-`bin/sql-check-pg.php` принимает `--input-dir`, `--schema`, `--db-host`, `--db-port`, `--db-name`, `--db-user`, `--db-password`. При прямом запуске fallback — `DB_*`; root runner отдельно преобразует `TEST_DB_*` в connection environment.
+bin/sql-check-pg.php accepts input/schema and --db-host/port/name/user/password; direct fallback uses DB_*. Root maps TEST_DB_* separately.
 
-## Автономная поставка
+## Autonomous distribution
 
-[bootstrap.php](./bootstrap.php) подключает [bundled distribution](../../third_party/codegen/sql/autoload.php). Установка пакетов не нужна. [Manifest](../../third_party/codegen/sql/manifest.json) фиксирует версии, refs, лицензии и SHA256; полные upstream package files и notices сохранены в `packages`.
+[Bootstrap](bootstrap.php) loads the [bundled distribution](../../third_party/codegen/sql/autoload.php). Its [manifest](../../third_party/codegen/sql/manifest.json) records versions/refs/licenses/SHA-256 and full upstream packages/notices. No installation is needed.
 
-SQL generator запускается отдельным PHP-процессом. Не объединять его bootstrap с runtime в одном процессе; generator libraries в HTTP не загружаются.
-
-Будущие component ideas описаны в [sql-gen-product.md](../../docs/design/sql-gen-product.md); приоритет задаёт [общий roadmap](../../docs/project/roadmap.md).
+Keep generator/runtime bootstraps in separate PHP processes. Future ideas belong to the [design](../../docs/design/sql-gen-product.md); priorities belong to the [roadmap](../../docs/project/roadmap.md).

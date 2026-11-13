@@ -1,28 +1,26 @@
-# Карта блоков и границ
+# Components and application boundaries
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `architecture`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-Текущая область продукта определена [видением](project/vision.md). Здесь нет уровня optional capabilities: реализованные механизмы имеют конкретную роль, приложение задаёт их использование обычной композицией.
+[Scope](project/vision.md) defines the shipped system. Components have concrete roles and are connected through ordinary application composition.
 
-| Код | Ответственность | Потребитель |
+| Code | Responsibility | Consumer |
 | --- | --- | --- |
-| Platform/Runtime | App, request ID и RR loop | Точки входа и реальные HTTP fixtures |
-| Platform/Http | RequestHandler/Middleware, ErrorResponse/JSON, AttachmentResponse, metadata logging | Ядро и каталог |
-| Platform/Routing | RouteEntry с готовыми RequestHandler, method/path dispatch | config/routes.php и маршруты каталога |
-| Platform/Storage | PostgreSQL PDO, SQL contracts/executor, транзакции/миграции | Каталог и PostgreSQL regression tests |
-| Platform/Logging | Вывод metadata, обычный и RR logger | RequestContext/HttpLogging и ошибки |
-| tools/sql-gen | Parser, inference, typed PHP generation, PostgreSQL checker | sql/queries/catalog.sql и SQL regression fixture |
+| Platform/Runtime | App, request ID, RR loop | Entry points and real HTTP fixtures |
+| Platform/Http | Handlers/middleware, errors/JSON, attachments, metadata logging | Core and catalog |
+| Platform/Routing | RouteEntry with constructed handlers, method/path dispatch | Core and catalog routes |
+| Platform/Storage | PostgreSQL PDO, SQL executor/contracts, transactions/migrations | Catalog and regression tests |
+| Platform/Logging | Metadata output, ordinary and RR logger | RequestContext/HttpLogging/errors |
+| tools/sql-gen | Parser, inference, PHP generation, PostgreSQL checker | SQL example and regression fixture |
 
-/health и ответы маршрутизатора 404/405 не открывают БД, не создают cookies и не выполняют аналитику посетителя. Объекты и middleware собираются обычным PHP через конструкторы, без DI-контейнера; добавление HttpLogging не читает body. Регистрация autoload maps/bootstrap files имеет собственную стоимость, поэтому нулевая стоимость загрузки не заявляется.
+/health and router 404/405 responses open no database, create no cookies, and run no visitor analytics. Constructors assemble middleware and services; HttpLogging reads no body. Bootstrap/autoload registration has a cost, so zero loading overhead is not claimed.
 
-RoadRunner 3.x — единственный HTTP runtime, App отделён от worker loop. Default RR буферизует body; каталог явно выбирает chunk 8192 для seekable файлов. Поток и helper сами по себе не гарантируют ограниченную память: проверяется [полный путь](development/http-and-baseline.md).
+RoadRunner 3.x is the sole HTTP runtime. App is separate from its loop. Default RR body delivery buffers; the catalog selects 8192-byte chunks for seekable files. Verify the [complete transport path](development/http-and-baseline.md) before claiming bounded memory.
 
-## Граница приложения
+## Application boundary
 
-Каталог содержит Document, статусы публикации, private FileStore, PDF-only, HTML и cache policy. Прямые SQL constants находятся в CatalogRepository; sql/queries/catalog.sql — отдельный пример для генератора с параметром status и соответствующей структурой колонок. Platform не знает таблицу каталога, тип документа или права редактора.
+The catalog owns Document, publication states, private FileStore, PDF rules, HTML, and cache policy. CatalogRepository holds direct SQL constants. sql/queries/catalog.sql is a separate generator example with a status parameter and its own column model. Platform knows neither the catalog table nor editor permissions.
 
-Helper нужен, когда убирает повторяемую механику из существующего сценария. Наличие библиотечного API не обязывает каждый handler проходить через repository, mapper, domain service или другую иерархию. Авторизация/сессии/аналитика и редактор не спрятаны в отключённом профиле — их реализации в поставке нет.
+A helper should remove repeated mechanics from a current scenario. Handlers need no compulsory repository/mapper/service hierarchy. Authorization, sessions, analytics, and editing are absent rather than hidden in a disabled profile.
 
-Каталог имеет явную функцию application.php: Logger/Storage/private directory → repository/HTML/files → handlers → routes/pipeline. CLI миграции собираются отдельно от HTTP.
-
-При изменении контракта указывать шаги разработчика, полезное поведение, стоимость, ресурсы и проверки по [принципам](project/principles.md). Новая функция проходит этот критерий до появления исходников и зависимостей.
+The catalog's application.php composes Logger/Storage/private directory → repository/HTML/files → handlers → routes/pipeline. Migrations build a separate CLI graph. Contract changes describe developer steps, behavior, cost, resources, and checks according to the [principles](project/principles.md).

@@ -1,10 +1,10 @@
-# Транзакции и миграции
+# Transactions and migrations
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `design`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-Владелец текущего контракта Storage.transaction и Migration. [Архитектура](../architecture/overview.md) описывает композицию, [инфраструктура](../development/infrastructure-and-testing.md) — TEST_DB_* и запуск проверок. PostgreSQL — единственный backend приложения.
+This owns Storage.transaction and Migration behavior. See [architecture](../architecture/overview.md) for composition and [verification](../development/infrastructure-and-testing.md) for TEST_DB_*. PostgreSQL is the only application backend.
 
-## Одна операция — одна транзакция
+## One operation, one transaction
 
 ```php
 $result = $storage->transaction(function () use ($storage): int {
@@ -17,17 +17,17 @@ $result = $storage->transaction(function () use ($storage): int {
 });
 ```
 
-transaction получает PDO лениво, начинает транзакцию, вызывает callback один раз, делает commit и только затем возвращает результат. Значение callback сохраняет тип через PHPStan template. SQL и зависимости остаются явными; контейнер, retry policy или transaction manager не требуются.
+transaction lazily obtains PDO, begins, calls the callback once, commits, and then returns its typed result. The operation owns BEGIN/COMMIT/ROLLBACK; callbacks must not issue manual transaction-control SQL. No container, retry policy, or manager is required.
 
-Операция владеет BEGIN/COMMIT/ROLLBACK. В callback не следует исполнять команды управления транзакцией вручную. Вложенный transaction отклоняется LogicException до вызова вложенного callback; savepoints не создаются. Если этот отказ пойман внутри внешнего callback, его исправная транзакция может продолжиться. Поддержка восстановления через ручные savepoints в этом контракте не предоставляется.
+Nested calls throw LogicException before invoking the inner callback; no savepoints exist. If that error is caught inside an otherwise healthy outer callback, the outer transaction can continue. Manual-savepoint recovery is outside the contract.
 
-Любая PDO-ошибка query/queryOne/execute/lastInsertId во время callback запоминается до конца транзакции. Даже если callback поймал её и вернул значение, transaction выбросит первую StorageException и откатит операцию. Это исключает наблюдавшийся ложный успех PostgreSQL: commit после пойманной SQL-ошибки мог завершить aborted transaction как rollback. Вне transaction ошибка просто передаётся вызывающему коду и не удерживается Storage. lastInsertId теперь также сохраняет PDOException внутри StorageException, как остальные SQL-операции.
+PDO failures in query/queryOne/execute/lastInsertId are retained during the callback. Even if caught inside it, the first StorageException is rethrown and the transaction rolled back. This prevents false PostgreSQL success when commit on an aborted transaction acts as rollback. Outside a transaction, storage forwards failures without retaining them. lastInsertId preserves the original PDOException as other operations do.
 
-При обычном исключении callback сохраняется исходный объект. Ошибка begin/commit остаётся исходной PDOException с SQLSTATE. После неудачного commit сервер уже может закончить транзакцию: [inTransaction](https://www.php.net/manual/en/pdo.intransaction.php) проверяется перед попыткой rollback, чтобы вторичное «нет активной транзакции» не затёрло исходную причину. [PDO commit](https://www.php.net/manual/en/pdo.commit.php) не заменяет проверку завершения операции.
+Ordinary callback exceptions retain identity. Begin/commit errors retain their PDOException/SQLSTATE. After failed commit, [inTransaction](https://www.php.net/manual/en/pdo.intransaction.php) is checked before rollback so secondary cleanup cannot erase the cause. [commit](https://www.php.net/manual/en/pdo.commit.php) does not replace outcome verification.
 
-Если rollback тоже не удался, выбрасывается TransactionRollbackException: getPrevious() содержит исходный сбой, readonly rollbackFailure — ошибку очистки. Этот Storage нужно отбросить и явно собрать новый; автоматического переподключения/повтора нет. При разрыве связи во время commit результат записи может требовать отдельной проверки перед ручным повтором. После завершения любого пути внутренние флаги/ссылка на ошибку очищаются в finally; успешный rollback позволяет следующей операции использовать то же соединение.
+If rollback also fails, TransactionRollbackException contains the original in getPrevious() and cleanup failure in readonly rollbackFailure. Discard that Storage and construct a new one; reconnect/retry is not automatic. Connection loss during commit may leave an uncertain write requiring inspection before retry. Finally clears internal flags/error references; successful rollback permits reuse.
 
-## Явные SQL-списки миграции
+## Explicit SQL lists
 
 ```php
 final readonly class Migration20300101001_Records extends AbstractMigration
@@ -47,48 +47,48 @@ final readonly class Migration20300101001_Records extends AbstractMigration
 }
 ```
 
-Здесь AbstractMigration — App\Platform\Storage\Migration\AbstractMigration, как в [миграции каталога](../../examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php). getVersion() этой базовой реализации возвращает имя класса без namespace. Собственная реализация Migration может задавать версию явно.
+AbstractMigration is App\Platform\Storage\Migration\AbstractMigration, as in the [catalog migration](../../examples/document-catalog/migrations/Migration20261017001_CreateDocuments.php). Its version is the unqualified class name; custom implementations can choose a version.
 
-up()/down() возвращают `list<string>`, каждый элемент — один полный SQL statement. Пустой список допустим: меняется только запись версии. Точка с запятой внутри литерала, комментария или dollar-quoted тела остаётся частью statement. MigrationService не разбивает SQL по `;`; несколько отдельных команд нужно поместить в отдельные элементы. Параметры runtime из HTTP сюда не поступают: это доверенный код миграции, загруженный CLI из явно выбранной директории.
+up/down return list<string>, one full SQL statement per element. Empty lists change only history. Semicolons inside literals/comments/dollar quotes stay within a statement. MigrationService does not split SQL; separate commands need separate elements. These are trusted CLI-loaded files, not HTTP input.
 
-Это несовместимое изменение прежнего контракта `up(): string` / `down(): string`. Собственные миграции нужно перевести на массивы отдельных SQL. Совместимый string fallback, SQL parser и второй режим выполнения не добавлены. Уже применённые версии не запускаются заново только из-за обновления движка; DDL каталога и имя его версии сохранены.
+This breaks the former string-returning API. Convert custom migrations to arrays; no fallback/parser/second execution mode exists. Previously applied versions are not rerun solely by an engine upgrade. Catalog DDL/version stayed the same.
 
-## Атомарность версии и восстановление
+## Per-version atomicity and recovery
 
-MigrationService проверяет уникальность версий до выполнения up/down; дубли — LogicException вместо прежнего пропуска одной реализации. Для migrate применяется лексикографический порядок версий, уже зарегистрированные пропускаются. rollback выполняет зарегистрированные версии в обратном порядке.
+Versions must be unique before any up/down call; duplicates throw LogicException. Migrate sorts lexicographically and skips registered versions. Rollback reverses registered versions.
 
-Каждая версия имеет собственную транзакцию: все её statements и INSERT/DELETE строки в migrations либо завершаются вместе, либо откатываются вместе. Исключение останавливает проход. Успешно завершённые предыдущие версии сохраняются; вся серия не является одной общей транзакцией. При неудачном down восстанавливаются удалённые этой версией таблицы/данные и сохраняется её версия. Проверена также ошибка deferred constraint на commit после добавления версии.
+Each version's statements and history INSERT/DELETE share one transaction. Failure stops the pass; earlier committed versions remain. Failed down restores that version's changes/history. Deferred commit constraints are also tested. The full series is not one transaction.
 
-После исправления миграции оператор явно повторяет ту же CLI-команду:
+After fixing a migration, rerun explicitly:
 
 ```bash
 php bin/migrate.php migrate examples/document-catalog/migrations
 php bin/migrate.php rollback examples/document-catalog/migrations
 ```
 
-Неисправная версия и следующие действия сами не повторяются. Инициализация служебной таблицы migrations выполняется отдельно в MigrationRepository constructor; она может остаться после первой неудачной миграции. HTTP startup и services:start не запускают DDL. Остатки частичных миграций прежнего движка требуют отдельной сверки фактической схемы и версий; новый движок не удаляет их автоматически.
+There is no automatic retry. MigrationRepository initializes history separately, so the empty table may remain after a first failed migration. HTTP/services:start perform no DDL. Partial leftovers from the old engine require manual schema/history inspection; the new engine does not delete them.
 
-Все миграции транзакционные. `CREATE INDEX CONCURRENTLY` и другие команды, запрещённые внутри transaction, приводят к ошибке PostgreSQL и откату текущей версии. Non-transactional флага нет. Запуски миграций оператор выполняет последовательно: механизма сериализации нескольких CLI-процессов или distributed lock проект не предоставляет.
+All migrations are transactional. CREATE INDEX CONCURRENTLY and other forbidden transactional commands fail and roll back. No non-transactional switch exists. Operators run CLI migrations sequentially; no multi-process serialization/distributed lock is provided.
 
-## BIGINT времени и явное обновление метаданных
+## BIGINT timestamps and explicit metadata upgrade
 
-Новая служебная таблица migrations хранит executed_at как BIGINT, включая значения до PHP_INT_MAX. CREATE TABLE IF NOT EXISTS не изменяет уже существующую INTEGER-колонку. Её обновляет отдельная команда с обычными DB_* и DB_SCHEMA выбранного приложения:
+New migrations tables use executed_at BIGINT, including PHP_INT_MAX. CREATE TABLE IF NOT EXISTS does not alter an existing INTEGER column. Use the selected application's DB_* and DB_SCHEMA:
 
 ```bash
 php bin/migrate.php upgrade-metadata
 ```
 
-Из checkout доступен эквивалент `php tools/project.php migrate upgrade-metadata`. Аргумент каталога для этого действия запрещён и проверяется до подключения. Команда не загружает application migrations или HTTP config: создаёт Storage/repository и выполняет `ALTER TABLE migrations ALTER COLUMN executed_at TYPE BIGINT` в транзакции. Строки, timestamps, primary key и имена применённых версий сохраняются; повторный вызов допустим. Неявного downcast и удаления истории нет.
+The checkout equivalent is `php tools/project.php migrate upgrade-metadata`. A directory argument is rejected before connection. The command loads neither application migrations nor HTTP config; it builds Storage/repository and transactionally runs ALTER TABLE migrations ALTER COLUMN executed_at TYPE BIGINT. Rows, timestamps, primary key, and versions remain. Repeating is allowed; no downcast/history deletion occurs.
 
-Оператор запускает обслуживание последовательно с остальными migration CLI в выбранной схеме. ALTER получает блокировку метаданных и может переписать таблицу; время зависит от её размера и конкурирующих операций. После окончания запускается новый CLI-процесс со свежим PDO: прежние cached prepared statements могут сохранять INTEGER-типы параметров. HTTP startup не меняется и в migrations не обращается. Если преобразование невозможно, PostgreSQL откатывает ALTER, исходная таблица остаётся; команда завершается ошибкой. Это явное обслуживание таблицы движка, не новая версия прикладной схемы.
+Run sequentially with other migration commands. ALTER takes a metadata lock and may rewrite the table; duration depends on size/concurrency. Start a fresh CLI/PDO afterward because cached statements may retain INTEGER parameter types. HTTP never accesses migration history. Impossible conversion rolls back and exits with an error, preserving the source table. This is engine metadata maintenance, not an application migration version.
 
-MigrationCliRecoveryTest проверяет создание BIGINT, границы PHP_INT_MAX, сохранение старой INTEGER-истории, отсутствие автоматического ALTER, повтор команды и ошибку преобразования на настоящем PostgreSQL.
+MigrationCliRecoveryTest checks BIGINT creation/PHP_INT_MAX, preserved INTEGER history, no implicit ALTER, repeatability, and failed conversion on PostgreSQL.
 
-## Цена и проверка
+## Cost and verification
 
-Путь разработчика — один обычный callback либо список SQL в up/down; бизнес-правила, выбор запросов и ручной повтор остаются у приложения. Проверка пойманной ошибки хранит одну ссылку только на время активного callback и не добавляет SQL probes. Обычный transaction сохраняет BEGIN/COMMIT; migrate/rollback теперь добавляют BEGIN и COMMIT на каждую версию. Для каталога up состоит из двух DDL и одной записи версии, плюс две команды границы транзакции. Это структура SQL-вызовов, не измерение полного протокола prepare или latency. Ускорение этим изменением не заявляется.
+Developers use an ordinary callback or SQL list. Applications own policy, queries, and manual retry. Error tracking holds one reference for an active callback and adds no SQL probes. Each migration version adds BEGIN/COMMIT; catalog up has two DDL statements and one history write plus those boundaries. This describes calls rather than full prepare/protocol latency; no speedup is claimed.
 
-Старое разбиение строк удалено. Миграции не являются частью HTTP hot path. Новые библиотеки, downloads, генераторы или обходы manifest не требуются. Без вызова transaction/миграций их SQL не выполняется; стоимость загрузки классов не объявляется нулевой.
+Migration execution is outside HTTP. No new libraries, downloads, generators, or manifest work are introduced. Unused operations run no SQL; class-loading cost is not claimed zero.
 
 ```bash
 php tools/project.php verify
@@ -96,8 +96,6 @@ php tools/project.php verify:integration
 php tools/project.php verify:full
 ```
 
-[TransactionRecoveryTest](../../tests/Integration/Storage/TransactionRecoveryTest.php) проверяет пойманные SQL-ошибки всех путей Storage, nested calls, deferred commit и потерю соединения при rollback, исходные причины и следующий callback. [MigrationRecoveryTest](../../tests/Integration/Storage/MigrationRecoveryTest.php) проверяет DDL/данные/версии, корректировку и повтор, SQL-литералы/DO, дубли и запрещённый transactional DDL. [MigrationCliRecoveryTest](../../tests/Integration/Storage/MigrationCliRecoveryTest.php) исправляет реальные PHP-файлы между отдельными CLI-процессами. Автономные [unit tests](../../tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php) используют настоящий SQLite fixture и не заменяют PostgreSQL checks.
+[Transaction tests](../../tests/Integration/Storage/TransactionRecoveryTest.php) cover caught SQL errors, nested calls, deferred commit, lost connection/rollback, causes, and the next callback. [Migration tests](../../tests/Integration/Storage/MigrationRecoveryTest.php) cover DDL/data/history, corrections/retry, literal/DO statements, duplicates, and forbidden DDL. [CLI tests](../../tests/Integration/Storage/MigrationCliRecoveryTest.php) edit actual files between processes. [Unit tests](../../tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php) use real SQLite without replacing PostgreSQL checks.
 
-[Данные ревизии от 2026-10-23](../history/2026-10-23-transaction-recovery.json) сохраняют наблюдавшиеся сбои до изменения и исправленные результаты. Исторический probe привязан к указанному Git-состоянию; старые string-сигнатуры из него не являются текущей инструкцией.
-
-Историческая проверка этапа до выбора RR единственным runtime: verify:full — 265 unit / 167 SQL-tool / 58 PostgreSQL tests; распакованный архив — 68 HTTP-сценариев на SAPI/RR3 с PostgreSQL и явными CLI миграциями, плюс 5 HTTP-сценариев source baseline. Это проверки корректности, не длительный load test.
+[2026-10-23 data](../history/2026-10-23-transaction-recovery.json) preserves original failures and corrected probes. Old string signatures there are historical. That stage, before RR-only scope, passed 265 unit/167 SQL-tool/58 PostgreSQL tests, 68 packaged SAPI/RR3 HTTP cases with migrations, and five source baseline cases. These were correctness checks, not endurance tests.

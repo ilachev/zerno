@@ -7,11 +7,11 @@ use Examples\DocumentCatalog\Html;
 return static function (string $title, string $content): void {
     ?>
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo Html::escape($title); ?> — Каталог документов</title>
+    <title><?php echo Html::escape($title); ?> — Document catalog</title>
     <style>
         :root{font-family:system-ui,sans-serif;color:#162333;background:#fff;line-height:1.6}
         body{max-width:60rem;margin:auto;padding:1rem}a{color:#064fa4}a:hover{text-decoration-thickness:.15em}
@@ -23,12 +23,12 @@ return static function (string $title, string $content): void {
     </style>
 </head>
 <body>
-<a class="skip" href="#main">Перейти к содержанию</a>
-<header><a href="/documents">Каталог документов</a></header>
+<a class="skip" href="#main">Skip to content</a>
+<header><a href="/documents">Document catalog</a></header>
 <main id="main" tabindex="-1">
 <?php echo $content; ?>
 </main>
-<footer>Публичные документы. Для просмотра страниц JavaScript не требуется.</footer>
+<footer>Public documents. JavaScript is not required.</footer>
 </body>
 </html>
 <?php

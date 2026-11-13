@@ -1,48 +1,44 @@
-# HTTP-проверки и baseline RoadRunner
+# HTTP checks and RoadRunner baseline
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `operations`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-RoadRunner 3.x — единственный HTTP runtime. PHP app и handler отделены от worker loop для композиции и unit tests; это не обещание других серверных адаптеров. executable RR3 и sockets — платформа, PHP libraries и tools уже включены.
+RoadRunner 3.x is the sole HTTP runtime. App/handler separation supports composition/tests rather than promising other adapters. RR/sockets are platform requirements; PHP libraries/tools are bundled.
 
-## HTTP: настоящий RoadRunner
-
-Из корня checkout:
+## Real HTTP checks
 
 ```bash
 php tools/project.php http:check --rr=/path/to/rr3
 ```
 
-[Checker](../../tools/check-http.php) создаёт временные конфигурации, свободный loopback port, файлы и один PHP worker с memory_limit=32M/RR_HTTP_CHUNK_SIZE=8192. После запуска останавливает свои процессы и удаляет свои fixtures. БД, package installation/download и дополнительные HTTP-серверы не нужны. Приготовленные JSON/HTML композиции используют настоящие внутренние компоненты; helper внешнего WorkerInterface применяется только в unit tests.
+The [checker](../../tools/check-http.php) owns temporary configs, a free loopback port, fixtures, and one worker with memory_limit=32M/chunk size 8192. It cleans up its own resources. No database, installation, or extra HTTP server is needed. Internal components are real; an external WorkerInterface double is used only in unit tests.
 
-Матрица проверяет routing/405/Allow, HEAD, 204/205/304, повторные headers/Set-Cookie, числовые имена headers, query/cookies/forms/nested upload с числовыми и строковыми ключами (включая name) и moveTo. Request ID и параметры проверяются в последовательных запросах одного worker. Файлы до 16 MiB + 17 байт проверяются по размеру и SHA-256; повторные передачи проверяют ограниченный рост PHP allocations после прогрева. Metadata logging не читает payload, исключения остаются в logger, ответ не раскрывает детали.
+The matrix covers routing/405/Allow, HEAD/204/205/304, repeated/numeric headers, cookies/forms/query/nested uploads including name keys, and moveTo. Sequential requests check IDs/state. Files through 16 MiB+17 bytes have exact size/SHA-256 checks; repeated transfers check bounded warmed PHP allocation growth. Logging reads no payload; public errors omit private details.
 
-Это ограниченная проверка HTTP/1.1. Полное соответствие HTTP, реальные HTTP/2/3, отмена клиента и длительная устойчивость не установлены. 205 Reset Content подавляется без чтения body с нулевой длиной; streams закрываются runtime и для этого статуса.
+This is limited HTTP/1.1 coverage, not complete HTTP/HTTP2/HTTP3/cancellation/endurance certification. 205 suppresses body without reading, advertises zero length, and still closes streams.
 
-## Ограниченный JSON
+## Bounded JSON
 
-[Ручной POST](../../examples/json-echo/README.md) и [generated Echo](../../examples/contract-echo/README.md) проверяются через общий App на RR3. Размер handler — 65 536 байтов; тестируются соседние границы, invalid JSON/UTF-8/type/media type, ошибки реализации и output encoding, следующий пустой запрос. Временный RR-профиль ограничивает приём 1 MiB: более крупное тело получает 413 до PHP как с Content-Length, так и при chunked передаче. Размер ровно 1 MiB достигает handler и получает его 413. Формат серверного отказа не является JSON-контрактом приложения.
+[Manual](../../examples/json-echo/README.md) and [generated Echo](../../examples/contract-echo/README.md) share App/RR. Checks cover the 65,536-byte limit and neighbors, malformed JSON/UTF-8/types/media types, implementation/output failures, and a subsequent empty request. A temporary 1 MiB RR ingress cap rejects larger Content-Length and chunked bodies before PHP. Exactly 1 MiB reaches the handler and gets its 413. Server rejection format is outside application JSON contracts.
 
-Native RR материализует вход до handler. Body::readLimited ограничивает дальнейшее чтение/decode, не весь transport memory. Запросы и response streams имеют отдельных владельцев; [lifecycle](../architecture/request-lifecycle.md) описывает их завершение.
-
-Опциональный замер конкретного проверяемого пути:
+RR buffers incoming payload before the handler. readLimited bounds later reading/decoding rather than all transport memory. See [ownership](../architecture/request-lifecycle.md).
 
 ```bash
 php tools/project.php http:check --rr=/path/to/rr3 --measure-contract
 ```
 
-Он сравнивает 100 последовательных manual/generated запросов после 20 warmup pairs, чередуя порядок. Включены socket/routing/metadata logging; это не concurrency/throughput benchmark. Старые межсерверные измерения остаются [историей](../history/2026-10-17-core-http-baseline.md), а [выбор единственного runtime](../history/2026-10-23-roadrunner-only.md) задан пользователем.
+This compares 100 sequential manual/generated requests after twenty warmup pairs, alternating order, including socket/routing/logging. It is not a concurrency/capacity benchmark. Older [cross-server data](../history/2026-10-17-core-http-baseline.md) is historical; [RR-only scope](../history/2026-10-23-roadrunner-only.md) was a user decision.
 
-## Baseline: что измеряется
+## Baseline workload
 
-[Функция сборки](../../load-tests/baseline/config.php) создаёт Storage без PDO; /json возвращает `{"id":42,"value":"record-42"}` без SQL, /select/42 делает один параметризованный lookup. [database.php](../../load-tests/baseline/database.php) создаёт случайную схему zerno_baseline_<24 hex>, 10 000 записей, ANALYZE и EXPLAIN. SQL/request 0/1 описывает прикладные SELECT, исключая соединение, SET search_path и prepare. HTTP startup миграции не запускает.
+[Composition](../../load-tests/baseline/config.php) creates Storage without PDO. /json returns {"id":42,"value":"record-42"} without SQL; /select/42 performs one parameterized lookup. [Database setup](../../load-tests/baseline/database.php) owns a random zerno_baseline_<24 hex> schema, 10,000 rows, ANALYZE, and EXPLAIN. SQL/request 0/1 counts application SELECTs, excluding connection/search_path/prepare. HTTP never runs migrations.
 
-## Подготовить одну изолированную схему
+## Prepare an isolated schema
 
-Нужна заранее созданная отдельная test database с правом создавать собственные схемы. Укажите TEST_DB_HOST/PORT/NAME/USER/PASSWORD по [правилам изоляции](infrastructure-and-testing.md); не используйте приложение или чужую БД. В одном терминале из корня:
+Use a precreated separate test database with schema-create permission. Set TEST_DB_* following [isolation rules](infrastructure-and-testing.md); do not use someone else's or an application database.
 
 ```bash
 mkdir -p var
-: "${TEST_DB_NAME:?Укажите отдельную test database}"
+: "${TEST_DB_NAME:?Set a separate test database}"
 php tools/project.php perf:prepare > var/baseline-fixture.json
 export DB_HOST="$TEST_DB_HOST" DB_PORT="$TEST_DB_PORT"
 export DB_NAME="$TEST_DB_NAME" DB_USER="$TEST_DB_USER" DB_PASSWORD="$TEST_DB_PASSWORD"
@@ -50,11 +46,11 @@ export DB_SCHEMA="$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,
 rr serve -w "$PWD" -c load-tests/baseline/rr.yaml
 ```
 
-Продолжайте только после успешного prepare, не перезаписывайте metadata используемой схемы. Сохраняйте свои env/credentials в игнорируемом var с ограниченными правами; другой терминал должен получить те же значения. RR слушает 127.0.0.1:19002 и использует один worker с CLI OPcache.
+Continue only after successful preparation. Do not overwrite active schema metadata. Store environment/credentials in ignored var with restricted permissions; the second terminal needs matching values. RR listens on loopback 19002 with one worker and CLI OPcache.
 
-## Прогрев и измерение
+## Warmup and measurement
 
-В другом терминале с тем же окружением:
+In a second terminal with the same environment:
 
 ```bash
 BASE_URL=http://127.0.0.1:19002 CASE=json DURATION=5s \
@@ -63,23 +59,23 @@ BASE_URL=http://127.0.0.1:19002 CASE=json DURATION=30s \
 SUMMARY_PATH=var/rr-json.json php tools/project.php perf:baseline
 ```
 
-Повторить с CASE=select и отдельными SUMMARY_PATH. Нужен установленный k6, команда не скачивает инструменты. Проверяйте точный результат, статус, errors, throughput и p50/p95/p99; сохраняйте серверные настройки, число workers, PHP/extensions/OPcache, входные данные и CPU/RSS RR server + всех PHP workers. БД и k6 учитывать отдельно. Сумма RSS может повторно учитывать shared pages; snapshot не является peak или доказательством отсутствия роста памяти.
+Repeat with CASE=select and distinct summaries. Installed k6 is required; nothing downloads. Check exact results/status/errors/rate/quantiles; retain platform/settings/data and CPU/RSS for RR plus every worker. Account for database/k6 separately. RSS sums can double-count shared pages; snapshots are neither peaks nor proof against growth.
 
-## Завершить свой запуск
+## Cleanup
 
-Остановите свой RR через Ctrl+C. Только после остановки удалите свою fixture schema:
+Stop your RR with Ctrl+C, then remove only your fixture:
 
 ```bash
 php tools/project.php perf:cleanup "$DB_SCHEMA"
 ```
 
-Cleanup проверяет имя, marker и роль-владельца; чужие схемы/БД/контейнеры не удаляются.
+Cleanup validates schema name, marker, and owner role. Do not remove unrelated schemas/databases/containers.
 
-## Смешанный длительный прогон
+## Mixed sustained run
 
-`load-tests/soak/config.php` явно объединяет существующие baseline и HTTP fixtures. Два worker обслуживают SQL, малый JSON, ручной/generated Echo, последовательные route/query context, GET/HEAD файлов 1 MiB и 16 MiB + 17 байт, 204/205 и ожидаемые 400/404/405/500. SQL исполняется небольшими параллельными сериями по четыре запроса, чтобы нагрузка попадала в оба worker. Wrapper добавляет только диагностические headers с PID, числом запросов и PHP allocations/peak; запросы и body не удерживаются. Это проверочный граф, не минимальная композиция production-приложения.
+load-tests/soak/config.php explicitly composes baseline and HTTP fixtures. Two workers handle SQL batches of four concurrent requests, small JSON, manual/generated Echo, sequential context checks, 1 MiB/16 MiB+17-byte GET/HEAD, 204/205, and expected 400/404/405/500. The wrapper adds bounded PID/count/PHP allocation telemetry and retains no requests/bodies. This is a test graph, not minimal production composition.
 
-Нужны заранее подготовленные PHP 8.5.12+/pdo_pgsql/sockets/OPcache, RR3, PostgreSQL и k6. Из source checkout подготовьте свою baseline schema через `perf:prepare`, перенесите её TEST_DB_* в DB_* и DB_SCHEMA по инструкции выше. Подготовьте свои файлы и их hashes:
+Prepare PHP 8.5.12+/pdo_pgsql/sockets/OPcache, RR3, PostgreSQL, and k6 externally. Prepare the baseline schema as above, map test settings to DB_*, and create owned files/hashes:
 
 ```bash
 mkdir -p var/soak/files
@@ -89,18 +85,18 @@ export FILE_HASHES="$(cat var/soak/hashes.json)"
 rr serve -w "$PWD" -c load-tests/soak/rr.yaml
 ```
 
-Конфигурация слушает loopback port 19003, включает два worker без max_jobs recycling, memory_limit=64M и chunk size 8192. В контейнере RR должен быть PID 1; при публикации порта явно переопределите listener `-o http.address=0.0.0.0:19003`. Выбирайте существующий executable/образ платформы: команды проекта ничего не устанавливают. Перезапуск контейнера с автоматически выбранным host port требует повторно определить его через docker port.
+Configuration uses loopback 19003, two workers without max_jobs recycling, 64M limit, and chunks 8192. For container sampling, RR must be PID 1. Publishing a container port needs `-o http.address=0.0.0.0:19003`. Use an existing platform binary/image. After restarting a container with a dynamic host port, read docker port again.
 
-В другом терминале с теми же FILE_HASHES и фактическим BASE_URL:
+In another terminal with matching FILE_HASHES and actual BASE_URL:
 
 ```bash
 BASE_URL=http://127.0.0.1:19003 RATE=10 DURATION=60s SUMMARY_PATH=var/soak/warmup.json php tools/project.php perf:soak --quiet
 BASE_URL=http://127.0.0.1:19003 RATE=10 DURATION=15m SUMMARY_PATH=var/soak/measure.json php tools/project.php perf:soak --quiet
 ```
 
-RATE задаёт iterations/s, а не requests/s: серия SQL и пары context увеличивают число HTTP-запросов. Проверяются точные SQL/JSON/file hash результаты, собственный request ID, отсутствие переноса параметров/сессии, PHP telemetry и ожидаемые ошибки. k6 представляет body 204 как null; 205 имеет пустую строку. Запрет реальных bytes дополнительно проверяет raw http:check. Thresholds требуют всех checks, отсутствия сетевых/неожиданных HTTP failures и пропущенных iterations; ожидаемый 500 сам по себе не является transport failure, его status/privacy проверяются отдельно.
+RATE means iterations/s, not requests/s; batches/context pairs add requests. Checks validate SQL/JSON/hash/ID/state/no cookies/telemetry/errors. k6 represents 204 bodies as null and 205 as empty text; raw wire checks also verify no actual content. Thresholds require all checks, no unexpected/network failures, and no dropped iterations. Expected 500 status/privacy is checked separately.
 
-Для Linux-контейнера с RR как PID 1 [sample.php](../../load-tests/soak/sample.php) снимает /proc RSS, kernel peak RSS, CPU ticks, start time и число FD для server и всех PHP workers, исключая собственный процесс. Например, в отдельном терминале выполните конечную серию из 194 samples с интервалом 5 s, охватывающую прогрев и измерение:
+Linux [sampling](../../load-tests/soak/sample.php) reads /proc RSS/peak/CPU/start-time/FD for PID-1 server and workers, excluding itself. A bounded series of 194 samples every five seconds covers warmup/measurement:
 
 ```bash
 for sample in $(seq 1 194); do
@@ -109,26 +105,21 @@ for sample in $(seq 1 194); do
 done
 ```
 
-SOAK_CONTAINER — только созданный вами сервер. Узнайте CLK_TCK через getconf внутри него; CPU seconds = разность cpu_ticks / CLK_TCK. Сопоставляйте pid вместе со start_ticks, чтобы не пропустить restart или повторное использование PID. Сумма RSS включает общие страницы повторно; Zend allocations, kernel RSS/peak и память Docker VM — разные показатели. PostgreSQL и k6 учитывать отдельно. Сравните первые и последние 60 s после прогрева, extrema и FD, проверьте активность каждого worker. Нагрузку/срок, image/binary hashes, PHP flags и source hashes сохраняйте вместе с результатом. После остановки своего RR удалите только свою baseline schema через perf:cleanup и принадлежащие вам fixtures.
+SOAK_CONTAINER must be your server. Obtain CLK_TCK with getconf inside it; CPU seconds are delta ticks/CLK_TCK. Match pid and start_ticks to detect recycling/reuse. Zend allocation, kernel RSS/peak, and VM memory differ; shared pages affect sums. Track PostgreSQL/k6 separately. Compare first/last sixty measured seconds, extrema/FD, and activity of each worker. Save source/platform hashes, flags, workload/duration. Stop RR, run owned-schema cleanup, and remove owned fixtures.
 
-[Отчёт от 2026-10-28](../history/2026-10-28-runtime-soak.md) и JSON сохраняют финальный прогон на подготовленной платформе. Пятнадцать минут подтверждают только наблюдаемое поведение этого сценария. Они не устанавливают многодневную устойчивость, пригодность любого stream, поведение при потере БД/отмене клиента или production SLO. Числовые ориентиры сравнимы только с тем же результатом, платформой и нагрузкой.
+The [2026-10-28 report](../history/2026-10-28-runtime-soak.md) preserves the final run. Fifteen minutes establishes that workload's observations, not multi-day stability, all-stream behavior, database-loss/client-cancellation handling, or production SLO. Compare only equivalent results/platform/load.
 
-## Стоимость файлового пути
+## File-path cost
 
-[Сценарий файлов](../../load-tests/files/scenario.js) выполняет последовательные GET/HEAD attachment fixture с точным SHA-256. Подготовка:
+The [file scenario](../../load-tests/files/scenario.js) checks sequential attachment GET/HEAD and exact SHA-256.
 
 ```bash
 mkdir -m 700 -p var/file-benchmark
 php -r 'require "tools/http-fixtures/AttachmentFiles.php"; echo json_encode(Project\HttpFixtures\AttachmentFiles::prepare($argv[1]), JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR);' var/file-benchmark > var/file-hashes.json
-```
-
-Запустите RR3 с явными fixture-настройками:
-
-```bash
 rr serve -w "$PWD" -c .rr.yaml \
   -o server.env.APP_CONFIG=tools/http-fixtures/config.php \
   -o server.env.WIRE_FILE_DIRECTORY=var/file-benchmark \
   -o server.env.RR_HTTP_CHUNK_SIZE=8192
 ```
 
-WIRE_HTTP_LOGGING=0 даёт контрольный запуск без logging middleware; default включает его. Это fixture приложения, не настройки ядра. Передавайте BASE_URL своего RR, FILE_SIZE, EXPECTED_SHA256, DURATION и отдельный SUMMARY_PATH в k6 run load-tests/files/scenario.js; METHOD=HEAD проверяет пустой body при том же Content-Length. k6 материализует body на стороне клиента, его память не является памятью сервера. Старые [данные файлового этапа](../history/2026-10-18-file-responses.md) описывают прежнюю конфигурацию и не задают текущий состав.
+WIRE_HTTP_LOGGING=0 supplies a comparison without middleware; default enables it. These are fixture settings. Supply BASE_URL, FILE_SIZE, EXPECTED_SHA256, DURATION, SUMMARY_PATH to k6 run load-tests/files/scenario.js. METHOD=HEAD expects no body with the same Content-Length. k6 materializes client bodies; its memory is separate. [Earlier file results](../history/2026-10-18-file-responses.md) describe a previous configuration.

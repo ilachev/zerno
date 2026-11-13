@@ -1,85 +1,85 @@
-# Правила написания и ревью кода
+# Coding and review guidelines
 
-Тип: `instructions`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `instructions`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-Этот документ применяет [три цели](../project/principles.md) к PHP-коду «Зерна». [AGENTS.md](../../AGENTS.md) задаёт обязательные команды, стиль и границы исходников; [архитектура](../architecture/overview.md) описывает реализованное поведение. Правила ниже относятся к новым изменениям, а не объявляют существующий код полностью приведённым к ним.
+These rules apply the [three goals](../project/principles.md) to PHP changes. [AGENTS](../../AGENTS.md) defines commands/style/source boundaries; [architecture](../architecture/overview.md) describes implementation. These are requirements for changes, not a claim that all existing code already satisfies them.
 
-## Доставлять законченный сценарий
+## Deliver a complete scenario
 
-Единица изменения — полезный результат с проверенными ошибками:
+The unit of work is a useful result with checked errors:
 
 ```text
-HTTP input → проверка входа → необходимые действия/SQL → response → отправка и завершение ресурсов
+HTTP input → validation → required actions/SQL → response → emission and resource cleanup
 ```
 
-Для генератора это input contract → generated PHP → ручная реализация → работающий запрос. До изменения определить вход, ожидаемый ответ, побочные эффекты, пределы ресурсов и проверку результата. Добавлять необходимые типы, обработчики, адаптеры и тесты вместе. Подготовительный refactor допустим под конкретного потребителя.
+For generation: input contract → generated PHP → manual implementation → working request. Define input, response, side effects, bounds, and verification before editing. Deliver needed types, handlers, adapters, and tests together. Preparatory refactoring needs a concrete consumer.
 
-Файлы объединяются по общей причине изменения. Не требуется отдельный каталог для каждого маршрута или последовательное построение всех DTO, затем всех repositories, затем всех controllers. Сценарий может состоять из одного handler с явными зависимостями и SQL. Application service выделяется при существующей политике, повторном использовании или необходимости отделить транспорт.
+Group files by reason to change. Do not require a directory per route or build all DTOs before all repositories/controllers. A handler with explicit dependencies/SQL may complete a scenario. Extract an application service for actual policy, reuse, or transport separation.
 
-## Делать исполнение видимым
+## Make execution visible
 
-Обработчик или application service читается как последовательность действий. Helper может скрывать разбор данных, но запись, транзакция, повтор операции, проверка доступа и выбор публичной ошибки должны иметь понятного владельца.
+Handlers/services should read as actions. Helpers may hide parsing; writes, transactions, retries, access checks, and public errors need clear owners. Composition owns dependencies/lifetimes; applications own business decisions.
 
-Composition root связывает зависимости и время жизни; бизнес-решения принадлежат приложению. Зависимости передаются обычными конструкторами и типизированными функциями сборки. Контейнер, autowiring, service locator и registry service providers удалены; не заменять их словарём сервисов с универсальным get/resolve. Маршрут получает готовый RequestHandler, а не имя класса для последующего создания. Код сценария возвращает данные/response или ошибку; отправка HTTP и завершение server loop принадлежат транспортной границе.
+Use constructors and typed functions. Do not replace removed container/autowiring/locator/provider machinery with a generic dictionary/resolver. Routes receive constructed RequestHandler objects. Scenario code returns data/response/errors; the transport owns sending and its loop.
 
-Предпочитать обычный PHP и понятные функции. Reflection и attribute discovery не используются для сборки графа зависимостей. Общий registry, event bus или новая иерархия требуют доказанной пользы для текущего сценария и не должны возвращать скрытое разрешение сервисов. Глобальное mutable state, I/O при подключении файла и создание скрытых зависимостей затрудняют повторное использование и RR lifecycle.
+Use ordinary PHP. No reflection/attribute discovery for dependency assembly. Registries, event buses, and hierarchies need demonstrated benefit and must not restore hidden resolution. Mutable globals, include-time I/O, and hidden dependencies obstruct reuse and persistent-worker behavior.
 
-## Держать границы небольшими
+## Keep boundaries small
 
-- Начинать с concrete classes и обычных значений. Интерфейс содержит необходимые потребителю методы; одна реализация достаточна, если контракт изолирует реальный I/O, защищает направление зависимости или даёт нужную подмену внешней границы.
-- Использовать собственные конкретные HTTP-типы ядра и прямой PDO. Не возвращать зависимости Nyholm/PSR или их полные интерфейсы под другими именами. Не зеркалировать все методы класса в отдельном interface и не вводить абстракцию ради имени слоя.
-- Обобщать одинаковую семантику и общую причину изменения. Небольшое повторение проще преждевременной универсальной платформы. Общие проверки доступа, владения ресурсами и безопасной обработки заголовков не должны расходиться между потребителями.
-- Избегать каталогов-свалок `Utils`, `Common`, `Base` и общих repositories без текущей потребности. Цикл зависимостей решать границами: объединить совместно меняющийся код, выделить общий тип или поднять составной сценарий к его потребителям.
-- Массивы с фиксированной формой описывать точными PHPStan types; значимые идентификаторы и состояния оформлять отдельными типами, когда это предотвращает ошибку. Не создавать класс для каждого промежуточного массива.
+- Start with concrete classes/values. Interfaces expose methods a consumer needs. One implementation can justify an interface when it isolates real I/O or protects dependency direction.
+- Use core HTTP types and direct PDO. Do not restore Nyholm/PSR through full substitute interfaces or mirror every class method in an interface.
+- Generalize shared semantics and reasons to change. Small duplication can be simpler than a generic platform. Access checks, ownership, and safe headers must stay consistent.
+- Avoid Utils/Common/Base dumping grounds and generic repositories without demand. Resolve cycles by merging jointly changing code, sharing a type, or moving orchestration toward consumers.
+- Describe fixed arrays with precise PHPStan types. Introduce identifier/state types when they prevent real errors, rather than a class for every intermediate array.
 
-## Отделять контракт от политики
+## Separate contract and policy
 
-HTTP fields, JSON, protobuf messages и generated DTO — публичный транспортный контракт. Явно задавать обязательность, отсутствие/null/default, единицы и диапазоны значений. Внутренний refactor не должен незаметно менять wire format. PHPDoc помогает анализу, но внешние данные и runtime-инварианты требуют настоящих проверок.
+HTTP/JSON/protobuf/generated DTOs are transport contracts. Define requiredness, absence/null/default, units, and ranges. Internal refactoring must preserve wire behavior. PHPDoc supports analysis; external input and runtime invariants need real checks.
 
-Generated DTO может быть аргументом транспортного endpoint. Domain/application-код получает нужные ему данные; отдельная domain-модель и mapper появляются при реальном различии контрактов или политике. Дублировать каждое message в идентичный внутренний DTO не требуется. [Генерация из protobuf](../design/protobuf-contract-generation.md) реализована первым ограниченным Echo-этапом; неподдержанные объявления отклоняются при генерации.
+An endpoint may accept generated DTOs. Add separate domain models/mappers for actual contract/policy differences; do not duplicate every message mechanically. [Protobuf generation](../design/protobuf-contract-generation.md) supports a limited Echo slice and rejects unsupported declarations.
 
-Генератор производит механическую часть контракта. Правила доступа, SQL, транзакции и бизнес-решения остаются ручным кодом. Generated-файлы исправляют через исходный контракт/генератор. SQL остаётся читаемым и параметризованным; появление генерации не оправдывает изменение плана или семантики рабочего запроса без проверки.
+Generation owns mechanical contract work. Applications own access rules, SQL, transactions, and business decisions. Change generated files through inputs/generators. SQL stays readable/parameterized; generation does not justify unverified query-plan or semantic changes.
 
-## Сохранять смысл ошибок
+## Preserve error meaning
 
-Ожидаемые ошибки входа/отсутствия данных отделять от отказов инфраструктуры и нарушения внутренних инвариантов. Отсутствующее поле, отказ парсинга или ошибка БД не должны превращаться в успешный пустой результат. Причину исключения сохранять, добавляя контекст операции; не ветвиться по тексту сообщения.
+Distinguish expected input/missing-data errors from infrastructure failure and broken invariants. Missing fields, parsing failures, and database errors must not become successful empty results. Preserve exception causes and operation context; do not branch on message strings.
 
-Нижний слой сообщает о результате, владелец сценария определяет продолжение, а HTTP-граница выбирает публичный ответ. Не логировать одно исключение в каждом слое и не раскрывать клиенту SQL, stack trace, пути или секреты. Сообщения и context логов также требуют осмысленного выбора безопасных данных.
+A lower layer reports outcomes; the scenario decides continuation; HTTP selects the public response. Avoid logging one exception at every layer. Do not expose SQL, traces, paths, or secrets. Choose safe log context deliberately.
 
-Retry требует конкретной временной причины, безопасной повторяемости, предела попыток и общего времени. После неизвестного исхода записи сначала проверять состояние; автоматический повтор может продублировать эффект. Не добавлять универсальную retry-платформу без такого сценария.
+Retry needs a specific transient cause, safe repeatability, an attempt limit, and a time bound. After an uncertain write, inspect state before repeating. Do not add a generic retry platform without such a scenario.
 
-## Владеть ресурсами и состоянием
+## Own resources and state
 
-У открытого файла, response body, PDO transaction и дочернего процесса должен быть владелец на каждом пути завершения. Передачу владения выражать контрактом. `finally` закрывает ресурсы при ошибке; существенные ошибки записи/завершения учитывать до объявления успешного результата.
+Every file, body, transaction, and child process needs an owner on every exit path. Express ownership transfer in contracts. Use finally for cleanup and account for write/completion errors before reporting success.
 
-Для HTTP соблюдать [действующий lifecycle](../architecture/request-lifecycle.md): `App::handle` возвращает ответ, RoadRunnerRuntime завершает его body после отправки. `AttachmentResponse` принимает владение переданным потоком. Middleware диагностики не читает и не перематывает payload.
+Follow [HTTP lifecycle](../architecture/request-lifecycle.md): App returns a response; RoadRunnerRuntime closes its body after emission. AttachmentResponse accepts stream ownership. Diagnostics never read or rewind payload.
 
-Для RR request state остаётся в конкретном request. Не удерживать requests, bodies или пользовательские данные в singleton-сервисах и closure между вызовами. Кешам и очередям нужны пределы и время жизни; наличие потокового body не доказывает ограниченную память.
+Keep request state in the request. Do not retain requests, bodies, or user data in long-lived services/closures. Bound caches/queues and their lifetimes. A stream abstraction alone establishes no memory bound.
 
-Для длительности использовать monotonic time, для сохранённых меток — явно определённые UTC/units. Когда время определяет поведение, передавать clock или значение времени для воспроизводимых проверок. Не вводить общий request deadline до появления операции, которая действительно его соблюдает.
+Use monotonic time for durations and explicit UTC/units for persisted timestamps. Supply a clock/value when time controls behavior. A generic request deadline requires an operation that actually observes it.
 
-## Ограничивать I/O на его границе
+## Bound I/O where it happens
 
-Размер body, файла, результата SQL и вывода процесса проверять там, где данные читаются или создаются. Значения лимитов определять текущим сценарием и документировать. `LIMIT` ограничивает строки результата, но не размер строки и не объём сканирования; `fetchOne` сам по себе не доказывает ограничение чтения.
+Check body/file/SQL/process-output size at the read/write boundary. Choose and document limits for current scenarios. LIMIT bounds result rows, not row width or scanning; fetchOne alone bounds neither.
 
-Доступ, канонический ID и путь проверять до эффекта. Миграции выполняются явно, вне HTTP startup. Транзакции очерчивают согласованные изменения; сеть, генерация и сторонние процессы не должны скрыто запускаться при создании HTTP-графа.
+Check access, canonical identifiers, and paths before effects. Migrations run explicitly outside HTTP startup. Transactions bound consistent changes. Network/generation/processes must not appear as hidden graph-construction work.
 
-CLI-инструмент получает argv array, рабочий каталог и контролируемое окружение; пользовательские данные не подставляются в shell source. Для потенциально зависающей операции нужны завершение, ограниченный output и уборка принадлежащих ей процессов/временных файлов. Обновление файлов определяет поведение при частичном отказе и сохраняет предыдущий корректный результат там, где он нужен.
+CLI tools receive argv arrays, cwd, and controlled environments. Never interpolate user data into shell source. Potentially hanging operations need termination, bounded output, and cleanup of their own processes/files. Define partial-write behavior and preserve prior usable output where needed.
 
-## Проверять результат на нужной границе
+## Verify useful behavior
 
-Тест должен доказывать полезное поведение и существенный отказ, а не последовательность вызовов private helpers. Использовать реальные внутренние компоненты. Внешние процессы/протоколы можно изолировать локальными fixtures; это не повод подменять внутренние services mocks.
+Check caller-visible outcomes and meaningful failures rather than private-helper call sequences. Use real internal components. External process/protocol boundaries can use local fixtures without mocking internal services.
 
-Обычный `verify` автономен. SQL и миграции проверять через настоящий PostgreSQL, транспорт — через реальные RR3, память — на полном пути и длительности, относящихся к утверждению. Для protobuf нужны input/output generation checks, загрузка generated PHP и реальный запрос через общий runtime. Не считать успешную генерацию доказательством работающего endpoint.
+Default verify is autonomous. Check SQL/migrations on PostgreSQL, transport on RR3, and memory across the complete path/duration relevant to the claim. Protobuf requires input/output checks, generated PHP loading, and real HTTP. Successful generation alone does not prove a working endpoint.
 
-Проверять некорректный вход, нарушенную целостность, недоступный ресурс и следующий запрос RR после ошибки. Тесты документации проверяют ссылки и соответствие контрактов; для текстовой правки не нужны искусственные unit tests. Обязательный gate остаётся в AGENTS.
+Exercise invalid input, integrity failures, unavailable resources, and the next request after an error. Do not invent unit tests for prose edits. Mandatory gates remain in AGENTS.
 
-## Сохранять изменения проверяемыми
+## Keep changes reviewable
 
-Новые зависимости допускаются только в фиксированной bundled-поставке по правилам [автономности](../design/autonomous-core.md). Объяснять, какую сложность они заменяют и каков путь обновления. Go module/tool provisioning из devctl не переносится в «Зерно»: установка и скачивание пакетов здесь не требуются.
+Dependencies enter only through fixed [bundled delivery](../design/autonomous-core.md). Explain what complexity they replace and how they update. Do not import devctl's Go provisioning/install behavior.
 
-Оптимизировать подтверждённые затраты, сохраняя корректность и понятный control flow. Изменение описывает наблюдаемый результат, шаги разработчика, выполненные проверки и ограничения. Завершённый этап включает код, тесты и актуальный контракт; несвязанные refactors и format churn не добавляются попутно.
+Optimize measured costs while preserving semantics and control flow. Report the result, developer steps, checks, and limits. A completed stage includes code, tests, and current contracts; unrelated refactors/format churn stay separate.
 
-## Основание
+## Origin
 
-Адаптированы документы владельца `devctl/docs/coding-guidelines.md` и `devctl/docs/decisions/0003-unix-philosophy-and-vertical-slices.md`, прочитанные 2026-10-20 в локальном checkout на revision `31d31532f682226d58389aae92b6a0663a3f8cf3`. Это самостоятельная PHP-адаптация Unix-композиции и законченных сценариев. Go/macOS/daemon, VPN, package installation и эксплуатационная политика devctl не становятся требованиями «Зерна». Доступ к devctl для применения этих правил не нужен.
+Adapted from the owner's devctl/docs/coding-guidelines.md and devctl/docs/decisions/0003-unix-philosophy-and-vertical-slices.md, read on 2026-10-20 at revision 31d31532f682226d58389aae92b6a0663a3f8cf3. This is a standalone PHP adaptation of Unix composition and vertical slices. Go/macOS/daemon, VPN, installation, and devctl operational policies do not become Zerno requirements. Applying these rules needs no devctl access.

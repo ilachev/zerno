@@ -1,75 +1,65 @@
-# Правила документации и инвентаризации
+# Documentation maintenance
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Type: `operations`. Status: `current`. Reviewed: 2026-11-13.
 
-Документация хранится рядом с кодом и должна быть пригодна для человека и агента без истории чата. Стартовая карта — [docs/README](../README.md), обязательные правила работы — [AGENTS.md](../../AGENTS.md), машиночитаемая карта — [documentation-inventory.json](../documentation-inventory.json).
+Keep documentation beside code and usable without chat history. Write project guides, case studies, and example UI in English. Conversation with the owner remains in Russian. Preserve upstream notices, multilingual protocol fixtures, and raw historical artifacts. Translating a narrative does not change the date or scope of its original technical verification.
 
-## Владелец каждого вида знаний
+## Canonical sources
 
-| Сведения | Канонический источник |
-|---|---|
-| Правила работы агента | `AGENTS.md`; `CLAUDE.md` только совместимый entry point |
-| Требования запуска и команды быстрого старта | Корневой `README.md`; полный command interface — `tools/project.php help` |
-| Цель, аудитория и границы продукта | `docs/project/vision.md` |
-| Обязательные цели и правила выбора решений | `docs/project/principles.md` |
-| Написание и ревью кода, границы, ошибки и ресурсы | `docs/development/coding-guidelines.md` |
-| Общие приоритеты, последовательность и критерии результатов | `docs/project/roadmap.md` |
-| Текущие связи модулей и профили | `docs/architecture/overview.md` |
-| Выполнение HTTP-запроса | `docs/architecture/request-lifecycle.md` |
-| Граница ядра и приложения | `docs/reusable-blocks.md` |
-| Bootstrap, distributions и packaging | `docs/design/autonomous-core.md` |
-| Поведение и ограничения компонента | Соответствующий architecture/design документ и tool README |
-| Окружения и проверки | `docs/development/infrastructure-and-testing.md` |
-| Точный состав bundled code | `third_party/manifest.json` и manifests distributions |
-| Проверки прошлых этапов | Датированные материалы `docs/history/` |
+| Information | Owner |
+| --- | --- |
+| Agent rules | AGENTS.md; CLAUDE.md is a compatibility entry point |
+| Purpose and scope | docs/project/vision.md |
+| Portfolio contributions and cases | docs/portfolio/overview.md and linked cases |
+| LLM workflow | docs/portfolio/workflow.md |
+| Quickstart and platform | README.md; tools/project.php help owns the full command interface |
+| Decision criteria | docs/project/principles.md |
+| Coding/review/resource rules | docs/development/coding-guidelines.md |
+| Priorities and acceptance criteria | docs/project/roadmap.md |
+| Module relationships | docs/architecture/overview.md |
+| HTTP execution | docs/architecture/request-lifecycle.md |
+| Core/application boundary | docs/reusable-blocks.md |
+| Bootstrap and packaging | docs/design/autonomous-core.md |
+| Component behavior | Relevant architecture/design document and tool README |
+| Environments/checks | docs/development/infrastructure-and-testing.md |
+| Bundled composition | third_party/manifest.json and distribution manifests |
+| Past verification | Dated docs/history reports and raw artifacts |
 
-Код и тесты определяют, что реализовано. Документация должна объяснять это поведение и его ограничения; при расхождении проверить исходники и исправить текст. Планы не являются доказательством наличия функции. Пользовательские инструкции имеют приоритет над репозиторными правилами.
+Code/tests establish implementation. Resolve discrepancies by inspecting them and updating text. Plans establish no implemented behavior. User instructions take precedence over repository rules. Attribution must follow available evidence; do not invent personal authorship or productivity claims.
 
-## Тип и статус документа
+## Type and status
 
-После заголовка указывать тип, статус и дату последней содержательной сверки. Дата не является обещанием актуальности без проверки исходников. При переводе на другой язык сохранять значения machine enums.
+After the title, provide kind, status, and the date of substantive review. A date alone promises no freshness. Preserve machine enum values when translating.
 
-| Поле | Значения |
-|---|---|
-| `kind` | `instructions`, `navigation`, `architecture`, `operations`, `design`, `roadmap`, `tool-guide`, `history`, `reference`, `inventory` |
-| `status` | `current` — действующая инструкция/описание; `accepted-plan` — принятое направление или проект, не реализация; `historical` — снимок прошлого; `compatibility` — entry point, ведущий к каноническому документу |
+Kinds: `instructions`, `navigation`, `architecture`, `operations`, `design`, `roadmap`, `tool-guide`, `history`, `reference`, `inventory`.
 
-В design-документе допустимы текущий контракт и будущие идеи, если они явно разделены. Для roadmap каждой функции нужен собственный статус и критерий готовности. Статус документа `current` не делает все предложения в нём реализованными.
+Statuses: `current` for active descriptions/instructions; `accepted-plan` for accepted direction, rather than implementation; `historical` for a past snapshot; `compatibility` for an entry point to the canonical document. Separate implemented contracts from future ideas. A current document does not make every proposal implemented.
 
-Не называть компонент production-ready, безопасным или более быстрым без относящихся к заявлению проверок. Отчёт о проверке содержит дату/состояние кода, окружение, команду или метод, результат и границы охвата. Успешный smoke test не является нагрузочным тестом, аудитом безопасности или правовой сертификацией. WCAG target в проекте — техническая цель, не подтверждение соответствия требованиям любой юрисдикции.
+Claims of readiness, safety, compliance, or speed require relevant evidence. A report records date/source state, environment, method, outcome, and scope. Smoke checks establish neither load behavior nor security/legal certification. Accessibility goals are technical targets, not jurisdictional certification.
 
-## Машинный инвентарь
+## Inventory
 
-`docs/documentation-inventory.json` содержит:
+`docs/documentation-inventory.json` contains schema_version, reviewed_at, scope, documents, artifacts, and exclusions. Each entry has a unique id/path, kind/status, summary, nonempty read_when, and existing source_paths.
 
-- `schema_version`, `reviewed_at`, `scope`;
-- `documents`: уникальный `id`, путь от корня, `kind`, `status`, краткое `summary`, условия чтения `read_when`, существующие `source_paths`;
-- `artifacts`: те же поля для generated reference, inventory и исторического JSON;
-- `exclusions`: явно исключённые классы файлов и причина.
+Include root instructions/README, docs Markdown, project tool/example README files, and third_party/README.md. Upstream package documentation, PHAR contents, and generated PHP belong to supply manifests. Source paths are navigation, not an exhaustive dependency graph.
 
-Включать корневые instructions/README, все `docs/**/*.md`, README собственных инструментов и примеров, `third_party/README.md`. Upstream README внутри bundled packages, PHAR contents и generated PHP не являются собственными руководствами. Их состав учитывается supply manifests. `source_paths` — навигация к проверяемым исходникам, а не гарантия полного графа зависимостей.
+## Change procedure
 
-## Процедура изменения
+1. Find the canonical owner and inspect relevant sources.
+2. Apply all three principles to direction/contracts/architecture, including integration and runtime cost. Update behavior descriptions with code; mark a stage implemented only after checking its criteria.
+3. Change review dates only after substantive review. Keep short context plus links instead of duplicate specifications.
+4. Update inventory, index, and incoming links for added/moved documents. Preserve historical claims and their time boundary. Keep raw historical snapshots unchanged.
+5. Run docs:check and the mandatory verify. Read examples and links for meaning; automated checks do not certify factual accuracy.
 
-1. Найти документ-владелец факта и проверить его `source_paths` в инвентаре.
-2. Для изменения направлений, контрактов или архитектуры проверить все три [принципа развития](../project/principles.md), включая цену использования и подключения. Обновить описание реализации вместе с кодом; завершённый этап перенести из planned в implemented только после проверки критериев. Новые идеи помечать как предложения, открытые решения оставлять открытыми.
-3. Обновить тип/статус/дату только по результатам содержательной проверки. Не размножать одну спецификацию по onboarding, README и design: краткий контекст плюс ссылка достаточны.
-4. При добавлении/переносе документа обновить инвентарь, index и входящие ссылки. Для исторического материала сохранить исходные утверждения с явной рамкой времени, а не переписать прошлый результат под нынешний код.
-5. Выполнить `docs:check` и обязательный `verify`. Проверить смысл ссылок и примеров глазами: автоматическая проверка не подтверждает точность утверждений.
+## Format and checks
 
-## Ссылки и формат
-
-Использовать обычный Markdown, небольшие разделы и относительные ссылки на документы и исходники. Не публиковать `/Users/...`, пути другого checkout или ссылки на несуществующие будущие файлы. Будущие имена писать как code literals. Команды должны запускаться из корня, если явно не указан иной каталог. Секреты и реальные credentials в примеры не включать.
-
-Ссылки на внешние спецификации вести к первоисточнику. Не добавлять сеть или package manager ради проверки Markdown. Generated PHP меняется через SQL inputs и генератор; upstream notices не редактируются как документация проекта.
-
-## Автоматическая проверка
+Use ordinary Markdown and relative repository links. Do not publish local checkout paths, secrets, real credentials, or links to nonexistent future files. Write future paths as code literals. Commands run from the repository root unless stated otherwise. Link external specifications to primary sources; add no network/package manager for Markdown checks.
 
 ```bash
 php tools/project.php docs:check
 php tools/project.php verify
 ```
 
-Локальный `tools/check-docs.php` проверяет форму инвентаря, покрытие собственных Markdown-файлов, уникальность путей/ID, наличие источников и локальных целей Markdown-ссылок. Для ссылок на Markdown проверяются и heading fragments. Внешние URLs не запрашиваются. Это ограниченная проверка принятого в репозитории Markdown, а не полный CommonMark parser.
+The local checker validates inventory shape, coverage, unique ids/paths, existing sources, link targets, and Markdown heading fragments. It does not fetch external URLs and is not a complete CommonMark parser. Generated PHP changes through inputs/generators; upstream notices are not project prose.
 
-При реорганизации 2026-10-17 созданы единые agent instructions, разделены текущая архитектура / направление / история и убраны локальные абсолютные ссылки. Старый `docs/design/dependency-inventory.json` перенесён без изменения содержимого в `docs/history/dependency-inventory-2026-10-17.json`; прежний путь audit design сохранён как актуальный документ поставки. Исторический текст сохранён отдельно.
+The 2026-10-17 reorganization unified agent instructions and separated architecture, direction, and history. The former design dependency inventory moved unchanged into docs/history; the delivery design took over the current contract. The 2026-11-13 editorial revision added the portfolio and English guides while preserving original measurement artifacts.

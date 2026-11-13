@@ -1,49 +1,47 @@
-# Инфраструктура и тестирование
+# Infrastructure and verification
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `operations`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-[PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. HTTP runtime: PHP 8.5.12+, PDO; технический минимум CLI checks — PHP 8.5; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
+The [PHP runner](../../tools/project.php) is the command interface; no package installation or Task is needed. CLI checks require PHP 8.5+; HTTP requires upstream PHP 8.5.12+, PDO, sockets, and RR 3.0.1+ in the 3.x line. PostgreSQL needs pdo_pgsql. Unit/tool checks need ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter and pdo_sqlite for migration fixtures. SQLite is not an application backend and is excluded from runtime.
 
-Для HTTP check нужен установленный RoadRunner 3.0.1+ в ветке 3.x; RR требует sockets. Выбор executable — PATH либо --rr=/path/to/rr у http:check. Для нагрузок — k6, Docker используется для локального PostgreSQL service; изолированный контейнер PHP также может служить явно подготовленной тестовой платформой. PHP libraries и quality/codegen tools уже включены; executable downloads не являются частью checks.
+Select RR through PATH or http:check --rr=/path/to/rr. Load checks require k6. Docker supplies the local PostgreSQL service; a separately prepared PHP container can be a test platform. Dependencies/tools are bundled; checks download no executables.
 
-## Команды
+## Commands
 
-| Команда | Что выполняется |
+| Command | Behavior |
 | --- | --- |
-| verify | Integrity → docs → style → PHPStan 10 → SQL/API synchronization → root unit tests |
-| verify:integration | sql:check:pg → PostgreSQL integration tests |
+| verify | Integrity → docs → style → PHPStan 10 → SQL/API sync → root unit tests |
+| verify:integration | sql:check:pg → PostgreSQL tests |
 | verify:full | verify → tools:sql:check → verify:integration |
-| proto:gen / proto:compile:check | Компиляция/полная сверка Echo через platform protoc |
-| proto:check | Хеши contract sources/descriptor и точная сверка generated PHP без compiler |
-| tools:sql:check | Style, PHPStan и tests SQL generator |
-| http:check | Настоящий RR3, JSON/HTML ошибки и файлы с metadata logging |
-| security:inventory | Автономный список версий PHP packages из manifests |
-| security:audit | Online OSV и PHP security release policy; advisory data only |
-| security:platform --rr=PATH | Проверка текущего PHP и конкретного RR binary через bundled govulncheck |
-| perf:soak | Смешанный k6 прогон; заранее подготовленные SQL/files и поддерживаемый RR; методика в HTTP guide |
-| build VERSION | Integrity и runtime tar.gz; не заменяет quality gate |
-| services:start | Только PostgreSQL Docker service с --pull never, без миграций |
-| services:stop / services:status | Остановка / статус compose-проекта |
-| run | Только запуск RR core из .rr.yaml; не требует запуска БД для /health |
-| migrate [action] [directory] | migrate/rollback с default src/Migrations; upgrade-metadata без каталога обновляет BIGINT метаданных |
+| proto:gen / proto:compile:check | Compile/full-compare Echo using platform protoc |
+| proto:check | Source/descriptor hashes and exact PHP comparison, no compiler |
+| tools:sql:check | SQL tool style, PHPStan, tests |
+| http:check | Actual RR3, JSON/HTML errors and files with metadata logging |
+| security:inventory | Offline package versions from manifests |
+| security:audit | Online OSV/PHP release policy; advisory data only |
+| security:platform --rr=PATH | Current PHP and exact RR binary via bundled govulncheck |
+| perf:soak | Mixed k6 run against prepared SQL/files and supported RR |
+| build VERSION | Integrity and runtime archive; does not replace quality checks |
+| services:start | PostgreSQL Docker service, --pull never, no migrations |
+| services:stop / services:status | Compose stop/status |
+| run | RR core via .rr.yaml; /health needs no database |
+| migrate [action] [directory] | migrate/rollback; upgrade-metadata takes no directory |
 
-Полный справочник — php tools/project.php help. proto:gen и proto:compile:check требуют установленный protoc (проверен 26.1); proto:check входит в verify и сверяет sources/descriptor/PHP без compiler. Нет cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build. [Security workflow](security.md) также выполняется ежедневно и для push/PR; release packaging/upload требует его успеха. Подготовка PHP/RR платформы в CI отделена от checks, а verify остаётся без сети.
+Use `php tools/project.php help` for the full interface. protoc 26.1 was checked for full compilation. No cache/legacy load commands, Task aliases, Redis service, or OpenAPI sidecar remain. CI/release run verify:full/build and separate [security gates](security.md). CI platform provisioning precedes checks; verify itself remains offline.
 
-## База приложения
+## Application database
 
-config/storage.php создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Адаптер открывает PDO только при первой query/queryOne/execute/transaction/lastInsertId; конструктор не выполняет I/O. STORAGE_ENGINE и backend selector удалены. DB_SCHEMA — один quoted identifier, не список search_path.
+config/storage.php constructs PostgreSQLStorage from DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. The first SQL/transaction/lastInsertId opens PDO. STORAGE_ENGINE/backend selection is removed. DB_SCHEMA is one quoted identifier, not a search_path list.
 
-Текущие миграции возвращают массив отдельных SQL в up/down. Каждая версия и её запись в migrations атомарны; после исправления сбоя CLI запускается явно повторно. [Полный контракт](../design/transactions-and-migrations.md) фиксирует nested calls, исходные ошибки, потерю соединения и ограничения DDL.
+Migrations return full SQL statements in arrays. Each version and history row are atomic; rerun the CLI explicitly after correcting failure. The [contract](../design/transactions-and-migrations.md) covers nesting, original errors, connection loss, and DDL limits. src/Migrations is empty; the catalog supplies its directory. Only explicit MigrationRepository construction creates history. HTTP/services:start run no migration. Existing legacy user tables are not removed.
 
-Core migration path — пустой src/Migrations; пример имеет собственную migration. Явный migrate создаёт служебную таблицу migrations при явном создании MigrationRepository в CLI. Запуск HTTP и services:start не запускают migration автоматически. Существующие пользовательские таблицы старого API не удаляются этой очисткой.
+## Unit and integration profiles
 
-## Unit и integration profiles
+[phpunit.xml](../../phpunit.xml) selects tests/Unit. Real internal components run without an external database. tests/Fixtures/SQLiteStorage uses actual PDO SQLite solely for migration lifecycle and closed HTML error-path tests. It is excluded from production. RR tests double the external WorkerInterface and use real adapter/native HttpWorker. ObservedStream records actual stream reads/seeks/closes.
 
-[phpunit.xml](../../phpunit.xml) включает tests/Unit. Реальные внутренние реализации проверяются без внешней БД. tests/Fixtures/SQLiteStorage использует настоящий PDO SQLite только для migration lifecycle unit tests; production SQLite backend не поставляется. Тот же реальный PDO fixture проверяет закрытый HTML error path; контейнеры/mocks внутренних сервисов не нужны. RR unit tests используют double внешнего WorkerInterface и реальный RoadRunnerHttpWorker/HttpWorker. HTTP-типы и ресурсы проверяются реальными объектами; ObservedStream — PHP stream wrapper для наблюдения чтений/seek/close.
+[phpunit.integration.xml](../../phpunit.integration.xml) selects tests/Integration. Bootstrap loads only test/runtime autoload, with no shared API App, migrations, or global schema. Each PostgreSqlTestDatabase owns a random phpunit_<24 hex> schema. Catalog tests own temporary private files; LIMIT fixtures generate in a separate process. SqlExecutor/generated rows use real PostgreSQL. QueryOneTest checks one-row semantics, SQLSTATE/reuse, and PHP-array allocation; its counter excludes libpq buffers/RSS.
 
-[phpunit.integration.xml](../../phpunit.integration.xml) включает tests/Integration. Его bootstrap загружает только test/runtime autoload; нет shared API App, автоматических миграций или глобальной схемы. Каждый тест явно владеет PostgreSqlTestDatabase, случайной schema phpunit_<24 hex> и очисткой. Каталог дополнительно владеет private temporary files; SQL LIMIT fixture генерируется отдельным процессом. SqlExecutor и generated row mapping проверяются на настоящем PostgreSQL; прежний InMemorySqlExecutorStorage удалён. QueryOneTest отдельно проверяет one-row семантику, SQLSTATE/reuse и отсутствие полного PHP-массива; этот memory counter не включает native libpq buffers/RSS.
-
-Runner берёт TEST_DB_HOST/PORT/NAME/USER/PASSWORD независимо от DB_*. Для прямого PHPUnit TEST_DB_NAME обязателен. Роли нужны права создавать и удалять свои схемы. Значения ниже относятся к заранее подготовленной отдельной test database:
+The runner reads TEST_DB_HOST/PORT/NAME/USER/PASSWORD independently of DB_*. Direct PHPUnit requires TEST_DB_NAME. The test role needs permission to create/drop its schemas. For a separately prepared test database:
 
 ```bash
 TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432 TEST_DB_NAME=app_test TEST_DB_USER=app TEST_DB_PASSWORD=password php tools/project.php verify:full
@@ -51,10 +49,10 @@ php tools/project.php test tests/Unit/Platform/Runtime/AppTest.php
 php tools/project.php tools:sql:check
 ```
 
-[PostgreSqlTestDatabase](../../tests/Integration/PostgreSqlTestDatabase.php) не выбирает runtime DB и удаляет только успешно созданную им схему. Tests проверяют сохранение public sentinel и соседних схем. sql:check:pg создаёт отдельную sql_gen_check_<random>. Очистка после принудительного убийства процесса не гарантируется; удалять чужие schemas/containers нельзя.
+[PostgreSqlTestDatabase](../../tests/Integration/PostgreSqlTestDatabase.php) never chooses runtime DB and drops only a schema it successfully created. Tests preserve public sentinel/neighbor schemas. sql:check:pg creates a separate sql_gen_check_<random>. Cleanup after forced termination is not guaranteed. Never delete other owners' schemas/containers.
 
-## HTTP, нагрузки и поставка
+## HTTP, load, delivery
 
-[HTTP guide](http-and-baseline.md) описывает реальные listeners, временные ports, контроль body/hash/HEAD и ограничения памяти. Ни наличие Body, ни один unit test не доказывают bounded memory всего pipeline. Короткие результаты не устанавливают runtime winner или длительную устойчивость.
+The [HTTP guide](http-and-baseline.md) covers real listeners, temporary ports, body/hash/HEAD checks, and memory limits. A Body object or a unit test alone proves no full-pipeline memory bound. Short runs establish neither a runtime winner nor long-term stability.
 
-SQL inputs генератора, автономная загрузка PHP migrations без application autoload, default HTTP/RR и распакованный runtime archive проверяются вместе при изменении состава. Исторические данные предыдущих композиций остаются [историей](../README.md#исторические-материалы); они не являются инструкцией запускать удалённый API.
+Distribution changes check SQL inputs, migration loading without application autoload, HTTP/RR, and extracted archives. [Historical reports](../README.md#historical-evidence) describe previous compositions and do not instruct restoring removed APIs.

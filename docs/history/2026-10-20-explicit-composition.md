@@ -1,38 +1,38 @@
-# Явная сборка приложения без контейнера
+# Explicit application composition without a container
 
-Тип: `history`. Статус: `historical`. Дата: 2026-10-20.
+Type: `history`. Status: `historical`. Date: 2026-10-20. English edition: 2026-11-13.
 
-Пользователь подтвердил vertical slices/Unix-философию и потребовал убрать DI-контейнер ради явной сборки зависимостей. До изменения: `e6ae4f66b6940c850454af2c269b01a8965ff274`. [Данные проверки](2026-10-20-explicit-composition.json) содержат счётчики, исходник CLI probe и fingerprints. Текущий контракт описывает [архитектура](../architecture/overview.md), правила — [coding guidelines](../development/coding-guidelines.md).
+The user endorsed vertical slices/Unix principles and requested removal of the dependency container. Before: e6ae4f66b6940c850454af2c269b01a8965ff274. [Data](2026-10-20-explicit-composition.json) contains counts/probe/fingerprints. [Architecture](../architecture/overview.md) owns current behavior.
 
-## Результат и путь разработчика
+## Result and developer steps
 
-Удалены Container/DIContainer, autowiring plans, service providers и class-name handler factory. App получает готовый RequestHandler; config/core.php — обычная Closure(Logger): App. Точка входа явно выбирает logger/transport и вызывает функцию. RouteEntry получает готовый handler, Router — массив маршрутов; промежуточные route definitions/providers/collectors и дублирующий HandlerInterface удалены. Собственный PHP runtime: 72 → 49 файлов. Это число файлов, не оценка скорости.
+Removed Container/DIContainer, autowiring plans, providers, class-name factories, route definitions/collectors, and duplicate HandlerInterface. App receives a handler; config/core.php returns Closure(Logger): App. Entry points select logger/transport and invoke it. Router receives RouteEntry objects with constructed handlers. Own runtime files fell from 72 to 49; this is not a speed metric.
 
-Каталог собирается функцией application.php из Logger, Storage и private directory. Repository/Html/FileStore/List/Detail/Download создаются через new, связанные GET/HEAD используют один handler. Tests передают реальные зависимости в эту же функцию; service overrides и универсального get/resolve нет. Бизнес-логика не помещена в composition root и не размножена по обязательным слоям.
+Catalog application.php constructs repository/Html/FileStore/handlers from Logger/Storage/private directory. GET/HEAD share handlers. Tests use the same function with real dependencies. No override registry or generic resolver remains; policy stays outside the composition root without compulsory layers.
 
-Подключение БД перенесено в PostgreSQLStorage: первый SQL/transaction/lastInsertId создаёт PDO, устанавливает schema и сохраняет соединение. Объект Storage и handlers каталога строятся заранее без SQL. Core HTTP не создаёт Storage. /health/404/405 остаются независимы от БД; меняется момент ошибки подключения — с конструктора на первую операцию. Prepared statement cache и SQL contracts сохранены.
+PDO creation moved to the first SQL/transaction/lastInsertId operation, with schema setup and reuse. Objects are built upfront without SQL. Core creates no Storage; /health/404/405 remain database-independent. Connection errors now occur at first use. Statement cache/contracts remain.
 
-CLI migrate получает directory вместо HTTP config. Он явно строит Storage/repository/loader/service, проверяет действие и directory до соединения. Loader подключает файлы выбранного каталога, поэтому новая миграция не требует регистрации namespace приложения. Default — src/Migrations; для каталога — examples/document-catalog/migrations. Это несовместимое изменение CLI/App/RouteEntry; заглушки старого контейнера не оставлены.
+CLI migrate takes a directory rather than HTTP config, validates before connection, constructs its graph explicitly, and directly loads files. Default is src/Migrations; catalog passes its directory. This breaks CLI/App/RouteEntry contracts without shims.
 
-Оба HTTP транспорта используют одну APP_CONFIG функцию. RoadRunnerRuntime::createWorker собирает PSR17/PSR7 adapter из переданного transport; RR_HTTP_CHUNK_SIZE default0 сохраняет buffering, каталог/fixture явно выбирают8192. Проверки streaming сохранены и перенесены с удалённого provider к действующей функции сборки. Будущий protobuf output должен получать реализации/зависимости конструкторами и возвращать готовые routes без восстановления контейнера.
+At this snapshot both HTTP transports shared APP_CONFIG; RR still used PSR17/PSR7 adaptation. Default chunk 0 buffered; catalog/fixtures chose 8192. Tests moved from deleted providers to actual composition. Future generated endpoints were required to use constructors/routes without a container.
 
-## Три цели и стоимость
+## Costs and bounded comparison
 
-Простота: граф виден в одном PHP-файле без bindings, reflection и lookup по имени класса. Функциональность: тот же HTTP/PDO путь и серверы, произвольный RequestHandler можно собрать вручную; изменения проверяют CLI, файлы, errors и database lifecycle. Цена: eager construction создаёт доступные handlers сразу; PDO остаётся lazy. Нельзя обещать отсутствие startup I/O только потому, что соединение отложено: config/классы всё равно читаются, объекты создаются.
+The graph became visible without reflection/bindings/name lookup. Handlers were eagerly created, PDO lazy. Config/class reads and object construction still cost work.
 
-Ограниченный CLI probe: PHP 8.5.9, OPcache CLI выключен, один отброшенный процесс каждого варианта, затем семь чередующихся пар отдельных процессов. Bootstrap + core composition измеряются вместе; затем 10 000 in-process GET /health с одинаковым request ID, проверкой status/body и закрытием stream. Ни сеть, ни БД, ни SAPI emission не измеряются.
+PHP 8.5.9 CLI, OPcache off: discard one process per variant, then seven alternating process pairs. Measure bootstrap/composition followed by 10,000 in-process GET /health calls with identical ID, status/body checks, and stream close. No network/database/emission.
 
-| Медиана семи процессов | До | После |
+| Median | Before | After |
 | --- | ---: | ---: |
-| Bootstrap + сборка графа, ms | 1.816 | 1.045 |
-| 10 000 handle + проверка/закрытие, ms | 53.266 | 52.641 |
-| Loaded PHP classes после сборки | 325 | 316 |
-| Используемая PHP memory после сборки, bytes | 672768 | 594360 |
+| Bootstrap/composition ms | 1.816 | 1.045 |
+| 10,000 handle/check/close ms | 53.266 | 52.641 |
+| Loaded classes | 325 | 316 |
+| PHP bytes after construction | 672,768 | 594,360 |
 
-Это короткое локальное наблюдение, не доказательство ускорения HTTP или отсутствия утечек. PHP memory не равна RSS; малую разницу горячего цикла нельзя переносить на FPM/RR throughput. Другие задачи могли влиять на host. Для воспроизведения извлечь probe_source из JSON в свой временный PHP-файл и выполнить его отдельными процессами с `php -d opcache.enable_cli=0 probe.php ROOT before` для Git snapshot указанной старой версии и `... ROOT after` для текущего кода; использовать те же число запусков/чередование и сохранить raw samples.
+PHP memory is not RSS. Small hot-loop differences establish no HTTP throughput/endurance gain. Other host tasks could interfere. To reproduce, extract probe_source from JSON and run separate processes with php -d opcache.enable_cli=0 probe.php ROOT before for the specified snapshot and the corresponding after code, retaining ordering/sample counts.
 
-## Проверки
+## Verification
 
-verify:full прошёл: 200 root unit tests / 804 assertions, 167 SQL generator tests / 625 assertions, 32 PostgreSQL integration tests / 272 assertions. PHPStan level 10, bundled integrity 3 distributions / 1661 files и SQL synchronization прошли. Тесты удалённого контейнера и collector удалены с их кодом; проверки RR streaming сохранены у действующей функции сборки, добавлены проверки готового handler, migration loading без application autoload и первой транзакции.
+verify:full: 200 unit/804 assertions, 167 SQL-tool/625, 32 PostgreSQL/272; PHPStan 10, three distributions/1,661 files, synchronized SQL. Removed tests followed removed code; retained streaming and added ready-handler, direct migration-loading, and first-transaction checks.
 
-http:check прошёл 188 случаев на настоящих FPM/RR с JSON/HTML errors, logging и файлами. Дополнительные 43 HTTP smoke cases подтвердили default SAPI/RR startup, каталог в распакованном runtime и JSON/SELECT baseline из source tree. В архиве проверены явный CLI migrate, rollback/reapply/seed без регистрации application namespace, отсутствие startup DDL, 21 typed generated row через явно созданный SqlExecutor и отказ некорректных CLI arguments до соединения. Manifest содержит только runtime distribution; контейнер и отдельные RR profiles отсутствуют. Результаты сохранены в JSON. Старые отчёты сохраняют свои данные; ссылки на удалённые исходники закреплены за прежней Git-версией. Новая сборка не означает готовность к промышленной эксплуатации или выбор основного runtime.
+Actual FPM/RR passed 188 cases. Another 43 smoke cases covered default startup, packaged catalog, source JSON/SELECT. Archive checks included migrate/rollback/reapply/seed without application namespace registration, no startup DDL, twenty-one generated rows via explicit SqlExecutor, and bad CLI arguments before connection. Runtime-only manifest, no container or separate RR profiles. Results remain historical and establish neither readiness nor a runtime winner.

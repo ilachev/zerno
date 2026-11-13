@@ -1,46 +1,44 @@
-# Назначение и границы проекта
+# Purpose and scope
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-«Зерно» — небольшая автономная PHP-основа для разработчиков сайтов и веб-приложений. Муниципальные и государственные сайты — приоритетная аудитория, которая не ограничивает назначение ядра. Результат — короткий понятный путь HTTP → handler → явный SQL/поток → response.
+Zerno is an engineering portfolio case study in LLM-assisted development. A working PHP HTTP/PostgreSQL core supplies the concrete system: HTTP → handler → explicit SQL or stream → response. The [portfolio](../portfolio/overview.md) explains contributions and evidence; the [workflow](../portfolio/workflow.md) explains task boundaries and verification.
 
-## Состав продукта
+The earlier product direction targeted a small autonomous foundation for websites and applications, prioritizing municipal and public-sector developers. That motivation remains historical context. Independent adoption and the value of maintaining a separate framework have not been validated.
 
-| Область | Конкретный результат |
+## Implemented system
+
+| Area | Working capability |
 | --- | --- |
-| HTTP | Собственные Request/Response/Body, URI и uploads, routes, middleware, ошибки и attachment response |
-| Композиция | Обычные PHP constructors и функции сборки; готовые handlers в маршрутах, без контейнера/autowiring; App отделён от server loop |
-| БД | PostgreSQL PDO, параметры SQL, транзакции и явные CLI-миграции |
-| API из контракта | Первый string/unary POST JSON этап: DTO, typed endpoint, HTTP adapter и явный route |
-| Разработка SQL | Типизированные queries/rows из читаемого SQL, LIMIT и PostgreSQL checker |
-| Диагностика | Request ID, время обработки, логи метаданных без чтения response body |
-| Исполнение | Только RoadRunner 3.x; App/RequestHandler отделены от worker loop |
-| Поставка | Фиксированные runtime/codegen/quality sources, работа без package installation/download |
+| HTTP | Concrete Request/Response/Body/Uri/uploads, routes, middleware, errors, attachments |
+| Composition | Constructors and functions; constructed handlers; App separate from the loop |
+| Database | PostgreSQL PDO, parameters, transactions, explicit CLI migrations |
+| Contract generation | First string/unary POST JSON slice: DTO, endpoint, adapter, route |
+| SQL development | Typed queries/rows from readable SQL, LIMIT, PostgreSQL checker |
+| Diagnostics | Request ID, duration, metadata logs without reading response bodies |
+| Execution | RoadRunner 3.x only |
+| Delivery | Fixed bundled runtime/codegen/quality sources; no package installation/download in ordinary commands |
 
-Это исчерпывающая текущая область поставки, а не стартовый набор обязательных модулей с коллекцией optional-функций. Источник фактов — [архитектура](../architecture/overview.md); правила оценки — [три принципа](principles.md).
+This table is the current distribution boundary. [Architecture](../architecture/overview.md) describes implementation; [principles](principles.md) govern choices.
 
-## Собственная модель разработки
+## Development model
 
-Разработчик использует обычный PHP и видимый SQL. Не нужны facades, ORM, protobuf-контракт для маршрута, обязательная SPA, frontend-сборка или иерархия одинаковых обёрток. Новые interfaces/слои оправдываются существующим потребителем и уменьшением общей работы.
+Use ordinary PHP, explicit composition, visible SQL, and autonomous delivery. Containers, autowiring, service locators, facades, ORM, mandatory protobuf, SPA, frontend builds, and a compulsory hierarchy of wrappers are unnecessary. Add interfaces or layers only for a concrete consumer or a demonstrated reduction in total complexity.
 
-Код сохраняет HTTP-семантику и прямой PDO. HTTP-типы принадлежат ядру; зависимости Nyholm и PSR HTTP/factory/log удалены. Совместимость с PSR-7/17 не является контрактом. Новизна должна помогать разработке или проверяемым затратам; необычные названия и собственные замены библиотек ради отличия не являются целью.
+Core HTTP types have no PSR-7/17 compatibility contract. Nyholm and PSR HTTP/factory/log dependencies were removed. Retain useful standards and components; a distinctive API must improve developer steps or measured costs.
 
-Поставляемые сторонние файлы имеют происхождение, notices и hashes. PHP, sockets, PostgreSQL, RoadRunner и инструменты стенда — платформа. Вендорский protobuf-runtime остаётся требованием зафиксированного RoadRunner HTTP; API Echo использует обычные readonly DTO и builtin JSON, не Google Message.
+Bundled third-party files retain provenance, notices, and hashes. PHP, extensions, PostgreSQL, RoadRunner, and measurement executables are external platform requirements. The pinned RR transport still needs bundled protobuf/DTO libraries; generated Echo uses plain readonly DTOs and builtin JSON.
 
-## API из контракта: принятое направление
+## Accepted contract-generation direction
 
-Protobuf должен задавать API-контракт, из которого при разработке генерируются типизированные DTO, endpoint interfaces, HTTP handlers и явные маршруты. Бизнес-логика и SQL остаются ручным кодом, готовые артефакты исполняются общим HTTP-ядром. Это собственный путь упрощения разработки API.
+The accepted direction is `.proto → DTOs/endpoint contracts/HTTP adapters/explicit routes`, generated during development. Business policy, SQL, and transactions stay in application code. The [Echo slice](../design/protobuf-contract-generation.md) supports checked string messages and unary POST JSON. Further types and transcoding require a complete consumer scenario; expansion is not a portfolio requirement.
 
-Старый генератор удалён; [первый сквозной Echo-этап](../design/protobuf-contract-generation.md) реализован отдельно. Он поддерживает только проверенные string messages и unary POST JSON; новые типы и transcoding требуют законченного сценария. Очистка прикладных подсистем не означает отказ от генерации API-контракта.
+## Removed scope and application policy
 
-## Удалённое наследство и границы приложения
+Sessions, anonymous visitor tracking, GeoIP, fingerprints, analytics, caches, the legacy API/SDK/generator, hydration/mapping, and the outgoing HTTP client were removed with their configuration. See the [scope history](../history/2026-10-20-core-scope.md). Do not keep speculative subsystems as optional capabilities or restore compatibility shims.
 
-Session/anonymous visitor tracking, GeoIP, fingerprints, SQL-аналитика запросов, cache-платформа, прежний protobuf API/SDK/генератор, hydration/DTO mapping и outgoing HTTP client удалены вместе с конфигурациями и обслуживающими частями. Совместимость со старым API-шаблоном не является требованием. Решение и границы удаления описаны в [истории](../history/2026-10-20-core-scope.md).
+Login, cookies/sessions, forms, CSRF, roles, editing, publishing workflows, integrations, and cache policy belong to applications. The [document catalog](../../examples/document-catalog/README.md) checks a bounded SQL list, HTML detail, and a private file; its Document model, statuses, PDF rule, schema, and templates remain local.
 
-Вход, cookies/сессии приложения, формы, CSRF, роли, редактор, CMS workflow, интеграции и политика кеширования не предоставляются текущим ядром. Новая потребность сначала получает конкретный сценарий и критерии; код «на будущее» и перемещение его в optional недопустимы.
+## Current priority
 
-## Приложение и проверка пригодности
-
-[Каталог документов](../../examples/document-catalog/README.md) проверяет ограниченный SQL-список, HTML-карточку и файл. Его Document, published/draft/withdrawn, допустимый PDF, SQL schema и шаблоны принадлежат приложению. Пример не задаёт будущую CMS и не определяет последовательность задач ядра.
-
-Простота, полезная функциональность и эффективность оцениваются совместно. Количество встроенных подсистем не является мерой функциональности. RoadRunner выбран как единственный HTTP runtime. Числовые бюджеты, лицензия собственного кода и политика версий остаются открытыми; конкретные следующие проверки — в [roadmap](roadmap.md).
+Make engineering decisions and results easy to inspect. Preserve a runnable example and reproducible checks. Further work follows a concrete application or an identified correctness issue. Deployment budgets, license, public versions, and support remain open in the [roadmap](roadmap.md).

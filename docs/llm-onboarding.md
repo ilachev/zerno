@@ -1,46 +1,45 @@
 # LLM onboarding
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `navigation`. Status: `current`. Reviewed: 2026-11-13.
 
-«Зерно» — универсальная автономная PHP HTTP/PDO-основа. [AGENTS.md](../AGENTS.md) задаёт правила работы, [принципы](project/principles.md) — три совместных критерия, [граница продукта](project/vision.md) — конкретный состав. План не устанавливает наличие функции.
+Zerno is an [engineering portfolio](portfolio/overview.md) backed by a working autonomous PHP HTTP/PDO core. [AGENTS.md](../AGENTS.md) defines working rules; [principles](project/principles.md) define technical decision criteria. Communicate with the owner in Russian; write project documentation and example UI in English. Preserve multilingual protocol fixtures and raw historical data.
 
-## Текущий состав
+## Start a task
 
-Собственные Request/Response/Body/Uri/UploadedFile без PSR/Nyholm, маршруты/явная композиция, ErrorResponse, AttachmentResponse, request ID и metadata logging, PostgreSQL/PDO/SQL/транзакции/миграции, SQL generation и единственный HTTP runtime RoadRunner 3.x. Каталог — прикладной потребитель; его Document, публикационные состояния, PDF-only и шаблоны не являются API ядра.
+1. Read AGENTS, [coding guidelines](development/coding-guidelines.md), and principles. Inspect git status and relevant code/tests.
+2. Find the canonical document through the [index](README.md) and [inventory](documentation-inventory.json).
+3. Deliver a bounded result for a concrete consumer, with explicit SQL and resource lifetimes.
+4. Update documentation and run verify. Use PostgreSQL integration for database behavior, SQL-tool checks for generation, and actual HTTP for transport.
 
-Унаследованные Session/GeoIP/fingerprints/ApiStats/cache/hydration/mapping/outgoing HTTP удалены. Не восстанавливать их под названием optional и не поддерживать старые контракты заглушками. Старый protobuf API/генератор также удалён, но пользователь подтвердил направление `.proto → DTO/endpoint/HTTP adapter/routes`; первый [сквозной Echo-этап](design/protobuf-contract-generation.md) реализован с обычными string DTO и unary POST JSON. PHP зависимости и quality/codegen/security tools включены; package installation отсутствует. Только отдельные [security checks](development/security.md) получают advisory data по сети; обычный verify автономен.
+Plans do not establish implementation. Historical audits describe past runs. Attribute human/agent work accurately and do not invent productivity or adoption claims. Follow the [workflow](portfolio/workflow.md).
 
-## Начать задачу
+## Task map
 
-1. Прочитать AGENTS, [правила кода](development/coding-guidelines.md) и принципы, проверить git status и фактический код/тесты.
-2. Найти документ-владелец через [индекс](README.md) и [инвентарь](documentation-inventory.json).
-3. Реализовать минимальный контракт для конкретного потребителя, сохраняя SQL и время жизни ресурсов явными.
-4. Обновить текущую документацию и выполнить verify. Для БД — PostgreSQL integration; для генератора — tools:sql:check; для transport — реальные HTTP checks.
-
-| Задача | Документ | Код |
+| Task | Read | Code |
 | --- | --- | --- |
-| HTTP, runtime, routing, сборка объектов | [Архитектура](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, public/index.php, src/Platform |
-| Ограниченный JSON input | [Ручной POST-пример](../examples/json-echo/README.md) | Body::readLimited, examples/json-echo, tools/check-http.php |
-| API-контракт и генерация DTO/endpoints | [Контракт protobuf](design/protobuf-contract-generation.md) | contracts/echo.proto, tools/proto-gen, gen/Generated/Echo, examples/contract-echo |
-| Транзакции и миграции | [Контракт восстановления](design/transactions-and-migrations.md) | AbstractStorage, MigrationService, bin/migrate.php |
-| SQL и генератор | [SQL-контракт](design/sql-gen-product.md), [tool README](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
-| Уязвимости и CI | [Security monitoring](development/security.md) | tools/security, .github/workflows/security.yml, .github/dependabot.yml |
-| Проверки и БД | [Инфраструктура](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
-| RoadRunner, файлы и измерения | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |
-| Поставка | [Автономность](design/autonomous-core.md), [third-party](../third_party/README.md) | bootstrap.php, third_party/manifest.json |
-| Каталог | [Запуск](../examples/document-catalog/README.md), [прикладные границы](project/document-catalog-example.md) | examples/document-catalog |
-| Направление и документация | [Roadmap](project/roadmap.md), [maintenance](development/documentation.md) | Документ-владелец факта |
+| Portfolio and attribution | [Overview](portfolio/overview.md), [workflow](portfolio/workflow.md) | docs/portfolio, README.md |
+| HTTP, routing, composition | [Architecture](architecture/overview.md), [lifecycle](architecture/request-lifecycle.md) | config/core.php, public/index.php, src/Platform |
+| Bounded JSON | [Manual POST](../examples/json-echo/README.md) | Body::readLimited, examples/json-echo, tools/check-http.php |
+| API contracts | [Protobuf scope](design/protobuf-contract-generation.md) | contracts/echo.proto, tools/proto-gen, gen/Generated/Echo |
+| Transactions/migrations | [Recovery contract](design/transactions-and-migrations.md) | AbstractStorage, MigrationService, bin/migrate.php |
+| SQL generation | [Contract](design/sql-gen-product.md), [tool guide](../tools/sql-gen/README.md) | sql, tools/sql-gen, src/Platform/Storage |
+| Security | [Monitoring](development/security.md) | tools/security, .github/workflows/security.yml |
+| Testing | [Infrastructure](development/infrastructure-and-testing.md) | tools/project.php, tests/Integration |
+| RoadRunner/files/load | [HTTP guide](development/http-and-baseline.md) | tools/check-http.php, tools/http-fixtures, load-tests |
+| Delivery | [Architecture](design/autonomous-core.md), [bundled sources](../third_party/README.md) | bootstrap.php, third_party/manifest.json |
+| Catalog | [Run](../examples/document-catalog/README.md), [boundaries](project/document-catalog-example.md) | examples/document-catalog |
+| Plans/documentation | [Roadmap](project/roadmap.md), [maintenance](development/documentation.md) | Canonical fact owner |
 
-## Композиции и ограничения
+## Current implementation and limits
 
-config/core.php возвращает Closure(Logger): App. App принимает готовый RequestHandler, маршруты — готовые объекты. Контейнер, autowiring, service providers и class-name resolver удалены. public/index.php использует APP_CONFIG функцию; транспорт/RR logger создаются в точке входа. Для HTTP нужны PHP 8.5.12+ и RoadRunner 3.0.1+ в ветке 3.x; executable выбирается через PATH и не скачивается командами проекта. RR использует RoadRunnerHttpWorker → native HttpWorker, без PSR adapter; logger-removal patch записан в runtime manifest. RR_HTTP_CHUNK_SIZE=8192 включён явно в catalog/fixture server env, default0 буферизует body.
+Concrete HTTP types, explicit routes/composition, errors, attachments, request IDs/metadata logs, PostgreSQL PDO/SQL/transactions/migrations, SQL generation, and RoadRunner 3.x are shipped. Containers/autowiring/providers/class-name resolution are removed. config/core.php returns Closure(Logger): App; public/index.php builds logger/transport and selects APP_CONFIG. CLI migrations build a separate graph.
 
-Каталог собирается в examples/document-catalog/application.php из Logger/Storage/private directory; config.php только выбирает эти входы. PostgreSQLStorage лениво открывает PDO при первой операции; handlers/repository строятся заранее без SQL. /health/404/405 не открывают БД. Миграции — отдельный CLI граф с директорией migrations, не HTTP-конфигурацией.
+The catalog composes Logger/Storage/private directory without SQL during construction. PDO connects at the first SQL operation, transaction, or lastInsertId. /health/404/405 do not need a database. HttpLogging never reads the body; RoadRunnerRuntime closes the body after sending, including HEAD/errors. App::handle does not close it. RR chunk 8192 is explicit in file fixtures/catalog; default 0 buffers.
 
-HttpLogging не читает тело. RoadRunnerRuntime закрывает body после отправки, включая HEAD/ошибки; App::handle его не закрывает. Каталог сохраняет прямой SQL; sql/queries/catalog.sql — отдельный пример генератора.
+HTTP needs PHP 8.5.12+ and RR 3.0.1+ in the 3.x line, plus sockets. RR is selected through PATH, not downloaded by project commands. The native HttpWorker logger-removal patch is recorded in the manifest.
 
-PostgreSQL — единственная БД приложения. SQLiteStorage находится только в tests/Fixtures для автономных migration unit tests, не в поставке. Integration bootstrap не создаёт общий App, API-таблицы или глобальную схему: тесты сами владеют случайными схемами TEST_DB_*.
+PostgreSQL is the only application target. SQLiteStorage exists solely in migration unit fixtures and is excluded from runtime. Integration tests own random TEST_DB_* schemas; their bootstrap creates no shared application/database.
 
-Bundled RoadRunner HTTP требует protobuf/DTO runtime. Контракт Echo генерирует собственные readonly DTO и HTTP adapter; они не используют Google Message в runtime. SDK и legacy API не восстановлены; прочие protobuf types/transcoding пока не поддержаны. Исторические отчёты описывают прошлые версии; удалённые исходники доступны через Git, как объясняет [очистка состава](history/2026-10-20-core-scope.md).
+Sessions, GeoIP/fingerprints, analytics, caches, hydration/mapping, outgoing HTTP, and the legacy API/SDK were removed. Do not restore optional placeholders. A new, limited string/unary POST Echo contract generates plain readonly DTOs and HTTP adapters; unsupported declarations fail generation. Bundled protobuf/DTO runtime remains an internal RR dependency, not an application codec.
 
-HTTP runtime выбран: только RoadRunner 3.x. Числовые бюджеты пока не выбраны. Не объявлять production readiness, отсутствие утечек или ускорение по короткому тесту. Механизм входа/сессий/CSRF/прав не реализован; не приписывать его ядру.
+Runtime/codegen/quality dependencies are bundled. Ordinary commands need no installation or network. Separate security commands fetch advisory data only. Follow source boundaries; never hand-edit generated PHP or incidentally modify upstream sources. Deleted historical sources are referenced through Git history.

@@ -1,22 +1,12 @@
-# Контракт и развитие `sql-gen`
+# SQL generation contract
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `design`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
 
-## Роль в «Зерне»
+## Role and inputs
 
-`sql-gen` создаёт typed PHP queries и rows вокруг явного SQL. Он дополняет PDO storage ядра. Приложение может использовать PDO без запуска генератора во время обработки запросов.
+sql-gen generates typed PHP queries/rows around explicit SQL and complements PDO. It does not run during requests. Inputs are [schema](../../sql/schema.sql), [named queries](../../sql/queries), and App\Platform\Storage\Sql passed directly by the runner. No project-profile wrapper remains. Schema input supplies analysis metadata, not migrations; persistence changes must reconcile input, migration, and actual PostgreSQL schema.
 
-Источники для генерации:
-
-- [sql/schema.sql](../../sql/schema.sql) — типы колонок и ограничения для анализа;
-- [sql/queries](../../sql/queries) — именованные SQL-запросы;
-- runtime namespace App\Platform\Storage\Sql, переданный runner напрямую; project-profile обёртка удалена.
-
-`sql/schema.sql` не заменяет runtime migrations. При изменении persistence нужно отдельно согласовать schema source, миграции и фактическую PostgreSQL schema.
-
-## Текущий input/output contract
-
-Именованный запрос объявляется заголовком:
+## Input and output
 
 ```sql
 -- name: FindPublished :one
@@ -26,48 +16,27 @@ WHERE status = :status AND id = :id
 LIMIT 1;
 ```
 
-Реализованы result kinds `:one`, `:many`, `:exec` и именованные placeholders `:param`.
+Kinds are :one/:many/:exec, with :param placeholders. [PhpQueryGenerator](../../tools/sql-gen/src/Generator/PhpQueryGenerator.php) emits readonly Query classes with typed constructor/create, sql/params, Row classes for resolved projections, and rowClass. Matching result structures in one SQL file can share a row according to the naming algorithm. Separate Params/facade classes are not generated. Output lives under gen/Generated/Sql and must not be hand-edited.
 
-[PhpQueryGenerator](../../tools/sql-gen/src/Generator/PhpQueryGenerator.php) создаёт:
+## Parser and type model
 
-- readonly `*Query` с типизированными параметрами конструктора/`create()`, методами `sql()` и `params()`;
-- `*Row` для разрешённых result projections и `rowClass()` на query;
-- общий row class для запросов одного SQL-файла с совпадающей структурой результата, когда это определено текущим naming algorithm.
+Phplrt parsers use internal ASTs. [Query grammar](../../tools/sql-gen/src/Parser/grammar/sql_subset.pp2), [schema grammar](../../tools/sql-gen/src/Schema/grammar/schema_subset.pp2), and semantic resolvers jointly define support.
 
-Отдельные `*Params` и `*Queries` facade сейчас не генерируются. Это были варианты дизайна, а не действующий API.
-
-Примеры результата: gen/Generated/Sql/Catalog/FindPublishedQuery.php и CatalogRow.php. Generated-файлы не редактируют вручную.
-
-## Реализованные parser и type model
-
-Query и schema parsers построены на `phplrt` и внутреннем AST. Границы синтаксиса определены в [sql_subset.pp2](../../tools/sql-gen/src/Parser/grammar/sql_subset.pp2) и [schema_subset.pp2](../../tools/sql-gen/src/Schema/grammar/schema_subset.pp2), а семантика дополнительно ограничена resolvers.
-
-| Конструкция | Действующая граница |
+| Construct | Supported boundary |
 | --- | --- |
-| `SELECT` | Колонки, aliases, `*`/`table.*`, `FROM`, joins, `WHERE`, `ORDER BY`, завершающий `LIMIT` |
-| Условия | Сравнения колонок/placeholders через `=`, `<`, `>`, `<=`, `>=`; последовательности `AND`/`OR` |
-| `INSERT` | Явные колонки и placeholders в `VALUES`; `ON CONFLICT (...) DO UPDATE SET column = EXCLUDED.column`; `RETURNING` |
-| `UPDATE` | `SET column = :param`, необязательные `WHERE` и `RETURNING`; арифметические assignment expressions не поддерживаются |
-| `DELETE` | `DELETE FROM table WHERE ...` |
-| Projection expressions | Ограниченные `COUNT`, `MIN`, `MAX`, `COALESCE`, `CASE WHEN ... ELSE ... END`; совместимость типов проверяется resolver-ом |
-| Schema | Ограниченные `CREATE TABLE`, column nullability, primary/unique/foreign keys |
+| SELECT | Columns/aliases, star/table.star, FROM, joins, WHERE, ORDER BY, final LIMIT |
+| Predicates | Column/placeholder comparisons =, <, >, <=, >=; AND/OR |
+| INSERT | Explicit columns/placeholders, ON CONFLICT columns DO UPDATE SET column = EXCLUDED.column, RETURNING |
+| UPDATE | SET column = :param, optional WHERE/RETURNING; no arithmetic assignments |
+| DELETE | DELETE FROM table WHERE ... |
+| Expressions | Limited COUNT/MIN/MAX/COALESCE/CASE WHEN with resolver type checks |
+| Schema | Limited CREATE TABLE, nullability, primary/unique/foreign keys |
 
-Это не parser произвольного PostgreSQL. Например, CTE, subqueries, `GROUP BY`, `OFFSET`, произвольные literals и выражения не входят в текущую grammar. Само успешное чтение конструкции ещё не доказывает корректность type inference.
+CTEs, subqueries, GROUP BY, OFFSET, arbitrary literals/expressions are outside the grammar. Parsing alone does not establish correct inference.
 
-[PhpTypeFactory](../../tools/sql-gen/src/Type/PhpTypeFactory.php) сейчас отображает SQL-типы так:
+[PHP types](../../tools/sql-gen/src/Type/PhpTypeFactory.php): TEXT/JSONB → string; INTEGER/BIGINT/BIGSERIAL/SERIAL → int; REAL/DOUBLE/NUMERIC/DECIMAL → float; BOOLEAN/BOOL → bool. JSONB stays text until application decoding. Decimal-to-float is not exact decimal arithmetic. Extra PostgreSQL semantics are not established by this table. Typhoon\Type is the canonical generator model; Typhoon/Nette/Phplrt never load for query execution.
 
-| SQL | PHP |
-| --- | --- |
-| `TEXT`, `JSONB` | `string` |
-| `INTEGER`, `BIGINT`, `BIGSERIAL`, `SERIAL` | `int` |
-| `REAL`, `DOUBLE`, `NUMERIC`, `DECIMAL` | `float` |
-| `BOOLEAN`, `BOOL` | `bool` |
-
-`JSONB` остаётся строкой до ручного преобразования в repository/mapper. Текущее отображение `NUMERIC`/`DECIMAL` в float не даёт точной decimal arithmetic. SQL-типы с дополнительной PostgreSQL-семантикой нельзя считать поддержанными по этой таблице.
-
-Canonical type model внутри generator — `Typhoon\Type`. Эта библиотека, Nette и Phplrt нужны generator-у; generated query execution их не загружает.
-
-## Ограниченная SELECT-выборка
+## Bounded SELECT
 
 ```sql
 -- name: PageBefore :many
@@ -78,29 +47,27 @@ ORDER BY id DESC
 LIMIT 21;
 ```
 
-Для собственной schema с `catalog_documents` разработчик добавляет обычный named SQL и запускает генератор с этой schema. Дополнительные runtime services, profile options и pagination API не нужны. Приложение передаёт `status: 'published'`, положительный cursor `before`, показывает первые 20 строк и использует 21-ю как признак продолжения. Устойчивый порядок задаётся явным `ORDER BY id DESC` по уникальному ID; generator не добавляет сортировку и не доказывает её уникальность.
+An application supplies published status and a positive cursor, shows 20 rows, and uses row 21 to detect continuation. Stable order is explicit SQL; the generator neither adds ordering nor proves uniqueness. No pagination service/profile is needed.
 
-Поддержаны только `SELECT ... [WHERE ...] [ORDER BY ...] [LIMIT N | LIMIT :name] [;]` в пределах остального subset:
+Supported form is SELECT ... [WHERE ...] [ORDER BY ...] [LIMIT N | LIMIT :name] [;], subject to the rest of the subset.
 
-- `N` — десятичные цифры со значением от `0` до `PHP_INT_MAX`, включая ведущие нули; переполнение отвергается до integer cast с сообщением `LIMIT literal must be between 0 and PHP_INT_MAX.`.
-- `:name`, включая `:limit`, получает non-null PHP `int` и PostgreSQL `BIGINT` без привязки к колонке schema. Если это имя также сравнивается с integer-колонками, параметры объединяются, а SQL-тип сохраняется из первого сравнения в JOIN/WHERE, как при native PostgreSQL prepare. Для `INTEGER`/`SERIAL` действует диапазон PostgreSQL integer; для `BIGINT`/`BIGSERIAL` — bigint. Nullable integer-колонка не делает LIMIT nullable. Сравнение того же параметра с `TEXT`/`JSONB`, bool или float отвергается resolver-ом с сообщением `LIMIT parameter ... must be compatible with an integer column ...`.
-- Повторное использование LIMIT-параметра внутри projection expressions (`MIN`, `COALESCE`, `CASE` и остальных) отвергается с сообщением `LIMIT parameter ... cannot be reused in projection expressions ...`. Native PostgreSQL prepare может вывести тип аргумента projection до обработки LIMIT; checker с явным `PREPARE(bigint)` не воспроизводит этот вывод. Исправление общей модели expression typing и runtime casts в этот контракт не входят.
-- Значение параметра `0` возвращает пустой список; отрицательный `int` отклоняет PostgreSQL при исполнении. Генератор не добавляет runtime validation: допустимый положительный максимум определяет вызывающее приложение. `null` не входит в generated signature, поскольку PostgreSQL трактует `LIMIT NULL` как отсутствие ограничения.
-- `ORDER BY`, `WHERE` и сам `LIMIT` необязательны. Маркеры `:one` и `:many` выбирают runtime contract, не меняя SQL: `:one` материализует только первую строку как PHP-массив, но без явного `LIMIT` БД и buffered PDO по-прежнему могут получить весь результат.
+- N is decimal digits, including leading zeros, from 0 to PHP_INT_MAX. Overflow fails before casting: `LIMIT literal must be between 0 and PHP_INT_MAX.`
+- A LIMIT parameter is non-null PHP int/PostgreSQL BIGINT without a column. Reuse with integer columns keeps the first JOIN/WHERE comparison's SQL type, matching native prepare. INTEGER/SERIAL retain PostgreSQL integer range; BIGINT/BIGSERIAL retain bigint. Nullable columns do not make LIMIT nullable. TEXT/JSONB/bool/float reuse fails with an integer-compatibility diagnostic.
+- Reuse in projection expressions is rejected. PostgreSQL can infer projection argument types before LIMIT; explicit PREPARE(bigint) does not reproduce that inference. General expression typing/runtime casts remain outside this contract.
+- Zero returns no rows. PostgreSQL rejects negative values during execution. Generated code adds no runtime bound validation; the caller chooses its positive cap. Null is excluded because PostgreSQL interprets LIMIT NULL as unbounded.
+- WHERE/ORDER/LIMIT are optional. :one/:many choose materialization behavior without modifying SQL. :one fetches one PHP row but does not prevent the server/buffered PDO from receiving more rows.
 
-Syntax errors от parser-а получают формы `LIMIT ALL`, `LIMIT NULL`, signed/decimal/exponent/quoted values, column references, expressions, casts, parentheses, повторный или неверно расположенный LIMIT, `OFFSET`/comma pagination и LIMIT у INSERT/UPDATE/DELETE. Числовой literal добавлен только в LIMIT; WHERE literals этим расширением не поддержаны.
+LIMIT ALL/NULL, signs/decimals/exponents/quoted values, column references, expressions/casts/parentheses, duplicate/misplaced LIMIT, OFFSET/comma pagination, and non-SELECT LIMIT fail syntax parsing. Numeric literals were added only for LIMIT, not WHERE.
 
-[Каталог](../../examples/document-catalog/src/CatalogRepository.php) сохраняет прямой SQL с `status = 'published'`: такой literal в WHERE ещё не поддержан grammar. Замена на status parameter меняет доступность partial index в generic prepared plans, поэтому ради подключения инструмента запросы приложения не переписываются. [Основные SQL inputs](../../sql/queries/catalog.sql) и [LIMIT fixture](../../tests/Fixtures/SqlLimit/queries/catalog.sql) показывают соответствующие поля/порядок с параметром status; это проверочные примеры генератора, не SQL-источник приложения. Прикладной DDL/partial index определён migration каталога, schema input служит типизации.
+[CatalogRepository](../../examples/document-catalog/src/CatalogRepository.php) keeps direct SQL with a published literal, unsupported by this grammar. A parameter could affect partial-index use in generic prepared plans, so the application is not rewritten merely to fit generation. [Root input](../../sql/queries/catalog.sql) and [LIMIT fixture](../../tests/Fixtures/SqlLimit/queries/catalog.sql) are separate parameterized examples. The catalog migration owns its actual DDL/index.
 
-LIMIT ограничивает число **возвращённых** БД строк, не число просмотренных кандидатов или bytes одной строки. Фильтры, размер полей и индексы остаются ответственностью приложения. Индекс `(status, id DESC)` даёт проверочному запросу упорядоченный доступ; без подходящего плана даже `LIMIT 21` может потребовать сортировку/чтение большого объёма.
+LIMIT bounds returned rows, not scanned candidates or row width. The application owns filters, indexes, and field bounds. An index such as (status, id DESC) supports ordered access; LIMIT may still require substantial work without a suitable plan.
 
-Цена расширения: codegen читает один optional AST field, проверяет диапазон литерала/тип параметра и сохраняет LIMIT в PostgreSQL checker. Generated PHP сохраняет исходный SQL; дополнительных библиотек, разборов SQL или checks при запросе нет. Уже существующие queries без LIMIT генерируются без изменений. Включённый LIMIT уменьшает возвращаемый результат только при наличии большего числа совпадений; ускорение само по себе этим не доказано.
+Codegen adds an optional AST field, range/type checks, and checker preservation. Generated PHP retains SQL and adds no request-time parsing/library/validation. Queries without LIMIT remain unchanged. Fewer returned rows alone is not a proven speedup.
 
-### Проверка границ и стоимости
+### Verification and measured cost
 
-[SqlLimitTest](../../tests/Integration/Storage/SqlLimitTest.php) запускает генератор отдельным процессом, загружает полученный PHP только в runtime-контур и выполняет его через настоящие PostgreSQLStorage/SqlExecutor. Проверяются пустой набор, 1/20/21/22 строки, последовательные страницы, published-фильтр, typed rows, числовые параметры `0`/`1`/`PHP_INT_MAX`, отказ отрицательного LIMIT и отсутствие автоматического ограничения у `:one`. Для reuse параметра проверяются реальные `pg_prepared_statements.parameter_types`, порядок сравнений INTEGER/BIGINT и отказ значения вне integer-диапазона. Unit tests подтверждают тот же тип в checker, без скрытого расширения до bigint. Все схемы случайные, временные generated files удаляются.
-
-После настройки отдельной PostgreSQL test database через `TEST_DB_*`:
+[SqlLimitTest](../../tests/Integration/Storage/SqlLimitTest.php) generates separately and executes using real PostgreSQLStorage/SqlExecutor. Cases cover 0/1/20/21/22 rows, pages, published filter, rows/types, 0/1/PHP_INT_MAX parameters, negative refusal, unbounded :one, actual pg_prepared_statements types, comparison order, and integer overflow. Unit checks keep checker inference aligned. Schemas/output are isolated and cleaned.
 
 ```bash
 php tools/project.php tools:sql:check
@@ -111,27 +78,27 @@ php tools/sql-gen/bin/sql-check-pg.php --input-dir=tests/Fixtures/SqlLimit/queri
 php tests/Fixtures/SqlLimit/measure.php --rows=50000
 ```
 
-Последняя команда создаёт собственную случайную схему, 50 000 записей с описанием 1032 bytes и 10 000 published, индекс `(status, id DESC)`, выполняет `ANALYZE`. Разные PHP runtime-процессы читают одинаковую projection с LIMIT 21 и без LIMIT; JSON-отчёт содержит rows, размер сериализованного результата, PHP memory counters, codegen wall time и `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`. В конце схема и generated files удаляются. Прямой checker получает только явно переданные test connection settings; его fallback `DB_*` не используется.
+The measurement creates a random schema with 50,000 rows, 1,032-byte descriptions, 10,000 published rows, index, and ANALYZE. Separate PHP processes read identical projections with/without LIMIT. JSON contains rows, serialized bytes, PHP memory, codegen time, and EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON). Cleanup removes owned schema/output. Direct checker settings are explicitly test-only.
 
-Локальный снимок 2026-10-18: PHP/pdo_pgsql 8.5.9, CLI OPcache 0; PostgreSQL 16.15 aarch64 в собственном cached `postgres:16-alpine`, временный loopback-порт, без общего Compose. Один sample каждого режима, соседние задачи могли создавать нагрузку на host.
+2026-10-18 snapshot: PHP/pdo_pgsql 8.5.9, CLI OPcache off, PostgreSQL 16.15 aarch64 in a cached postgres:16-alpine container with temporary loopback port. One sample per variant; concurrent host tasks were possible.
 
-| Наблюдение | LIMIT 21 | Без LIMIT |
+| Observation | LIMIT 21 | No LIMIT |
 | --- | ---: | ---: |
-| Возвращено строк | 21 | 10 000 |
-| JSON результата, bytes | 25 075 | 11 933 347 |
-| Живая PHP-память результата сверх baseline, bytes | 41 632 | 18 109 336 |
-| Пик используемой PHP-памяти fetch сверх baseline, bytes | 42 008 | 18 109 712 |
-| Shared hit blocks верхнего plan node | 19 | 12 930 |
+| Rows | 21 | 10,000 |
+| JSON bytes | 25,075 | 11,933,347 |
+| Live result PHP bytes above baseline | 41,632 | 18,109,336 |
+| Peak fetch PHP bytes above baseline | 42,008 | 18,109,712 |
+| Top-node shared hit blocks | 19 | 12,930 |
 
-Для LIMIT план — `Limit → Index Scan catalog_documents_status_id_idx`, actual rows 21/21, shared read blocks 0. Без LIMIT — `Gather Merge → Sort → Parallel Seq Scan`, 10 000 rows, temp read/write 565/566 blocks. В замере 2026-10-18 полная генерация **одинакового набора шести fixture queries** в subprocess заняла 132/135 ms; это не изолированная оценка добавочного времени разбора LIMIT. Текущая fixture дополнена тремя regression queries для reuse параметра, поэтому её полное время генерации нельзя напрямую сравнивать с тем снимком. Generator bootstrap в runtime не загружен.
+LIMIT used Limit → Index Scan catalog_documents_status_id_idx, rows 21/21, zero shared reads. Unbounded used Gather Merge → Sort → Parallel Seq Scan, 10,000 rows, temp read/write 565/566 blocks. Full generation of the same six fixture queries took 132/135 ms, not an isolated LIMIT parsing delta. Three later reuse regressions make current full generation incomparable. Generator bootstrap was absent from runtime.
 
-Пики сняты до JSON encoding/EXPLAIN и после загрузки классов; счётчики PHP не включают всю native память libpq, RSS процесса или память PostgreSQL. Это ограниченная проверка объёма чтения результата, а не доказательство ускорения или устойчивости долгоживущего worker. Большие поля всё ещё требуют прикладных ограничений. Без LIMIT исходный массив результата растёт вместе с количеством совпадений.
+PHP peaks precede JSON/EXPLAIN after class loading and exclude libpq/RSS/PostgreSQL. This measures result volume, not overall speed or worker endurance. Large fields still need bounds; unbounded PHP arrays grow with matches.
 
-## Runtime и применение
+## Runtime and use
 
-[SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) исполняет query через `Storage`, а typed rows создаются через `DatabaseRow::fromDatabaseRow`. `:one` выбирает первый результат либо возвращает null; сам по себе этот marker не доказывает уникальность строки в БД. Транзакции предоставляет `Storage::transaction`.
+[SqlExecutor](../../src/Platform/Storage/Sql/SqlExecutor.php) executes through Storage and maps with DatabaseRow::fromDatabaseRow. :one returns the first row/null, not a uniqueness guarantee. Storage supplies transactions.
 
-`Storage::queryOne($sql, $params)` возвращает первую ассоциативную строку либо null. Это не проверка уникальности: дополнительные строки допустимы, порядок задаётся SQL. Строка из одних SQL NULL остаётся массивом, а ошибки PDO остаются StorageException с исходным PDOException. Метод выполняет исходный запрос целиком, вызывает один `fetch(PDO::FETCH_ASSOC)` и `closeCursor()` в finally, включая ошибку execute/fetch. Он не добавляет LIMIT, не меняет SELECT/RETURNING и не ограничивает число изменённых строк. Ошибка БД после первой строки также приводит к отказу buffered execution.
+Storage::queryOne returns an associative first row/null in SQL order. All-null rows remain arrays. PDO errors preserve StorageException/PDOException. It executes unchanged SQL, fetches once, and closes the cursor in finally, including execute/fetch failure. It neither adds LIMIT nor limits changed rows/RETURNING. Buffered errors after the first row still fail.
 
 ```php
 $row = $storage->queryOne(
@@ -140,29 +107,25 @@ $row = $storage->queryOne(
 );
 ```
 
-Это обычный прямой SQL, без генерации. `SqlExecutor::fetchOne` делегирует этому пути, `fetchOneRow` преобразует только полученную строку в DatabaseRow. Код вызова generated query сохраняется; `Storage::query` / `fetchAll` по-прежнему возвращают весь список, `fetchAllRows` дополнительно строит список typed rows. Каталог использует queryOne для findPublished с тем же SQL по primary key, без переписывания published literal или partial index. Доступ к БД помечен для PHPStan как impure: повторный вызов после изменения данных может дать другой результат.
+fetchOne delegates; fetchOneRow maps only that row. query/fetchAll retain full arrays; fetchAllRows also creates typed rows. Catalog lookup retains its SQL/partial index. Storage methods are impure for PHPStan because repeated reads can differ after writes.
 
-Native prepared statements и соединение переиспользуются, кеш ограничен 100 SQL-ключами. `closeCursor()` закрывает PDO cursor, но не обещает освобождение native-буфера cached statement: в [pdo_pgsql PHP 8.5](https://github.com/php/php-src/blob/PHP-8.5/ext/pdo_pgsql/pgsql_statement.c) cursor closer сам по себе не очищает PGresult. Буферы могут жить до следующего исполнения этого statement или его уничтожения/вытеснения. [PDO fetch](https://www.php.net/manual/en/pdostatement.fetch.php) и [closeCursor](https://www.php.net/manual/en/pdostatement.closecursor.php) не являются server-side LIMIT. Этот этап убирает полный PHP-массив из однострочного пути, сохраняя стандартный buffered PDO; native memory и работа PostgreSQL не становятся ограниченными одной строкой.
+Connections/native statements are reused with a 100-SQL cache. closeCursor does not promise native PGresult release; [pdo_pgsql source](https://github.com/php/php-src/blob/PHP-8.5/ext/pdo_pgsql/pgsql_statement.c), [fetch](https://www.php.net/manual/en/pdostatement.fetch.php), and [closeCursor](https://www.php.net/manual/en/pdostatement.closecursor.php) do not establish server LIMIT. Native buffers can survive until reexecution/destruction/eviction. The one-row path removes full PHP arrays while retaining buffered PDO.
 
-Для растущих списков или first-row lookup без уникального предиката приложение задаёт явный LIMIT и устойчивый порядок. Размер одной строки тоже остаётся его ответственностью. Ни уникальный key lookup, ни LIMIT 1 раньше не создавали большой список, поэтому общий выигрыш на них заранее не заявляется. [Замер 2026-10-23](../history/2026-10-23-query-one.md) сравнивает прежний и новый путь на одинаковом SQL.
+Use explicit LIMIT/order for growing lists/nonunique first-row queries and bound row width. Unique lookups already returned small results, so no universal gain is assumed. See the [comparison](../history/2026-10-23-query-one.md).
 
-Изменение контракта Storage: собственные реализации/decorators должны реализовать queryOne с такой семантикой; default fallback через query/fetchAll не добавлен. Внутренний SQLite fixture адаптирован для автономных migration/error tests, но не становится production backend. Без вызова нового метода не выполняются дополнительный SQL, чтение или закрытие cursor; прежние query/execute paths сохранены.
+Custom Storage implementations/decorators must implement queryOne; no query/fetchAll fallback exists. SQLite remains test-only. Unused queryOne adds no execution/reads/cursor close; prior query/execute semantics remain.
 
-Runtime contract FQCN и naming вынесены в `SqlGenerationProfile`. CLI поддерживает `--runtime-namespace` для default profile либо `--bootstrap` + `--profile-class` для внешнего profile; явно выбранный profile определяет contracts сам.
+SqlGenerationProfile owns contract FQCNs/naming. CLI supports --runtime-namespace with default profile, or --bootstrap/--profile-class for an explicit external profile. Root inputs generate ListPublished/ListPublishedBefore/FindPublished as examples. PostgreSQL fixtures execute generated contracts; removed API repositories are not consumers. Integration must preserve application SQL/plans.
 
-Основные inputs генерируют ListPublished/ListPublishedBefore/FindPublished как проверочный пример typed contracts. PostgreSQL integration fixture исполняет generated queries через реальный SqlExecutor и проверяет rows/params. Каталог использует прямой Storage SQL; удалённые API repositories больше не являются потребителями. Подключение генератора к приложению должно сохранять его SQL и планы, а не требовать переписывания запросов ради инструмента.
+### Parameters and safe publication
 
-### Параметры и надёжность генерации
+Every cached statement execution receives the complete PDO parameter array. Bool becomes PostgreSQL true/false; otherwise PDO converts false to invalid empty text. Null/other scalars retain previous semantics. The linear parameter pass adds no SQL or binding cache.
 
-PostgreSQLStorage передаёт полный массив параметров PDO при каждом исполнении cached statement. В общем пути query/queryOne/execute bool преобразуется в канонические строки PostgreSQL true/false: нативный PDO иначе превращает false в пустую строку, непригодную для BOOLEAN. null и остальные scalar сохраняют прежнюю PDO-семантику. Проход по параметрам выполняется только при SQL-вызове; дополнительного SQL или второго кеша bindings нет.
+Query names within a file, modules across files, and final PHP paths are checked case-insensitively before publication. Generation/check report the source conflict rather than selecting a last declaration.
 
-Имена запросов в одном SQL-файле уникальны без учёта регистра, как PHP class names. Имена модулей разных входных файлов и итоговые PHP-пути тоже проверяются на коллизии до публикации. Генерация и check отвергают конфликт с диагностикой источника, а не выбирают последнее объявление.
+sql:gen builds all artifacts, writes a neighboring staging directory, then replaces the dedicated output. Ordinary parse/type/staging failures preserve old output; failed rename triggers restoration. Success removes retired files. Writer checks complete writes, path boundaries, and output symlinks. Missing/empty input directories fail. Concurrent writers and forced termination between renames are unsupported. Temporary space for old/new trees must share a filesystem. See [ADR](adr-2026-10-28-contract-correctness.md).
 
-sql:gen строит полный набор, записывает его в соседний staging-каталог и только затем заменяет выделенный output. Обычная ошибка разбора, типизации или staging сохраняет прежний набор; при неудачном переименовании выполняется восстановление. Успешная замена удаляет устаревшие файлы. Writer проверяет полную запись каждого файла, границы путей и отсутствие symlink у output. Пустой/отсутствующий input directory отвергается. Одновременная генерация в один output и принудительное завершение между переименованиями не поддержаны; генерация не выполняется в активном worker. Временно нужны место под старый и новый набор на одном filesystem. Решение и альтернативы — в [ADR](adr-2026-10-28-contract-correctness.md).
-
-## Действующие проверки
-
-Из корня:
+## Checks
 
 ```bash
 php tools/project.php sql:gen
@@ -171,28 +134,12 @@ php tools/project.php sql:check:pg
 php tools/project.php tools:sql:check
 ```
 
-- `verify:integration` проверяет queryOne на настоящем PostgreSQL: 0/1/many, NULL/falsy, reuse prepared statement/connection, все изменения RETURNING, исходные SQLSTATE, PHP allocations и generated row mapping. Тесты typed mapping используют реальное исполнение SQL, прежний InMemorySqlExecutorStorage удалён.
-- `sql:check` сравнивает ожидаемые PHP-артефакты с каталогом output: отсутствующие, устаревшие и лишние PHP-файлы дают ошибку.
-- `sql:check:pg` через runner использует `TEST_DB_*`, создаёт случайную схему `sql_gen_check_...`, выполняет trusted schema SQL и проверяет скомпилированные запросы через `PREPARE`. После проверки удаляет свою схему.
-- Прямой `tools/sql-gen/bin/sql-check-pg.php` принимает `--db-*` и `DB_*`; это другая граница конфигурации, чем root runner.
-- `tools:sql:check` запускает style, PHPStan и tests компонента. `verify` включает автономный `sql:check`; PostgreSQL входит в `verify:integration`/`verify:full`.
+verify:integration checks 0/1/many, null/falsy, statement reuse, RETURNING mutations, SQLSTATE, PHP allocation, and generated mapping using real SQL. sql:check rejects missing/stale/extra PHP. Root sql:check:pg uses TEST_DB_* and an owned sql_gen_check_... schema, trusted DDL, and PREPARE, then cleans up. Direct sql-check-pg accepts --db-*/DB_* separately. tools:sql:check runs style/PHPStan/tests. Default verify is offline; integration/full add PostgreSQL.
 
-`PREPARE` проверяет SQL и разрешение типов в sandbox schema. Он не исполняет business mutations, не проверяет данные, результат row mapping, планы запросов или производительность. Эти свойства требуют интеграционных сценариев.
+PREPARE checks syntax/type resolution, not mutations, data, row mapping, plans, or performance. Those need integration scenarios.
 
-## Известные ограничения
+## Limits and future work
 
-Grammar распознаёт `LEFT`, `RIGHT`, `FULL JOIN`, но семантический resolver явно отвергает их до генерации: nullability отсутствующей строки внешней стороны ещё не реализована. Поддержаны обычный JOIN и INNER JOIN. Отказ содержит имя запроса; ложный non-null row contract больше не публикуется.
+Grammar recognizes LEFT/RIGHT/FULL but resolvers reject them by query name until missing-side nullability is implemented. Ordinary/INNER JOIN remain supported. Relation metadata does not prove arbitrary compound conditions. Compatibility tests establish specific cases, not all PostgreSQL.
 
-Join relation checks используют schema metadata, но не доказывают корректность произвольных составных условий. Проверки ProjectSqlQueriesCompatibilityTest и UpdateQueriesCompatibilityTest подтверждают конкретные поддержанные сценарии; это не покрытие всего PostgreSQL.
-
-## Принципы и предложения по развитию
-
-SQL остаётся читаемым источником запросов; generator не должен скрывать его за ORM, Active Record или query builder. Runtime не должен заново интерпретировать SQL или загружать generator libraries.
-
-Каждое предложение оценивается по [трём целям проекта](../project/principles.md): максимальная простота, максимальная функциональность и максимальная производительность. Порядок работ задаёт [общий roadmap](../project/roadmap.md), а не список возможных возможностей generator-а.
-
-Внешние joins остаются явно запрещены до корректной nullability и PostgreSQL mapping checks; расширение expressions не должно обходить этот отказ. Ограниченный список покрыт явным LIMIT и отдельной PostgreSQL fixture. Оптимизация `fetchOne` или row iteration требует измерений и не должна скрытно менять существующий контракт массивов.
-
-Более точное expression typing, составные relation checks и diagnostics добавляются под конкретные SQL-файлы. Расширение subset требует согласованных parser, semantic inference, generation и PostgreSQL checks. `*Params`, facade и новые AST-слои не являются самостоятельными целями: они допустимы только если упрощают подтверждённый сценарий без неоправданной runtime-стоимости.
-
-Команды, CLI options и bundled distribution описаны в [README sql-gen](../../tools/sql-gen/README.md).
+Keep readable SQL and no ORM/Active Record/query builder or runtime interpretation. Apply the [principles](../project/principles.md) and [roadmap](../project/roadmap.md). New syntax needs coordinated parser/inference/generation/PostgreSQL checks. Outer joins need actual nullability/mapping. More precise expressions, composite relations, and diagnostics follow concrete SQL. Params/facades/new AST layers are justified only by a simpler useful scenario without unreasonable runtime cost. See the [tool guide](../../tools/sql-gen/README.md).

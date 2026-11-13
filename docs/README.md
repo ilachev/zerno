@@ -1,80 +1,74 @@
-# Документация «Зерна»
+# Zerno documentation
 
-Тип: `navigation`. Статус: `current`. Сверено с кодом: 2026-10-28.
+Type: `navigation`. Status: `current`. Reviewed: 2026-11-13.
 
-«Зерно» (`zerno`) развивается в универсальное автономное PHP HTTP/PDO-ядро для разработчиков веб-приложений. Здесь отдельно описаны текущая реализация, принятые направления и история перехода. Наличие функции в roadmap не означает её наличие в коде.
+Start with the portfolio to understand the engineering process, then follow its evidence into code, tests, and reports. Architecture describes implementation; accepted plans describe direction; historical reports apply to their recorded snapshots.
 
-## Точки входа
+## Portfolio
 
-- [README проекта](../README.md) — требования платформы, запуск и основные команды.
-- [AGENTS.md](../AGENTS.md) — единые правила работы агентов.
-- [LLM onboarding](llm-onboarding.md) — минимальный контекст и порядок чтения по задаче.
-- [Машинный инвентарь](documentation-inventory.json) — пути, типы, статусы, назначение и связанные исходники всех собственных документов.
+- [Overview and contribution boundaries](portfolio/overview.md)
+- [Working with an LLM](portfolio/workflow.md)
+- [Scope and explicit composition](portfolio/scope-and-composition.md)
+- [Defects beyond a passing suite](portfolio/contract-correctness.md)
+- [Persistent runtime measurement](portfolio/runtime-measurement.md)
 
-## Направление продукта и план
+## Repository entry points
 
-| Документ | Для чего читать |
-|---|---|
-| [Принципы развития](project/principles.md) | Обязательные цели простоты, функциональности и производительности; правила выбора решений и проверки компромиссов |
-| [Видение и границы ядра](project/vision.md) | Цель, пользователи, автономность, обязательная БД, конкретный состав ядра и границы приложения |
-| [Roadmap](project/roadmap.md) | Ближайшие задачи ядра, их результаты и критерии готовности |
-| [Приложение: каталог документов](project/document-catalog-example.md) | Публичное чтение как потребитель ядра; прикладные модели, SQL и файлы |
+- [README](../README.md): purpose, platform, startup, verification.
+- [AGENTS](../AGENTS.md): canonical agent instructions.
+- [LLM onboarding](llm-onboarding.md): task-specific reading.
+- [Documentation inventory](documentation-inventory.json): paths, kinds, statuses, and related sources.
 
-## Текущая архитектура
+## Purpose and technical direction
 
-| Документ | Владеет описанием |
-|---|---|
-| [Обзор архитектуры](architecture/overview.md) | Функции сборки объектов, точки входа, HTTP/SQL и границы модулей |
-| [Жизненный цикл запроса](architecture/request-lifecycle.md) | Порядок middleware, обработка запроса, ресурсы, файлы и ограничения |
-| [Карта блоков](reusable-blocks.md) | Назначение механизмов ядра и граница прикладной политики |
-| [Автономная поставка](design/autonomous-core.md) | Bootstrap, vendored distributions, изоляция инструментов, manifests и сборка |
+| Document | Responsibility |
+| --- | --- |
+| [Purpose and scope](project/vision.md) | Portfolio purpose, working system, application boundary |
+| [Principles](project/principles.md) | Simplicity, useful scenarios, measured efficiency |
+| [Roadmap](project/roadmap.md) | Priorities, implementation states, acceptance criteria |
+| [Catalog example](project/document-catalog-example.md) | Application models, SQL, and files |
 
-## Работа с репозиторием
+## Architecture and contracts
 
-- [Уязвимости поставки и платформы](development/security.md) — Dependabot, PHP floor, OSV, аудит RR executable, CI/release gates и границы покрытия.
-- [Инфраструктура и проверки](development/infrastructure-and-testing.md) — команды, PostgreSQL, окружения, CI и проверки runtime.
-- [HTTP и малый baseline](development/http-and-baseline.md) — реальные RR3 wire checks, подготовка изолированной БД и воспроизведение JSON/SELECT замеров.
-- [Запуск публичного каталога](../examples/document-catalog/README.md) — отдельная БД, миграция/seed, HTML и private PDF storage на RR3.
-- [Ограниченный POST JSON](../examples/json-echo/README.md) — Body::readLimited, ошибки 400/413/415 и серверные пределы RR3.
-- [Правила кода](development/coding-guidelines.md) — законченные сценарии, небольшие границы, ошибки и владение ресурсами; адаптация принципов devctl к PHP.
-- [Правила документации](development/documentation.md) — статусы, источники истины, инвентаризация, ссылки и порядок обновления.
-- [Bundled distributions](../third_party/README.md) — карта включённых сторонних исходников и инструментов.
+- [Architecture overview](architecture/overview.md): composition, entry points, HTTP and SQL.
+- [Request lifecycle](architecture/request-lifecycle.md): middleware, bodies, server boundary, resources.
+- [Component boundaries](reusable-blocks.md): core mechanisms and application policy.
+- [Autonomous delivery](design/autonomous-core.md): bootstrap, distributions, manifests, packaging.
+- [Correctness ADR](design/adr-2026-10-28-contract-correctness.md): review defects and implemented decisions.
+- [Protobuf generation](design/protobuf-contract-generation.md): the first limited Echo slice and accepted direction.
+- [Transactions and migrations](design/transactions-and-migrations.md): atomicity, errors, recovery, metadata upgrade.
+- [SQL-generation contract](design/sql-gen-product.md) and [tool guide](../tools/sql-gen/README.md).
 
-## Архитектурные решения
+## Development and examples
 
-- [ADR: корректность текущих контрактов](design/adr-2026-10-28-contract-correctness.md) — решения по ревью SQL/PDO/uploads, безопасной генерации и запуску runtime-архива.
+- [Coding guidelines](development/coding-guidelines.md)
+- [Documentation maintenance](development/documentation.md)
+- [Infrastructure and verification](development/infrastructure-and-testing.md)
+- [HTTP checks and measurements](development/http-and-baseline.md)
+- [Security monitoring](development/security.md)
+- [Bundled sources](../third_party/README.md)
+- [Manual JSON Echo](../examples/json-echo/README.md)
+- [Generated Echo](../examples/contract-echo/README.md)
+- [Document catalog](../examples/document-catalog/README.md)
 
-## Компоненты: текущий контракт и дальнейшее развитие
+## Historical evidence
 
-Эти документы уточняют область компонента; приоритеты всего проекта задаёт [roadmap](project/roadmap.md).
+Narrative reports are available in English. Raw historical JSON retains its original contents, including language, hashes, and recorded output.
 
-- API из protobuf-контракта: [текущий string/unary POST этап](design/protobuf-contract-generation.md), [Echo-пример](../examples/contract-echo/README.md), автономные generation checks и измерения.
-- Транзакции и миграции: [атомарность версии, ошибки и восстановление](design/transactions-and-migrations.md).
-- SQL: [дизайн и ограничения](design/sql-gen-product.md), [инструкция инструмента](../tools/sql-gen/README.md).
+| Report | Snapshot |
+| --- | --- |
+| [Runtime soak](history/2026-10-28-runtime-soak.md) | HTTP 205, BIGINT upgrade, 15-minute mixed workload; [data](history/2026-10-28-runtime-soak.json) |
+| [RoadRunner only](history/2026-10-23-roadrunner-only.md) | Removal of SAPI/FPM paths |
+| [One-row SQL](history/2026-10-23-query-one.md) | queryOne/fetchOne, native memory boundaries; [data](history/2026-10-23-query-one.json) |
+| [RoadRunner 3](history/2026-10-20-roadrunner3.md) | Native transport and platform validation; [data](history/2026-10-20-roadrunner3.json) |
+| [Native HTTP types](history/2026-10-20-native-http.md) | Removal of PSR/Nyholm; [data](history/2026-10-20-native-http.json) |
+| [Explicit composition](history/2026-10-20-explicit-composition.md) | Container removal and lazy PDO; [data](history/2026-10-20-explicit-composition.json) |
+| [Scope reduction](history/2026-10-20-core-scope.md) | Removed application subsystems; [data](history/2026-10-20-core-scope.json) |
+| [File responses](history/2026-10-18-file-responses.md) | Complete transport checks, CPU/memory/I/O; [data](history/2026-10-18-file-responses.json) |
+| [Public catalog](history/2026-10-17-public-catalog.md) | HTML/SQL/PDF example; [data](history/2026-10-17-public-catalog.json) |
+| [Initial baseline](history/2026-10-17-core-http-baseline.md) | Early HTTP/PDO measurements; [data](history/2026-10-17-core-http-baseline.json) |
+| [Principles review](history/2026-10-17-development-principles-review.md) | Earlier discrepancies and planning evidence |
+| [Autonomy audit](history/2026-10-17-autonomy-audit.md) | Original delivery audit before reorganization |
+| [Former dependency graph](history/dependency-inventory-2026-10-17.json) | Historical Composer inventory, not current distribution |
 
-## Исторические материалы
-
-- [HTTP 205, BIGINT metadata и mixed runtime soak от 2026-10-28](history/2026-10-28-runtime-soak.md) — 15 минут после прогрева, реальные SQL/files/errors, RSS/CPU/FD server и обоих workers, [сырые данные](history/2026-10-28-runtime-soak.json).
-
-- [Выбор RoadRunner единственным runtime](history/2026-10-23-roadrunner-only.md).
-
-- [Однострочный SQL-путь от 2026-10-23](history/2026-10-23-query-one.md) — queryOne/fetchOne, проверки PostgreSQL, граница PHP/native памяти и [данные замера](history/2026-10-23-query-one.json).
-
-- [Переход на RoadRunner 3 от 2026-10-20](history/2026-10-20-roadrunner3.md) — upstream transport, patches, числовые headers, логирование и [данные проверки](history/2026-10-20-roadrunner3.json).
-
-- [Собственный HTTP без Nyholm/PSR от 2026-10-20](history/2026-10-20-native-http.md) — контракты, native RoadRunner, worker adaptation и [данные проверки](history/2026-10-20-native-http.json).
-
-- [Явная композиция без контейнера от 2026-10-20](history/2026-10-20-explicit-composition.md) — контракт сборки, ленивый PDO, проверки и [данные сравнения](history/2026-10-20-explicit-composition.json).
-
-- [Очистка состава от 2026-10-20](history/2026-10-20-core-scope.md) — удалённые подсистемы, несовместимость, размеры и [данные ревизии](history/2026-10-20-core-scope.json).
-
-- [Файловый ответ и прозрачная диагностика от 2026-10-18](history/2026-10-18-file-responses.md) — контракт, RR3 с логированием, CPU/память/I/O и [данные замера](history/2026-10-18-file-responses.json).
-- [Публичный каталог: проверки и замеры от 2026-10-17](history/2026-10-17-public-catalog.md) — HTML/SQL, потоковая выдача, ручная проверка страницы и [данные запуска](history/2026-10-17-public-catalog.json).
-- [Начальный HTTP/PDO baseline от 2026-10-17](history/2026-10-17-core-http-baseline.md) — ограниченное сравнение RR3, условия, результаты и [данные запусков](history/2026-10-17-core-http-baseline.json).
-- [Ревизия трёх целей от 2026-10-17](history/2026-10-17-development-principles-review.md) — замечания к документации, ограничения исходного кода и основания обновлённого плана.
-- [Аудит и этапы автономной поставки от 2026-10-17](history/2026-10-17-autonomy-audit.md) — сохранённый снимок до реорганизации документации.
-- [Исходный аудит установленных зависимостей](history/dependency-inventory-2026-10-17.json) — прежний Composer-граф, размеры и hashes; **не текущая поставка**.
-
-Ссылки из исторических отчётов на удалённые исходники закреплены за прежней Git-версией; результаты прошлых запусков не пересчитаны под текущий код.
-
-Актуальный состав стороннего кода задают [индекс distributions](../third_party/manifest.json) и связанные manifests. Все собственные Markdown-документы перечислены в инвентаре; upstream README внутри bundled packages туда не включаются.
+Historical links to removed source files point to a previous Git state. Results were not recalculated for later code. Current third-party composition is defined by distribution manifests, not historical inventories. The documentation inventory covers project-authored guides; upstream package README files belong to their distribution manifests.

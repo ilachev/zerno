@@ -18,7 +18,7 @@ final class HtmlTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('text/html; charset=utf-8', $response->getHeaderLine('Content-Type'));
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
-        self::assertStringContainsString('<html lang="ru">', $body);
+        self::assertStringContainsString('<html lang="en">', $body);
         self::assertStringContainsString('href="#main"', $body);
         self::assertStringContainsString('<main id="main" tabindex="-1">', $body);
         self::assertStringContainsString('&lt;script&gt;&quot;Title&quot;&lt;/script&gt;', $body);
@@ -27,8 +27,8 @@ final class HtmlTest extends TestCase
         self::assertStringNotContainsString('<script>', $body);
         self::assertStringNotContainsString('<img ', $body);
         self::assertStringContainsString('href="/documents/7/download"', $body);
-        self::assertStringContainsString('PDF, 12 345 байт', $body);
-        self::assertStringContainsString('<time datetime="2026-10-17">17.10.2026</time>', $body);
+        self::assertStringContainsString('PDF, 12,345 bytes', $body);
+        self::assertStringContainsString('<time datetime="2026-10-17">2026-10-17</time>', $body);
         self::assertFalse($response->hasHeader('Set-Cookie'));
     }
 
@@ -47,7 +47,7 @@ final class HtmlTest extends TestCase
     {
         $body = (string) new Html()->listing([], null)->getBody();
 
-        self::assertStringContainsString('Опубликованных документов на этой странице нет.', $body);
+        self::assertStringContainsString('There are no published documents on this page.', $body);
         self::assertStringNotContainsString('rel="next"', $body);
     }
 

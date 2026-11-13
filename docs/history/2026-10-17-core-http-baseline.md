@@ -1,77 +1,64 @@
-# Начальный HTTP/PDO baseline
+# Initial HTTP and PDO baseline
 
-Тип: `history`. Статус: `historical`. Проверено: 2026-10-17.
+Type: `history`. Status: `historical`. Verified: 2026-10-17. English edition: 2026-11-13.
 
-Это результат первой ограниченной HTTP-итерации после `612d009`: исправления маршрутизации, реальные FPM/RR wire checks и два коротких JSON/SELECT сценария. Точное измеренное состояние исходников зафиксировано SHA-256 в [данных отчёта](2026-10-17-core-http-baseline.json), вместе с окружением, EXPLAIN и результатами всех 12 запусков. Этот снимок не задаёт основной runtime или целевые бюджеты проекта.
+First bounded iteration after 612d009: routing fixes, FPM/RR wire checks, short JSON/SELECT scenarios. [Data](2026-10-17-core-http-baseline.json) preserves source hashes, environment, EXPLAIN, and twelve runs. This does not select the main runtime or budgets.
 
-## Изменение и цена подключения
+## Changes and costs
 
-Router экранирует literal-части parameter patterns и компилирует их при построении таблицы. Статический путь другого метода больше не перекрывает подходящий параметризованный маршрут запрошенного метода. Ответ 405 содержит отдельную ошибку и `Allow`, объединяющий методы совпавших маршрутов. Числовые extension methods сохраняются строками. Регрессии проверяют эти случаи, явный HEAD и прежние trailing slash rules.
+Router escapes literal parameter-pattern parts and compiles at construction. Another method's static route no longer blocks a matching parameter route. 405 has a distinct error and combined Allow; numeric methods stay strings. Checks cover explicit HEAD/trailing slashes. RouteResult gained getAllowedMethods while getHandler stopped carrying methods; its first three constructor arguments stayed.
 
-Маршрут разработчика остаётся прежним: запись method/path/handler и явная зависимость handler. Новых слоёв или обязательных настроек приложения нет. Для потребителя 405-результата появился `RouteResult::getAllowedMethods()`; `getHandler()` больше не несёт список методов. Первые три аргумента конструктора `RouteResult` сохранены. Семантика подробно описана в [жизненном цикле](../architecture/request-lifecycle.md).
+Developer registration stayed method/path/handler with explicit dependencies. Static success retains direct lookup; parameter dispatch scans that method's candidates; 405 checks others. Patterns consume router memory. FPM rebuilt the graph per request; RR built it per worker. No before/after router benchmark was done. Fixtures were checkout-only with separate installed tools.
 
-Статический успешный dispatch сохраняет прямой lookup; параметризованный перебирает candidates выбранного метода. При отсутствии совпадения определение 405 проверяет остальные методы. Скомпилированные patterns и имена параметров занимают память router. В FPM приложение и таблица строятся на каждом запросе, в RR — при старте worker. Сравнения старого и нового router не проводилось; ускорение от исправления не заявляется.
+## Platform and protocol
 
-Wire/baseline fixtures подключаются только отдельными командами и не входят в runtime-архив. Они расширяют проверяемые сценарии без installer, но требуют установленных platform executables. Полный порядок — в [руководстве воспроизведения](../development/http-and-baseline.md).
+macOS 26.6.1 arm64, M3 Max fourteen cores/36 GiB; PHP CLI/FPM 8.5.9; OPcache on for FPM/RR, JIT off despite a 64M buffer setting. JSON retains separate settings and post-series php-fpm -i; ini stayed unchanged. RR 2025.1.15, Caddy 2.11.4, k6 2.2.0; one PHP worker/profile and ordinary providers/loggers.
 
-## Окружение и протокол
+PostgreSQL 16.15 used a cached postgres:16-alpine container/random schema, Docker VM fourteen CPUs/about 7.82 GiB. No pulls/installations. Clients/servers shared the host, without CPU isolation. Every run used two-second four-VU warmup then five measured seconds at four VUs, closed loop with exact response checks.
 
-- macOS 26.6.1, arm64, Apple M3 Max, 14 ядер, 36 GiB RAM.
-- PHP CLI/FPM 8.5.9; OPcache включён для FPM и явно для RR CLI. JIT отключён; `jit_buffer_size=64M` сам по себе его не включает. В JSON сохранены отдельные CLI/RR settings и `php-fpm -i`, собранный после серии; ini в ходе задачи не менялся, pool overrides заданы sample config.
-- RR 2025.1.15, Caddy 2.11.4, k6 2.2.0; по одному PHP worker на профиль. Сохранены штатные provider/logger обоих профилей.
-- PostgreSQL 16.15, cached image `postgres:16-alpine`, отдельный временный контейнер и случайная схема. Docker VM: 14 CPU, около 7.82 GiB RAM. Образы и пакеты не скачивались.
-- k6, Caddy и оба runtime работают на одном компьютере, PostgreSQL — в его Docker VM. Host CPU не изолирован от фоновых процессов. Перед каждым запуском — 2 секунды отдельного прогрева при 4 VU, затем 5 секунд измерения при 4 VU. Нагрузка closed loop, без паузы между запросами, с проверкой точного ответа.
+One Caddy served :18081 → FPM :19001 and :18082 → RR :19002. These were end-to-end profiles with different transport/lifetimes, not isolated interpreter comparisons. JSON returned {"id":42,"value":"record-42"} without Storage; SELECT looked up the same row among 10,000, confirmed Index Scan/one row. SQL/request 0/1 came from handler inspection, excluding connection/search_path/prepare. FPM recreated PDO/statements and logged storage creation per SELECT; RR reused them. Those costs were not isolated.
 
-Оба входа используют один Caddy process: `:18081` → FastCGI/FPM `:19001`; `:18082` → HTTP/RR `:19002`. Это end-to-end профили с разными transport и lifetime costs. Они выполняют одну прикладную работу, но не являются изолированным сравнением PHP-интерпретатора.
-
-JSON возвращает `{"id":42,"value":"record-42"}` без разрешения `Storage`. SELECT читает тот же результат по primary key из 10 000 строк; подготовка подтвердила `Index Scan` и `Actual Rows=1`. SQL/request 0/1 объявлен по коду handlers, без внешнего SQL tracer, и исключает соединение, `SET search_path` и prepare. FPM заново создаёт PDO/statement и логирует создание storage на каждом SELECT-запросе; RR сохраняет соединение и statement в worker. Отдельная стоимость этих операций не измерялась.
-
-Для каждого сценария выполнены три запуска. В повторах 1 и 3 порядок FPM → RR, в повторе 2 — RR → FPM; JSON предшествует SELECT. Прогрев и предварительные диагностические серии не включены в данные отчёта. Во время финальной серии тесты и статический анализ проекта не запускались.
-
-После подготовки серверов по guide каждый запуск имеет вид:
+Three repetitions/case alternated runtime order FPM→RR, RR→FPM, FPM→RR; JSON preceded SELECT. Diagnostics/warmups were excluded. No project tests/analysis ran during the final series. A historical run looked like:
 
 ```bash
 BASE_URL=http://127.0.0.1:18081 CASE=json VUS=4 DURATION=2s SUMMARY_PATH=var/warmup.json \
 php tools/project.php perf:baseline --quiet
-
 BASE_URL=http://127.0.0.1:18081 CASE=json VUS=4 DURATION=5s SUMMARY_PATH=var/fpm-json-1.json \
 php tools/project.php perf:baseline --quiet
 ```
 
-Для остальных запусков меняются профиль/порт, CASE и уникальное имя результата. В JSON сохранены метрики summary; отдельные per-request samples не собирались.
+Change profile/port/case/output per run. Removed FPM configuration requires its historical source state. Only summary metrics, not per-request samples, were saved.
 
-## Результат
+## Results
 
-В таблице — медиана трёх значений соответствующей метрики. p50/p95/p99 — медианы перцентилей отдельных запусков, а не перцентили объединённой выборки. RPS — наблюдаемый rate k6 при 4 VU, не доказанный предел сервера.
+Values are medians of three run metrics, including medians of per-run quantiles rather than pooled percentiles. RPS is observed four-VU rate, not capacity.
 
-| Профиль | Сценарий | RPS | p50, ms | p95, ms | p99, ms | HTTP errors |
+| Profile | Case | RPS | p50 ms | p95 ms | p99 ms | Errors |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | FPM | JSON | 2703.83 | 1.419 | 1.674 | 1.905 | 0 |
 | RR | JSON | 4512.06 | 0.851 | 1.004 | 1.162 | 0 |
 | FPM | SELECT | 43.99 | 84.832 | 141.838 | 164.015 | 0 |
 | RR | SELECT | 1552.39 | 2.685 | 3.318 | 3.901 | 0 |
 
-Все status/content-type/body/cookie checks прошли. Диапазон RPS для FPM/SELECT — 42.1–59.0, для RR/SELECT — 1503.5–1586.2; разброс FPM заметен уже на этих коротких повторах. Разницу нельзя приписывать только router или выполнению одного SELECT: жизненный цикл соединения, prepare, логирование и transport остаются частью измеренного профиля.
+All status/content-type/body/cookie checks passed. SELECT RPS ranged 42.1–59.0 for FPM and 1503.5–1586.2 for RR. Connection/prepare/logging/transport prevent attributing the difference solely to router or SELECT execution.
 
-## CPU и память процессов
+## Process resources
 
-Сбор: `ps -axo pid=,ppid=,rss=,time=` каждые 250 ms во время команды k6. Для каждой группы выбирались родительский process и его descendants. CPU — разность суммарного process CPU time до/после команды, включая запуск/завершение клиента; RSS — максимальная наблюдавшаяся сумма RSS группы. Таблица снова показывает медианы трёх запусков.
+ps sampled parent/descendants every 250 ms. CPU is group-time delta around the client command, including client startup/finish interval; RSS is the maximum sampled group sum. Values again summarize three runs.
 
-| Профиль / сценарий | CPU pool, s | CPU Caddy, s | Peak sum RSS pool, MiB | Peak RSS Caddy, MiB |
+| Profile/case | Pool CPU s | Caddy CPU s | Pool RSS MiB | Caddy RSS MiB |
 | --- | ---: | ---: | ---: | ---: |
-| FPM / JSON | 3.92 | 4.57 | 54.31 | 52.44 |
-| RR / JSON | 8.07 | 5.98 | 108.97 | 52.39 |
-| FPM / SELECT | 0.98 | 0.18 | 54.31 | 52.44 |
-| RR / SELECT | 3.04 | 2.07 | 109.20 | 52.44 |
+| FPM/JSON | 3.92 | 4.57 | 54.31 | 52.44 |
+| RR/JSON | 8.07 | 5.98 | 108.97 | 52.39 |
+| FPM/SELECT | 0.98 | 0.18 | 54.31 | 52.44 |
+| RR/SELECT | 3.04 | 2.07 | 109.20 | 52.44 |
 
-FPM pool включает master и child; RR — server и PHP worker. Общий Caddy приведён отдельно и учитывается один раз при оценке выбранного профиля. Оба runtime оставались запущены, но неактивный профиль не добавлялся к затратам активного. CPU не нормализован на запрос: число запросов существенно различается. k6, PostgreSQL/Docker и посторонние процессы в этих CPU/RSS числах отсутствуют; задержка обращения к БД входит в HTTP-измерение.
+Pool means FPM master/child or RR server/worker. Caddy is separate and counted once. Both runtimes stayed running but inactive costs were excluded. CPU is not normalized per request; counts differ substantially. k6/PostgreSQL/VM/unrelated processes are excluded, although database delay enters HTTP latency.
 
-RSS может многократно учитывать shared pages и не равен уникальной физической памяти. Отдельные maxima pool/Caddy могли наблюдаться в разные моменты. Частота сбора не гарантирует захват краткого пика; короткий прогон не показывает долгосрочный рост памяти. Сэмплирование само создаёт накладные расходы. В данных сохранены агрегаты, полная временная серия process samples не сохранялась.
+RSS can double-count shared pages; separate maxima may occur at different times. Sampling misses brief peaks and adds overhead. Short duration establishes no memory-growth result. Full process time series were not retained.
 
-## Проверки и дальнейшая работа
+## Verification and next stage
 
-`http:check` прошёл 24 случая для FPM и 24 для RR: маршруты, методы/Allow, HEAD, 204/304, повторные headers/Set-Cookie, path/query и независимость последовательных запросов одного worker. FPM проверялся прямым FastCGI-клиентом, RR — HTTP-клиентом. Это не полная матрица HTTP или reverse proxy.
+Actual checks passed twenty-four cases each for FPM/RR: routing/methods/Allow/HEAD/204/304/multiple headers/cookies/path/query/state. FPM used direct FastCGI; RR used HTTP. This was not a full proxy/protocol matrix.
 
-Выполнены root `verify` и PostgreSQL `verify:integration`; fixture prepare/lookup/cleanup проверены на настоящей БД. Проверки не выполнялись параллельно финальному замеру. Временные native servers и отдельная схема/контейнер стенда удалены после запуска.
-
-Следующий этап — публичный HTML-каталог с ограниченным SQL-списком, карточкой и скачиванием. Его реализация даст полезный сценарий для следующего замера; отдельно ещё нужны длительная работа worker, файловая память, соединения и проверка профиля на целевой deployment-платформе. Этот baseline не доказывает максимальную производительность и не выбирает основной runtime.
+Root verify and PostgreSQL integration passed; prepare/lookup/cleanup used actual PostgreSQL. Owned servers/schema/container were cleaned. The next stage was catalog list/detail/download, followed by file memory, sustained workers/connections, and target-platform validation. No capacity or runtime-winner conclusion follows.

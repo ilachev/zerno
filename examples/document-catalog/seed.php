@@ -101,8 +101,8 @@ try {
         };
         $pdf = catalogDemoPdf('Zerno demo document ' . $number . ' - ' . $status);
         $rows[] = [
-            'title' => 'Документ №' . $number,
-            'description' => 'Пример документа для публичного каталога. Состояние: ' . $status . '.',
+            'title' => 'Document ' . $number,
+            'description' => 'Example document for the public catalog. Status: ' . $status . '.',
             'status' => $status,
             'published_at' => 1792195200 + $number,
             'storage_key' => catalogDemoFile($directory, $pdf),

@@ -1,170 +1,116 @@
-# История перехода к автономной поставке — 2026-10-17
+# Autonomous delivery migration audit
 
-Тип: `history`. Статус: `historical`. Снимок: `d60c4cc` до реорганизации документации.
+Type: `history`. Status: `historical`. Snapshot: d60c4cc before documentation reorganization. English edition: 2026-11-13.
 
-Это сохранённый текст последовательных аудитов и этапов миграции. Он содержит как исходное состояние с Composer, так и результаты последующих изменений; отдельные разделы описывают разные моменты перехода. Его команды и планы не являются текущей инструкцией по запуску. Числа и результаты проверок относятся только к указанным здесь запускам.
+This records successive audits and migration stages, including the initial Composer installation and subsequent changes. Sections describe different moments. Commands/plans are historical, not current startup instructions. Counts apply only to the recorded runs. The [delivery contract](../design/autonomous-core.md), [architecture](../architecture/overview.md), and [roadmap](../project/roadmap.md) own present behavior. The original [dependency inventory](dependency-inventory-2026-10-17.json) remains unchanged.
 
-Текущая поставка: [автономная поставка](../design/autonomous-core.md). Текущие возможности: [обзор архитектуры](../architecture/overview.md). Дальнейшие задачи: [roadmap](../project/roadmap.md). Исходный [снимок зависимостей](dependency-inventory-2026-10-17.json) сохранён без изменения содержимого; он не описывает текущие manifests.
+## Goal and initial status
 
----
+The initial audit was on 2026-10-17. By the recorded later stage, application/generators/checks/builds used included sources/tools, with project Composer manifests/locks removed and no Composer/Task requirement. Comparable performance measurement remained separate.
 
-# Автономное веб-ядро: аудит зависимостей и план перехода
+The goal was a small PHP HTTP/PDO foundation for websites including municipal applications, keeping CMS/editor policy in application code. Fixed third-party sources were allowed; startup/checks/builds needed no Composer/Task/npm/download. Platform PHP 8.5/extensions/PostgreSQL/server executables were separate. A PHP RR package was not a server binary. File/class/package size alone proved no speed improvement.
 
-Первоначальный аудит: 17 октября 2026 года. Текущий статус: PHP-приложение, оба генератора, проверки и сборка используют включённые исходники и инструменты. Проектные `composer.json` и lock-файлы удалены; Composer и Task для этих операций не нужны. Сравнительные замеры производительности остаются отдельным этапом.
+## Original dependency audit
 
-## Цель и границы
+The unchanged inventory records locally installed versions/refs/licenses/loading/resources/hashes. It establishes local integrity without retrospectively authenticating provenance. Sizes sum regular files including docs/resources, excluding vendor/composer/archives/executables and execution costs.
 
-Небольшое производительное PHP-ядро, на котором разработчики создают сайты, в том числе муниципальные. Работа с БД входит в базовый набор. CMS, редактор документов и продуктовая админка остаются прикладным кодом.
+| Boundary | Direct packages | Full execution graph | Installed size MiB |
+| --- | ---: | ---: | ---: |
+| Application | 5 | 14 | 12.67 |
+| SQL generator | 3 | 7 | 1.02 |
+| Protobuf generator | 2 | 3 | 1.13 |
 
-Весь необходимый код и инструменты поставляются вместе с репозиторием. Необходимые сторонние исходники допустимы как фиксированная часть поставки. Для запуска, сборки и проверок не требуется устанавливать Composer, Task, npm или скачивать пакеты. Запуск проверяется при отключённой сети.
+Root had 76 packages: 14 runtime/62 dev. SQL tooling had 69 and protobuf tooling 68. Copying whole vendor trees would duplicate development environments.
 
-Платформенные требования записываются отдельно: PHP 8.5, необходимые расширения, PostgreSQL и способ обслуживания HTTP. Отдельные executable вроде RoadRunner требуют собственной поставки под поддерживаемую ОС и архитектуру; наличие PHP-пакета не заменяет бинарный файл.
+### HTTP and database
 
-Скорость оценивается замерами одинаковых запросов. Размер vendor, число классов и отказ от менеджера пакетов сами по себе не доказывают ускорение.
+Nyholm 1.8.2/PSR factory1.1.0/message2.0 comprised three packages, 24 PHP files/105,999 source bytes: small candidates for bundling with notices, with any custom replacement requiring correctness/measurement separately.
 
-## Что обнаружено при первоначальном аудите
+spiral/roadrunner-http4.1.0's ten-package graph included HTTP/worker/Goridge/PSR/logging/DTO/protobuf/compatibility; Nyholm was additional. The spiral/roadrunner2025.1.11 metapackage had no files and supplied no executable. Transport JSON/protobuf requirements were independent of application API/KV removal. Large Temporal DTO trees were potential later reduction candidates requiring complete metadata/wire checks, not just class-name searches.
 
-Числа установленного окружения ниже описывают состояние до переноса. Текущая поставка и её контрольные суммы находятся в `third_party/manifest.json` и отдельных distribution manifests.
+Storage/PDO/SqlExecutor/generated contracts needed no Nette/Phplrt/Typhoon at runtime. Explicit SQL/parameters/transactions/connections/bounded statements/migrations remained core. PostgreSQL was the first checked backend. Sessions/users/api_stats migrations belonged to the application and supplied a path.
 
-Снимок версий, исходных refs, лицензий из metadata, графов загрузки, размеров и контрольных сумм находится в [dependency-inventory.json](dependency-inventory-2026-10-17.json). Это снимок локально установленных файлов. Он фиксирует их целостность, но не удостоверяет происхождение файлов задним числом.
+SQL codegen used Nette Generator/Utils, Phplrt, Typhoon Type, Brick Math, and two Symfony compatibility packages. Eight bootstrap/function files, multiple namespace roots, and both pp2 grammars were needed; copying src PHP alone would break it.
 
-Размеры ниже — сумма размеров обычных файлов, включая документацию и ресурсы. Они не включают каталоги `vendor/composer`, архивы, стоимость исполнения и отдельные серверные executable.
+### Then-retained application subsystems
 
-| Контур | Прямых сторонних пакетов | Полный граф исполнения | Размер установленного графа |
-|---|---:|---:|---:|
-| Текущее приложение | 5 | 14 | 12,67 МиБ |
-| SQL-генератор | 3 | 7 | 1,02 МиБ |
-| Protobuf-генератор | 2 | 3 | 1,13 МиБ |
+RR KV had a six-package graph with Goridge/DTO/protobuf/simple-cache. Redis through RR could fall back to local storage without cross-worker cache guarantees. Even FallbackStorage implemented Spiral and was not an independent backend.
 
-В корневом установленном окружении 76 пакетов: 14 для приложения и 62 только для разработки. В SQL-tooling установлено 69 пакетов, в protobuf-tooling — 68. Копирование целых нынешних `vendor` перенесёт несколько дублирующихся окружений разработки.
+IP2Location added bcmath/curl and a separate BIN resource whose redistribution terms did not follow the PHP library license. Composition, not the generic HTTP core, selected automatic sessions/statistics. Application protobuf/endpoints/manifests were a separate integration from RR's transport protobuf.
 
-### HTTP и запуск
+## Hidden coupling identified
 
-- `nyholm/psr7 1.8.2`, `psr/http-factory 1.1.0`, `psr/http-message 2.0`: 3 пакета, 24 PHP-файла, 105 999 байт PHP-кода. Это небольшой кандидат на включение в исходники. Сохранить исходные notices; замену собственной реализацией оценивать отдельно по корректности и замерам.
-- Полный граф `spiral/roadrunner-http 4.1.0` содержит 10 пакетов: HTTP/worker, Goridge, PSR HTTP и logging, API DTO, Google Protobuf, compatibility bootstrap и RoadRunner metapackage. Выбранный приложением Nyholm добавляется отдельно.
-- `spiral/roadrunner 2025.1.11` — metapackage без файлов. Он не поставляет `rr` и не доказывает версию установленного executable.
-- HTTP-адаптер RoadRunner поддерживает JSON и protobuf для обмена с worker. Поэтому отделение прикладного protobuf API или удаление KV не позволяет автоматически исключить Google Protobuf из этого адаптера.
-- В API DTO имеются большие деревья Temporal, не относящиеся к текущему HTTP/KV. Их исключение — кандидат для последующей ограниченной поставки с проверкой полной загрузки metadata и реального wire protocol. Простого поиска используемых имён классов для такого сокращения недостаточно.
+| Area | Boundary needed |
+| --- | --- |
+| RR provider/entry point | RR services selected by application configuration |
+| Container/routing providers | Explicit bindings, generated bindings only in API composition |
+| Router/generated manifest provider | Routing separate from directory discovery |
+| Hydration/reflection cache | Ordinary DTOs separate from Google Message handling |
+| Session/GeoIP | Session lifecycle separate from compulsory GeoIP/cache |
+| Cache fallbacks/RR service | Generic contract separate from RR-specific interfaces |
+| ProjectPath/endpoint resolver | Application paths separate from core sources |
 
-### База данных
+Existing Pipeline/RequestHandler were sufficient; no new parallel kernel hierarchy was required.
 
-`Storage`, PDO-адаптеры, `SqlExecutor`, типизированные query/row contracts и сгенерированные SQL-классы не требуют Nette, Phplrt или Typhoon при выполнении приложения. Этот путь сохраняется основой ядра: явный SQL, параметры, транзакции, управляемые соединения, ограниченный кеш prepared statements и миграции.
+## First completed separation
 
-Первый контрольный движок — уже используемый PostgreSQL. Таблицы `sessions`, `users`, `api_stats` и их миграции принадлежат приложению. Движок миграций получает их путь из конфигурации.
+App implemented RequestHandler and obtained its handler from container configuration, without RR loop ownership. config/container.php retained middleware/sessions/statistics/API. RoadRunnerRuntime owned waitRequest→handle→respond; public/index.php connected it. A minimal composition ran App without RR services; integration used the then-existing API/PostgreSQL.
 
-SQL-генератор сохраняется как локальный инструмент разработки. Его граф: Nette PHP Generator и Utils, Phplrt, Typhoon Type, Brick Math и два Symfony compatibility packages. Помимо классов нужны восемь function/bootstrap-файлов, несколько namespace roots и обе `.pp2` grammar. Копирование только `src/*.php` разрушит инструмент.
+Actual RR 2025.1.15 exercised health/POST system/404/repeated GET, cookies/headers/four statistics rows in an isolated schema. That run still used Composer and fallback cache, establishing neither autonomy nor RR KV behavior. No performance gain was measured.
 
-### Кеш, сессии, геолокация и API
+## Minimal HTTP and PDO stage
 
-- RR KV: отдельный граф из шести пакетов с Goridge, API DTO, Google Protobuf и PSR Simple Cache. Конфигурация выбирает Redis через RR KV; при ошибках KV PHP-кеш может перейти на локальный fallback без гарантий общего кеша между workers.
-- Даже `FallbackStorage` реализует интерфейс Spiral. Его нельзя считать независимым backend только потому, что он хранит данные в памяти.
-- IP2Location добавляет библиотеку, расширения `bcmath`/`curl` и отдельный BIN-файл. Включённая геобаза является самостоятельным внешним ресурсом; её условия распространения не следуют из лицензии PHP-библиотеки.
-- Сессии и статистика остаются доступными возможностями. Их автоматическое выполнение для любого маршрута задаётся композицией приложения, а не общим HTTP-ядром.
-- Прикладные protobuf contracts, generated endpoints, operation manifests и их toolchain сохраняются отдельной API-интеграцией. Потребность RR transport в protobuf рассматривается независимо от прикладного API.
-
-## Где проходят скрытые связи
-
-| Файлы | Что необходимо разделить |
-|---|---|
-| `RoadRunnerServiceProvider.php`, `public/index.php` | RR-сервисы выделены в отдельный provider и подключаются конфигурацией приложения |
-| `DI/DIContainer.php`, `RoutingServiceProvider.php` | DI использует явные bindings; generated endpoint bindings регистрирует только API provider |
-| `RoutingServiceProvider.php`, `GeneratedOperationManifestProvider.php` | Router и конкретный generated provider с обходом каталога |
-| `Hydration/ReflectionCache.php`, `ReflectionHydrator.php`, reflection caches | Обычные DTO и распознавание/гидрация Google Protobuf Message |
-| `SessionModule.php`, `IP2LocationGeoLocationService.php` | Жизненный цикл сессии и принудительное подключение GeoIP/cache |
-| `Cache/FallbackStorage.php`, `RoadRunnerCacheService.php` | Общий cache contract и конкретные RR interfaces/backend |
-| `Config/ProjectPath.php`, endpoint resolver | Пути экземпляра приложения и расположение исходников ядра |
-
-Первая реализация использует существующий `Pipeline` и `RequestHandler`. Само выделение ядра не требует вводить новый слой однотипных kernel-классов.
-
-## Выполненный первый шаг
-
-`App` реализует `RequestHandler` и получает обработчик из конфигурации контейнера. Он больше не получает RR worker и не содержит цикла сервера. Состав и порядок middleware перенесены в `config/container.php`; сессии, статистика и существующие API-маршруты сохранены в этой конфигурации.
-
-`RoadRunnerRuntime` выполняет `waitRequest → handle → respond`, а `public/index.php` связывает его с приложением. Тестовая минимальная конфигурация запускает тот же `App` без RR-сервисов; интеграционная проверка использует текущую API-композицию и PostgreSQL.
-
-Текущий entrypoint также проверен через настоящий RoadRunner 2025.1.15: GET health, POST system, 404 и повторный GET в одном worker с сохранением cookie, request headers и четырёх записей статистики в отдельной PostgreSQL-схеме. Этот запуск использовал существующий Composer autoload и тестовый fallback кеша; автономность и RR KV им не проверялись.
-
-Сравнительные замеры производительности пока не выполнены; ускорение этим изменением не заявляется.
-
-## Минимальная HTTP/PDO-композиция
-
-`config/core.php` собирает существующие HTTP-блоки и лениво регистрирует PDO/SQL и миграции. Маршруты перечислены явно в `config/routes.php`. По умолчанию доступны GET и HEAD `/health`; ответ GET — `{"status":"ok"}`. Обработка этого запроса не создаёт соединение с БД. Сессии, API-статистика, GeoIP, protobuf discovery и cache backend в эту конфигурацию не включены.
-
-Один обработчик можно запускать двумя способами:
+The then-current config/core.php lazily registered SQL/migrations, explicit routes, GET/HEAD health, and no session/statistics/GeoIP/discovery/cache. Health opened no DB. Historical commands were:
 
 ```bash
-# Local PHP server; public/http.php is also the PHP-FPM front controller.
 php -S 127.0.0.1:8080 -t public public/http.php
-
-# RoadRunner with the same routes and middleware.
 rr serve -c .rr.core.yaml
-```
-
-Порты в примерах совпадают: запускать серверы по очереди. Для PHP-FPM веб-сервер должен передавать запросы в `public/http.php`, сохранять исходный request URI и обслуживать только каталог `public`. Forwarded-заголовки не определяют scheme или host автоматически; доверие к reverse proxy требует отдельной конфигурации.
-
-`public/http.php` переводит SAPI globals, raw body и uploads в PSR-7 request. Emitter передаёт status и отдельные значения headers, читает response body частями и исключает тело для HEAD и статусов, запрещающих тело. Ошибки запроса получают 400 без диагностических подробностей. Ответы ошибок middleware содержат JSON-объект `error`.
-
-`config/core-roadrunner.php` добавляет только RR provider к минимальной композиции. Прежний protobuf API, сессии, статистика и RR cache сохраняются в `config/container.php`; `public/index.php` по умолчанию использует его. Обе точки входа принимают `APP_CONFIG`: для сравнения одной API-композиции можно передать абсолютный путь к её файлу. `config/core-roadrunner.php` предназначен для RR, `config/core.php` — для обычного PHP.
-
-База данных настраивается существующими `DB_*` и `STORAGE_ENGINE`. В обработчике можно получить `Storage` или `SqlExecutor` через явную фабрику контейнера; параметры запросов и транзакции предоставляют существующие PDO-блоки. Ядро не создаёт таблицы при HTTP-запросе.
-
-Для минимального приложения миграции размещаются в `src/Migrations` с namespace `App\Migrations` и интерфейсом `Migration`. Команды используют ту же конфигурацию:
-
-```bash
 php bin/migrate.php migrate config/core.php
 php bin/migrate.php rollback config/core.php
 ```
 
-Пустой каталог миграций не создаёт таблицы приложения; служебная таблица версий создаётся при запуске команды. Прежний запуск без второго аргумента использует API-конфигурацию и её миграции.
+These entry points/config-directory semantics were later removed. At that time servers used the same port sequentially. FPM forwarded original URI to public/http.php and exposed public only; forwarded headers required an explicit trust policy.
 
-GET, HEAD и JSON 404 проверены через PHP development server, настоящий PHP-FPM и RoadRunner с одинаковой минимальной композицией и заведомо недоступным storage engine. Дополнительно через FPM проверены повторяющиеся headers/cookies, сохранение status при Location, потоковый ответ, 204 без тела, JSON body, form data, вложенный multipart upload и 400 для некорректного host. Проверки выполнялись на отдельных локальных портах и временной конфигурации.
+SAPI globals/body/uploads became PSR7 requests. Emission preserved status/separate headers, read chunks, and suppressed bodyless methods/statuses. Invalid requests returned private-free400; middleware errors were JSON. core-roadrunner.php added a provider while the default RR entry still chose API/container composition. Absolute APP_CONFIG selected a shared graph. Storage used DB_*/STORAGE_ENGINE and factories; HTTP did no DDL. Migrations used App\Migrations and the selected configuration; an empty directory created only history.
 
-Обе точки входа теперь используют `bootstrap.php` и локальный загрузчик `bootstrap/Autoloader.php`. Загрузка runtime не подключает PHPUnit или другие инструменты разработки. Сторонние PHP-библиотеки включены в `third_party/runtime`; Composer ClassLoader не используется.
+Real development-server/FPM/RR checks covered GET/HEAD/404 with unavailable storage. FPM also covered repeated headers/cookies, Location status, streaming/204, JSON/form/nested multipart, and invalid-host400 on owned ports. Both entries moved to local bootstrap/Autoloader without Composer ClassLoader or quality tools at runtime.
 
-## Фиксированная поставка стороннего кода
+## Fixed distributions
 
 ```text
-bootstrap.php                    загрузчик приложения
-bootstrap/Autoloader.php          общий загрузчик prefixes, classmap и function files
-third_party/runtime/             исходники и карта загрузки приложения
-third_party/codegen/sql/          отдельный граф SQL-генератора
-third_party/codegen/protobuf/     отдельный граф protobuf-генератора
-third_party/tools/               standalone PHPUnit, PHPStan и PHP-CS-Fixer
-third_party/manifest.json         индекс distribution manifests
-tools/project.php                локальные команды проверки, генерации и сборки
+bootstrap.php                    application loading
+bootstrap/Autoloader.php          prefixes, classmap, function files
+third_party/runtime/             runtime sources and autoload map
+third_party/codegen/sql/          isolated SQL graph
+third_party/codegen/protobuf/     then-retained protobuf graph
+third_party/tools/                standalone quality tools
+third_party/manifest.json         distribution index
+tools/project.php                local command interface
 ```
 
-Сохранены полные установленные деревья выбранных библиотек, включая notices и ресурсы. Manifest каждого контура содержит версии, upstream refs, происхождение локального снимка, адаптации и SHA-256 всех включённых файлов. Импортированные библиотеки взяты из ранее установленного окружения; их refs не считаются повторной аутентификацией исходников. Для PHAR сохранены официальные источники, опубликованные SHA-256 и сведения о проверке подписей.
+Full selected installed trees/notices/resources were retained. Each manifest recorded versions/refs/local-snapshot provenance/adaptations/hashes. Prior-installed refs did not independently authenticate sources. PHAR provenance recorded official sources/published hashes/signature checks.
 
-`php tools/check-third-party.php` проверяет индекс, каждый файл и отсутствие незаявленных файлов или symlinks. `.gitattributes` сохраняет точные байты сторонних исходников и PHAR при работе Git с переводами строк. Проверка не обращается к сети.
+Offline integrity checked all files, undeclared files, and symlinks. gitattributes preserved exact third-party/PHAR bytes. Upstream namespaces/dependency metadata stayed without installation/loading behavior. At this snapshot the sole runtime adaptation made Version::current return pinned2025.1.11 metadata without an installed registry; it did not detect binary version.
 
-Upstream namespaces и метаданные, включая исходные dependency declarations, сохранены. Они не используются для установки или загрузки. Единственная адаптация runtime — `Spiral\RoadRunner\Version::current()`: вместо обращения к установленным пакетам он возвращает зафиксированную compatibility metapackage version `2025.1.11`. Patch и исходный hash записаны в manifest. Это значение не определяет версию исполняемого `rr`.
+Quality tools were unmodified PHPStan2.1.42/PHPUnit11.5.55/PHP-CS-Fixer3.94.2 PHARs with verified official SHA-256. PHPStan's OpenPGP signature was also checked; other saved signatures were not claimed cryptographically verified. Details stayed in provenance JSON.
 
-Инструменты качества включены как неизменённые standalone PHAR: PHPStan 2.1.42, PHPUnit 11.5.55 и PHP-CS-Fixer 3.94.2. Их опубликованные SHA-256 сверены с официальными источниками. Для PHPStan дополнительно проверена OpenPGP-подпись; для остальных сохранённые подписи не объявляются криптографически проверенными. Подробности находятся в `third_party/tools/*/provenance.json`.
+Generators ran isolated versions/processes; dev bootstrap added only PHPUnit types rather than mixing Google versions. Own root LICENSE was absent; both own generators said proprietary. Distribution policy remained open, while upstream licenses including protos/proto were inventoried.
 
-SQL и protobuf tooling загружают собственные зафиксированные версии библиотек в отдельных процессах. Общий dev bootstrap подключает только типы PHPUnit, не смешивая runtime Google Protobuf с версией protobuf-генератора. Включённые оригинальные package metadata служат сведениями об исходниках; проектных Composer manifests и этапа установки больше нет.
+## Verification without Composer
 
-У основного проекта пока нет root `LICENSE`; два собственных генератора помечены `proprietary`. Политика распространения собственного проекта остаётся отдельным решением. Лицензии включённых библиотек и уже находящихся в `protos/proto` сторонних исходников учитываются при подготовке manifest.
+A clean no-vendor copy passed verify:full with only PHP/platform executables in PATH, no Composer/Task/npm, and an OS network profile allowing loopback but blocking external network. Integrity/style/PHPStan/SQL/unit/both-generator/PostgreSQL checks passed. SQL and legacy protobuf SDK/endpoints/OpenAPI generation, repeated app tests, and archive build also ran under those restrictions.
 
-## Проверка без Composer
+Extracted /health used local bootstrap without ClassLoader/PHPUnit/vendor. Only runtime distribution/inventory shipped. Real FPM 8.5.9/RR 2025.1.15 repeated minimal GET/HEAD/404; RR/PostgreSQL also checked legacy API/POST/session/statistics with fallback rather than real KV.
 
-В чистой копии без `vendor` выполнен `php tools/project.php verify:full`. В `PATH` оставлены только PHP и платформенные executable для генерации/запуска; Composer, Task и npm отсутствовали. Профиль ОС запретил внешнюю сеть, разрешив loopback для PostgreSQL и локальных процессов проверок.
+SQL/endpoint/registry output was byte-identical. protoc26.1 aggregate metadata varied independent-import order even on repeated identical commands, while six individual descriptors matched byte-for-byte. Regenerated SDK passed app tests. This was not a performance result.
 
-Полный gate включает integrity, стиль, PHPStan, согласованность SQL, unit tests приложения, проверки обоих генераторов, SQL validation и интеграционные тесты PostgreSQL. Отдельно в тех же ограничениях выполнены генерация SQL, protobuf SDK/endpoints/OpenAPI, повторные тесты приложения и сборка runtime-архива.
+## Recorded transition sequence
 
-Распакованный архив запускает `/health` через собственный bootstrap без Composer ClassLoader, PHPUnit и подключений из `vendor`. Архив включает только runtime distribution и её inventory; инструменты разработки и генераторы остаются в исходном репозитории. Сторонние executable и расширения не подменяются PHP-пакетами и учитываются как требования платформы.
+1. Establish compatibility and comparable small-response/HTML/SELECT/list/write measurements, including quantiles/CPU/all-process RSS/SQL/connections/errors and sustained operation.
+2. Separate RequestHandler/Pipeline construction from RR, preserving a behavioral control and another entry for comparison.
+3. Extract explicit HTTP/PDO composition without mandatory discovery/GeoIP/sessions/statistics.
+4. Bundle selected HTTP/autoload/manifests, then isolated tooling; replace compulsory Task/Composer commands while retaining checks.
+5. Package/check RR separately and evaluate DTO/worker adaptations against platform requirements.
+6. Check offline no-manager startup/generation/analysis/tests/build/PostgreSQL, then compare costs and decide runtime scope.
 
-На настоящих PHP-FPM 8.5.9 и RoadRunner 2025.1.15 повторно проверены GET/HEAD/404 минимальной композиции, а на RR с PostgreSQL — прежний API, POST body, сохранение сессии и статистика запросов. RR KV в этих тестах заменялся существующим testing fallback; сам KV backend этой проверкой не охвачен.
-
-SQL-артефакты и generated endpoint/registry артефакты совпадают с исходными побайтово. У установленного `protoc 26.1` aggregate metadata меняет порядок независимых импортов даже при повторном запуске с одинаковыми аргументами. Сами шесть дескрипторов в каждом файле побайтово совпадают; повторно сгенерированный SDK прошёл тесты приложения. Это не замер производительности.
-
-## Последовательность перехода
-
-1. Зафиксировать исходную производительность и совместимость текущего API. Сравнивать одинаковые ответы и работу с данными: небольшой ответ, HTML, indexed SELECT, список, транзакционная запись. Измерять p50/p95/p99, CPU, общий RSS, SQL/request, соединения и ошибки; отдельно длительную работу worker.
-2. Отделить создание общего `RequestHandler`/Pipeline от RR loop. Сохранить прежний entrypoint и API-композицию для контроля поведения. Подготовить обычный PHP entrypoint и RR adapter для сравнения одной логики.
-3. Выделить HTTP/PDO основу с явными маршрутами и фабриками, без обязательного endpoint discovery, GeoIP, сессии и статистики. Работа с БД доступна из коробки; конкретный handler определяет необходимые обращения к данным.
-4. Включить выбранный HTTP-код, локальный загрузчик и manifest. Затем изолированно включить SQL-tooling и инструменты качества. Заменить обязательные Task/Composer команды PHP-командами, сохранив проверки.
-5. Отдельно упаковать и проверить RR runtime; определить, нужны ли ограниченный DTO набор и адаптации worker API. Состав executable и расширений зависит от поддерживаемых платформ.
-6. Проверить новый checkout при отключённой сети и без Composer/Task/npm в обязательном PATH: загрузка, генерация SQL, статический анализ, тесты, сборка и приложение с PostgreSQL. После этого сравнить производительность и принять решение об основном runtime.
-
-Первые переносы должны сохранять исходники пакетов целиком в выбранных графах. Сокращение отдельных деревьев и собственные HTTP-реализации выполняются только после работоспособной автономной поставки и проверки измеримого выигрыша.
+Initial imports retained whole trees. Later trimming/custom HTTP needed a working autonomous baseline and verified benefit. These historical stages do not authorize restoring removed subsystems.

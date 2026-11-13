@@ -1,37 +1,37 @@
-# Проверка HTTP 205, BIGINT метаданных и длительного RR-сценария
+# HTTP 205 metadata upgrades and sustained runtime validation
 
-Тип: `history`. Статус: `historical`. Проверено: 2026-10-28.
+Type: `history`. Status: `historical`. Verified: 2026-10-28. English edition: 2026-11-13.
 
-## Состояние и результат
+## State and result
 
-Завершён следующий этап [ADR](../design/adr-2026-10-28-contract-correctness.md): запрет body для HTTP 205, новая BIGINT-колонка времени миграций и явный upgrade-metadata для существующей истории. [Текущий контракт миграций](../design/transactions-and-migrations.md#bigint-времени-и-явное-обновление-метаданных) владеет порядком обслуживания; HTTP-поведение описывает [lifecycle](../architecture/request-lifecycle.md). Эти исправления не являются оптимизацией с заявленным ускорением.
+The next [ADR stage](../design/adr-2026-10-28-contract-correctness.md) implemented bodyless HTTP 205, BIGINT migration timestamps, and explicit upgrade-metadata. The [migration contract](../design/transactions-and-migrations.md#bigint-timestamps-and-explicit-metadata-upgrade) owns maintenance rules; [lifecycle](../architecture/request-lifecycle.md) owns HTTP. These are correctness changes without a claimed speedup.
 
-На настоящем RR пройдены 144 JSON + 144 HTML wire cases. PostgreSQL проверил сохранение INTEGER-истории, отсутствие неявного ALTER, повтор явной команды, PHP_INT_MAX и rollback неудачного преобразования. В распакованном runtime-архиве upgrade-metadata также сохранил старую строку и принял PHP_INT_MAX. verify:full: 316 root unit / 170 SQL tool / 62 PostgreSQL tests.
+Actual RR passed 144 JSON+144 HTML wire cases. PostgreSQL checked preserved INTEGER history, no implicit ALTER, repeated upgrade, PHP_INT_MAX, and failed-conversion rollback. The extracted archive also preserved an old row and accepted PHP_INT_MAX. verify:full passed 316 root/170 SQL-tool/62 PostgreSQL tests.
 
-## Платформа и метод
+## Platform and method
 
-Собственный код основан на Git 22dfa6d с незакоммиченными изменениями этапов ADR. [JSON](2026-10-28-runtime-soak.json) сохраняет source hashes, runtime manifest hash, SHA-256 RR, полный k6 summary и process samples. За измеренный интервал сохранённые собственные runtime/fixture sources не изменились.
+Code was based on Git 22dfa6d with uncommitted ADR changes. [Raw JSON](2026-10-28-runtime-soak.json) retains source/runtime-manifest/RR hashes, full k6 summaries, and process samples. Recorded runtime/fixture sources stayed unchanged during measurement. This English narrative does not modify that raw snapshot.
 
-Linux aarch64 в Docker Desktop: PHP 8.5.12, pdo_pgsql/sockets, libpq 17.11, PostgreSQL 16.15; RR 3.0.1, Go 1.27.3; k6 v2.2.0 (commit/devel, go1.26.5, darwin/arm64). Внешняя тестовая PHP-платформа предварительно подготовлена из cached PHP image с libpq-dev/pdo_pgsql; эта подготовка не входит в project checks/build и не меняет bundled dependencies. Docker VM имела 14 CPU и 8 GiB памяти. PHP workers: CLI OPcache on, memory_limit 64M, chunk size 8192, pool size 2, max_jobs 0. Проверочный граф включает оба существующих baseline/wire App и metadata logging; его затраты не приравниваются к минимальному ядру.
+Linux aarch64 in Docker Desktop: PHP 8.5.12, pdo_pgsql/sockets, libpq 17.11, PostgreSQL 16.15; RR 3.0.1, Go 1.27.3; k6 v2.2.0 commit/devel with go1.26.5 darwin/arm64. The external PHP platform was prepared from a cached image with libpq-dev/pdo_pgsql, outside project checks/build and without bundled changes. VM: fourteen CPUs/8 GiB. Workers: CLI OPcache on, 64M limit, chunks 8192, pool two, max_jobs zero. The graph includes baseline/wire Apps and metadata logging; its cost is not that of a minimal core.
 
-Финальный сценарий: 60 s прогрева и 900 s измерения при 10 iterations/s, SQL batches по 4 параллельных запроса, 10 000 подготовленных записей. Остальные операции — JSON, manual/generated Echo, route/query reset, 1 MiB и 16 MiB + 17 байт GET/HEAD с SHA-256, 204/205 и ожидаемые 400/404/405/500. Последовательный пилот в основном выбирал один worker, поэтому окончательная версия использует короткие SQL bursts. [Методика воспроизведения](../development/http-and-baseline.md#смешанный-длительный-прогон) содержит команды подготовки, k6 и process sampling.
+Final run: sixty-second warmup and 900-second measurement at ten iterations/s, four-request SQL batches, 10,000 records. Other operations: JSON/manual/generated Echo/context resets, 1 MiB and 16 MiB+17-byte GET/HEAD with SHA-256, 204/205 and expected 400/404/405/500. A sequential pilot mostly selected one worker, so the final version used short SQL bursts. The [guide](../development/http-and-baseline.md#mixed-sustained-run) describes reproduction.
 
-## Наблюдения
+## Observations
 
-За 15 минут k6 выполнил **16,564 HTTP requests**, **99,384 успешных checks**, не зарегистрировал failed checks, сетевых/неожиданных HTTP failures и dropped iterations. Ожидаемые HTTP errors проверяются по status/privacy и не приравниваются к transport failure. http_req_duration включает отправку запроса, ожидание и получение response body; клиентская проверка SHA-256 выполняется после ответа и входит в iteration_duration, а не в HTTP latency ([определения k6](https://grafana.com/docs/k6/latest/using-k6/metrics/reference/)).
+k6 completed **16,564 HTTP requests**, **99,384 passed checks**, zero failed checks, unexpected/network HTTP failures, or dropped iterations. Expected errors have explicit status/privacy checks. http_req_duration includes sending/waiting/receiving; client SHA-256 checks occur afterward in iteration_duration ([k6 definitions](https://grafana.com/docs/k6/latest/using-k6/metrics/reference/)).
 
-HTTP latency: p50 **1.96 ms**, p95 **13.70 ms**, p99 **498.52 ms**, max **767.58 ms**. Это смешанный workload с крупными файлами, не максимальная пропускная способность и не сравнение реализаций.
+Mixed HTTP latency: p50 **1.96 ms**, p95 **13.70 ms**, p99 **498.52 ms**, max **767.58 ms**. The workload includes large files and establishes neither capacity nor a comparison between implementations.
 
-| Процесс | RSS median первых 60 s, MiB | RSS median последних 60 s, MiB | Max sampled RSS, MiB | CPU seconds | FD min–max |
+| Process | First 60s median RSS MiB | Last 60s median RSS MiB | Max sampled RSS MiB | CPU seconds | FD range |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | RR server | 41.27 | 23.88 | 53.89 | 41.33 | 15–31 |
 | PHP worker 16 | 31.58 | 17.29 | 31.77 | 94.89 | 6–7 |
 | PHP worker 17 | 31.57 | 17.27 | 31.76 | 94.22 | 6–7 |
 
-PID/start_ticks server и обоих worker сохранялись во всех samples, оба worker расходовали CPU. PHP allocations/peak доступны в k6 telemetry отдельно от RSS. В JSON также записан lifetime kernel peak RSS; sampling раз в 5 s не ловит каждый кратковременный spike. CPU seconds получены из дельты utime+stime при CLK_TCK=100. Суммирование RSS может повторно учитывать shared pages. PostgreSQL и host k6 не входят в таблицу server/workers.
+PID/start_ticks stayed constant for all three processes; both workers consumed CPU. PHP allocation/peak telemetry is separate from RSS. JSON includes lifetime kernel RSS peaks. Five-second sampling misses brief spikes. CPU is utime+stime delta with CLK_TCK=100. RSS sums may double-count shared pages; PostgreSQL/host k6 are excluded.
 
-## Границы вывода и ориентиры
+## Scope and limits
 
-Корректность, неизменность worker identities и конечные диапазоны памяти/FD подтверждены только этим прогоном. Данные таблицы и latency — локальный baseline для сравнимого повторения, не универсальный SLO. Явные пределы сценария: 64M Zend memory_limit на worker, два worker, response files до 16 MiB + 17 байт, клиентский timeout 10 s и maxVUs 12. RSS отличается от Zend limit. В первой части измерения на том же host выполнялись verify:full и отдельный archive CLI smoke; фоновые задачи и Docker VM могли влиять на latency/residency.
+Correctness, identities, and observed finite memory/FD ranges apply only to this run. Latency/resource values are a local baseline, not a universal SLO. Explicit bounds were 64M Zend limit per worker, two workers, files through 16 MiB+17, ten-second client timeout, maxVUs twelve. RSS differs from Zend allocation. verify:full and archive CLI smoke ran on the host during the first measurement part, potentially affecting timing/residency.
 
-Пятнадцать минут не доказывают отсутствие утечек на днях работы, поведение произвольных streams, client cancellation, потерю БД или deployment readiness. Online security audit здесь не повторялся; действующее scoped заключение для Linux amd64 не покрывает использованный Linux arm64 executable. Следующий эксплуатационный этап должен выбрать профиль реального приложения, длительность и бюджеты на целевой deployment-платформе. Созданные для проверки процессы, schema и файлы очищаются отдельно от сохранённых результатов.
+Fifteen minutes does not establish multi-day leak freedom, arbitrary streams, client cancellation, database loss, or deployment readiness. Online security audit was not repeated; the scoped Linux amd64 assessment does not cover the used arm64 executable. Future operational checks need a real application profile, duration, budgets, and target platform. Owned processes/schema/files were cleaned separately from retained results.

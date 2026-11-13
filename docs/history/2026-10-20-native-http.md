@@ -1,38 +1,37 @@
-# Собственный HTTP без Nyholm и PSR-пакетов
+# Native HTTP types without Nyholm or PSR packages
 
-Тип: `history`. Статус: `historical`. Проверено: 2026-10-20.
+Type: `history`. Status: `historical`. Verified: 2026-10-20. English edition: 2026-11-13.
 
-Снимок перехода после `9c300d3`: RequestHandler/Middleware/ErrorResponse и потребители переведены на конкретные Request/Response/Body/Uri/UploadedFile ядра. Текущий контракт принадлежит [lifecycle](../architecture/request-lifecycle.md), поставка — [autonomous core](../design/autonomous-core.md). [Данные проверки](2026-10-20-native-http.json) содержат версию до изменения, raw CLI samples и исходник probe.
+After 9c300d3, handlers/middleware/errors/consumers moved to concrete core Request/Response/Body/Uri/UploadedFile. [Lifecycle](../architecture/request-lifecycle.md) and [delivery](../design/autonomous-core.md) own current contracts. [Data](2026-10-20-native-http.json) records the previous state/probe/raw samples.
 
-## Решение и цена сопровождения
+## Decision and maintenance cost
 
-Разработчик принимает Request, возвращает new Response(status, headers, string|Body), для файлов передаёт Body::create(resource) в AttachmentResponse. Composition root и маршруты сохраняют готовые объекты; factories/interfaces для сообщений отсутствуют. Полная поверхность PSR-7/17 не воспроизводится; это breaking PHP API change, все потребители checkout переведены. Внешние PSR middleware/adapters потребуют отдельной интеграции, которой здесь нет.
+Developers accept Request, return Response(status, headers, string|Body), and pass streams to AttachmentResponse. Composition/routes retain constructed objects. No full PSR-7/17 surface or extra message factories/interfaces is reproduced. This breaks PHP compatibility; external PSR middleware needs integration not supplied here.
 
-Удалены четыре пакета: nyholm/psr7, psr/http-factory, psr/http-message и psr/log. Runtime содержит семь retained packages для RR, protobuf/DTO и transport support. Собственный Logger уже существовал; единственный PSR LoggerTrait в тесте заменён явной реализацией. Upstream PSR7 adapter/logger sources сохранены как provenance и не загружаются. В RR Worker.php отдельным patch удалён неиспользуемый logger, eager default которого требовал psr/log; обработка frames сохранена. Upstream notices/hashes и обе worker adaptations зафиксированы в manifest.
+Removed nyholm/psr7 and PSR HTTP/factory/log. Seven retained runtime packages support RR/protobuf/DTO. Existing core Logger remained; a test LoggerTrait was replaced with explicit implementation. Unused upstream adapter/logger source remains provenance and unloaded. A recorded worker patch removed eager PSR logging without frame changes; notices/upstream/final hashes and both adaptations remain in manifests.
 
-Теперь команда проекта отвечает за header validation, URI, uploads и владение Body. Это дополнительный собственный код и ответственность, поэтому одного уменьшения vendor недостаточно для доказательства простоты/производительности. Выбраны concrete types с необходимыми текущим потребителям методами. Строковый Body не открывает php://temp; файл остаётся ресурсом. Metadata copies разделяют body, close идемпотентен. В RR chunk path удерживаются текущий и следующий блоки; default 0 по-прежнему буферизует весь body. Native upstream завершает stream при generator failure; адаптер сохраняет ошибку чтения и выбрасывает её после завершения, транспортные ошибки также выходят наружу.
+The project now owns header/URI/upload validation and body semantics. Fewer vendor files alone does not justify that maintenance cost. String Body avoids php://temp; file Body owns a resource. Metadata copies share it; close is idempotent. RR chunks retain current/next blocks, while default 0 buffers. Read failures are rethrown after native stream completion; transport errors propagate.
 
-Без RR его библиотеки не загружаются; autoload map и bootstrap имеют стоимость. Без файлового helper нет файлового I/O. Ниже измерен только малый общий PHP-путь. Он не выбирает основной сервер и не подтверждает production readiness.
+RR libraries load only when used, but bootstrap/maps still cost work. Unused file helpers open nothing. The following measures only a small PHP path.
 
-## Проверки
+## Verification
 
-- Пройден verify:full: root 229 tests / 908 assertions, SQL generator 167 / 625, PostgreSQL integration 32 / 272. PHPStan 10, style, docs, SQL synchronization и bundled integrity пройдены; три distributions / 1614 files.
-- Реальные FPM/RR: 51 случай × JSON/HTML errors × 2 транспорта = 204. Сохранены исходные 188, добавлены form-urlencoded/query/cookie, raw JSON, nested multipart upload с moveTo и следующий пустой request.
-- Body/headers/immutable metadata, malformed URI/status/header, upload errors/повторный move/SAPI validation, запрет чтения HEAD/1xx/204/304, закрытие при transport/logging/read failure, buffered/chunked non-seekable response и mid-stream read failure проверяются реальными внутренними объектами. Внешняя граница RR WorkerInterface изолирована; ObservedStream — настоящий PHP stream wrapper.
-- verify:full включает PostgreSQL integration и SQL generator checks; распакованный runtime archive отдельно прошёл 43 HTTP-проверки на SAPI/RR с каталогом, миграциями, rollback/reapply и 21 generated typed row. Legacy classes/interfaces не загружаются из чистого bootstrap.
+verify:full passed 229 unit/908 assertions, 167 SQL-tool/625, 32 PostgreSQL/272; PHPStan 10/style/docs/sync/integrity, three distributions/1,614 files. FPM/RR passed 51 cases × two renderers × two transports = 204, extending the previous 188 with forms/query/cookies/raw JSON/nested multipart/moveTo/subsequent empty request.
 
-Полная HTTP-матрица сохраняет длины/hashes больших файлов до 16 MiB + 17 при memory_limit 32M и повторных GET/HEAD. Это ограниченный regular-file сценарий и retained PHP allocation, не RSS/peak или доказательство отсутствия утечек при длительной нагрузке. Проверки входа не являются полным аудитом uploads/proxy/security; server limits и политика файлов остаются у приложения.
+Tests exercised body/header/metadata/URI/status, upload failure/repeated move/SAPI validation, unread HEAD/1xx/204/304, closure on transport/logging/read failure, non-seekable buffering/chunking, and mid-stream errors using real internal types/ObservedStream. WorkerInterface was isolated at the external boundary. Archives separately passed 43 HTTP cases, migrations/rollback/reapply, and twenty-one generated rows; clean bootstrap loaded no legacy interfaces.
 
-## Ограниченное сравнение
+Files through 16 MiB+17 bytes retained length/hash under 32M and repeated GET/HEAD. This establishes regular-file/PHP-allocation behavior, not RSS peaks/endurance or a full upload/proxy/security audit.
 
-PHP 8.5.9 CLI, OPcache CLI выключен, семь пар отдельных процессов с чередованием порядка, предварительно по одному отброшенному процессу. Каждый процесс измеряет bootstrap/composition, затем 10 000 новых GET /health, проверку Content-Type/request ID/status/body и закрытие обоих bodies. БД, сеть и emission отсутствуют. Медианы и raw samples находятся в JSON рядом; PHP memory counters не являются RSS. Измерения не задают FPM/RR p95/p99, throughput или долгоживущую устойчивость.
+## Bounded comparison
 
-| Медиана | До (`9c300d3`) | После |
+PHP 8.5.9 CLI/OPcache off; seven alternating process pairs after discarded warmups. Each measures bootstrap, then 10,000 fresh GET /health with content-type/ID/status/body checks and both bodies closed. No network/database/emission. Raw samples are in JSON.
+
+| Median | Before 9c300d3 | After |
 | --- | ---: | ---: |
-| Bootstrap/composition, ms | 1.038166 | 1.083583 |
-| 10 000 запросов с проверками, ms | 73.214 | 60.24325 |
-| PHP bytes после запросов | 883720 | 689416 |
-| Peak PHP bytes | 971704 | 736952 |
-| Included files после запросов | 45 | 37 |
+| Bootstrap/composition ms | 1.038166 | 1.083583 |
+| 10,000 checked requests ms | 73.214 | 60.24325 |
+| PHP bytes after requests | 883,720 | 689,416 |
+| Peak PHP bytes | 971,704 | 736,952 |
+| Included files | 45 | 37 |
 
-В этом конкретном CLI-сценарии цикл дешевле, короткий startup-замер не показал улучшения. Общий вывод об ускорении сайта из этих чисел не следует. Собственных runtime PHP-файлов стало 56 вместо 49; уменьшение пакетов сопровождается собственным кодом, тестами и ответственностью за HTTP-контракт.
+The measured loop was cheaper; startup did not improve. This does not establish site throughput, p95/p99, RSS, or endurance. Own runtime files rose from 49 to 56: package removal transferred responsibility into project code/tests.

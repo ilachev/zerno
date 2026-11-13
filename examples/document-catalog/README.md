@@ -1,10 +1,12 @@
-# Публичный каталог документов
+# Public document catalog
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `operations`. Status: `current`. Reviewed: 2026-11-13.
 
-Небольшой пример: список опубликованных документов → HTML-карточка → скачивание PDF. Все команды ниже выполняются из корня checkout. Установка пакетов не нужна; требуются PHP 8.5.12+ с расширениями ядра и `pdo_pgsql`, PostgreSQL, executable RoadRunner 3.0.1+ в ветке 3.x с расширением sockets. Общие требования описаны в [инфраструктуре и тестировании](../../docs/development/infrastructure-and-testing.md) и [security checks](../../docs/development/security.md).
+A runnable example: published list → HTML detail → PDF download. Run commands from the checkout root. Required platform: upstream PHP 8.5.12+, pdo_pgsql/core extensions, PostgreSQL, sockets, and RR 3.0.1+ in the 3.x line. No package installation is needed. See [requirements](../../docs/development/infrastructure-and-testing.md) and [security](../../docs/development/security.md).
 
-Подготовьте отдельную БД и роль примера через обычные средства администрирования PostgreSQL. Например, администратор может выполнить в `psql`:
+## Prepare and run
+
+An administrator can create a separate example database/role in psql:
 
 ```sql
 CREATE ROLE zerno_catalog LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
@@ -12,62 +14,54 @@ CREATE ROLE zerno_catalog LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
 CREATE DATABASE zerno_catalog OWNER zerno_catalog;
 ```
 
-Пароль вводится интерактивно. Перед командами PHP задайте его в окружении своего терминала; конфигурацию с секретами в репозиторий не добавляйте. Затем явно укажите параметры подключения:
+Enter a password interactively, then set it in your terminal environment. Do not commit secrets.
 
 ```bash
 export DB_HOST=127.0.0.1 DB_PORT=5432
 export DB_NAME=zerno_catalog DB_USER=zerno_catalog DB_SCHEMA=public
-: "${DB_PASSWORD:?Задайте пароль роли PostgreSQL в DB_PASSWORD}"
+: "${DB_PASSWORD:?Set the PostgreSQL role password in DB_PASSWORD}"
 export DB_PASSWORD
 export CATALOG_FILES_DIR="$PWD/var/document-catalog/files"
-
 php tools/project.php migrate migrate examples/document-catalog/migrations
 php examples/document-catalog/seed.php
-```
-
-`CATALOG_FILES_DIR` должен находиться вне `public`; без переменной используется `var/document-catalog/files`. Seed создаёт каталог, если его ещё нет. Процесс PHP должен иметь право читать файлы, а оператор seed — создавать их. Для промышленного размещения отдельно назначьте права и владельца, храните БД и файлы согласованно и запрещайте постороннюю запись в storage.
-
-Миграция создаёт таблицу `catalog_documents` и частичный индекс опубликованных записей. Она запускается явно, вне HTTP startup. Каждая версия вместе с её записью в migrations атомарна; после исправления ошибки повторите CLI-команду. Seed — только CLI-процедура демоданных: в пустой БД добавляет 24 опубликованные записи, один `draft` и один `withdrawn` с небольшими PDF. Повторный запуск сохраняет существующие записи с тем же storage key. Это не публичный upload или редактор.
-
-Запустите RoadRunner 3 с теми же переменными БД и storage:
-
-```bash
 rr serve -w "$PWD" -c examples/document-catalog/rr.yaml
 ```
 
-RR слушает `127.0.0.1:8081`, запускает один PHP worker с CLI OPcache и RR_HTTP_CHUNK_SIZE=8192. [Список документов](http://127.0.0.1:8081/documents) использует явную config.php функцию. Ctrl+C останавливает сервер.
+CATALOG_FILES_DIR must be outside public; default is var/document-catalog/files. Seed creates the directory. PHP needs read access and seed needs write access. Operators control ownership, database/file consistency, and protection from unrelated writes.
 
-| GET и HEAD | Результат |
+The explicit migration creates catalog_documents and its partial published index, atomically with history. HTTP startup does no DDL. In an empty database, CLI seed creates 24 published, one draft, and one withdrawn document with small PDFs. Repeated seed preserves records with matching storage keys; existing records retain their saved text. New demo content and UI are English.
+
+RR listens on loopback 8081 with one worker, CLI OPcache, and chunks 8192. Open the [catalog](http://127.0.0.1:8081/documents); Ctrl+C stops it.
+
+| GET/HEAD | Result |
 | --- | --- |
-| `/health` | Проверка ядра без подключения к БД |
-| `/documents` | До 20 опубликованных записей, последние добавленные первыми |
-| `/documents?before=24` | Следующая страница по идентификатору, без общего `COUNT` |
-| `/documents/{id}` | Название, текстовое описание, дата UTC и сведения о PDF |
-| `/documents/{id}/download` | Опубликованный PDF как вложение |
+| /health | Core health without a connection |
+| /documents | Up to twenty published rows, newest added first |
+| /documents?before=24 | Cursor page without a total COUNT |
+| /documents/{id} | Title, description, UTC date, PDF metadata |
+| /documents/{id}/download | Published PDF attachment |
 
-[CatalogRepository](src/CatalogRepository.php) использует прямой SQL с литералом published и параметром cursor; это сохраняет predicate частичного индекса даже при generic prepared plans. Список делает один ограниченный SQL-запрос с `LIMIT 21`: дополнительная запись определяет наличие следующей страницы. Cursor `before` — каноническая десятичная запись положительного ID в пределах `PHP_INT_MAX`, без знака, пробелов и начальных нулей; некорректный cursor даёт HTML `400`. Неверный ID, отсутствующий или непубличный документ дают одинаковую HTML `404`. Неподдерживаемый метод получает HTML `405` с `Allow`, внутренняя ошибка — HTML `500` без деталей реализации.
+## Behavior and boundaries
 
-[`application.php`](application.php) явно создаёт Html/Errors, repository/files и handlers из Logger/Storage/private directory. Объект [`Errors`](src/Errors.php) передаётся в общий ErrorHandlerMiddleware и RoutingMiddleware; [`config.php`](config.php) выбирает только параметры этой сборки. Контейнера, bindings и class-name lookup нет. HTML создаётся сразу, без промежуточного JSON; готовые ответы handlers не переписываются. Core `ErrorHandlerMiddleware` пишет полное исключение в выбранный logger, возвращая только публичное сообщение. Контракт, границы и стоимость подключения — в [жизненном цикле HTTP](../../docs/architecture/request-lifecycle.md#представление-http-ошибок).
+[Repository](src/CatalogRepository.php) uses a fixed published predicate so generic prepared plans can use the partial index. LIMIT 21 detects continuation while showing twenty rows. before is a positive canonical decimal ID through PHP_INT_MAX, without signs/spaces/leading zeros. Invalid cursors get HTML 400. Invalid/hidden/missing IDs share 404; unsupported methods return 405/Allow; private failures produce generic 500.
 
-Каталог работает без JavaScript и сессий, не создаёт `Set-Cookie`. HTML и download используют `Cache-Control: no-store`; `/health` сохраняет JSON-контракт ядра. HEAD возвращает метаданные GET без тела. В download он проверяет файл и размер, затем закрывает поток без чтения содержимого.
+[application.php](application.php) composes Html/Errors/repository/files/handlers from Logger/Storage/private directory; [config](config.php) chooses inputs. [Errors](src/Errors.php) serves shared routing/error middleware directly, without intermediate JSON. Completed handler responses remain unchanged; Throwable details go to the logger. See [lifecycle](../../docs/architecture/request-lifecycle.md).
 
-Выдача документов и файлов проверяет published-состояние через БД. Файл выбирается по непрозрачному ключу из записи; произвольный путь из URL не принимается. Проверяются нахождение внутри storage, обычный тип файла и соответствие размера через `fstat`. Недоступный файл даёт ту же публичную `404`, путь в ответе не раскрывается. PDF выдаётся через общий [`AttachmentResponse`](../../src/Platform/Http/AttachmentResponse.php) с `application/pdf`, `attachment`, ASCII/UTF-8 именами и `nosniff`; FileStore и вся проверка доступа/файла остаются локальными. [Контракт и владение потоком](../../docs/architecture/request-lifecycle.md#файловый-attachment-и-владение-потоком) описывают также ошибки и закрытие transport. Range пока не поддерживается: запрос с `Range` получает полный ответ `200`, без обещания частичной выдачи.
+No JavaScript/sessions/Set-Cookie are required. HTML/files use no-store. HEAD preserves representation headers without body; download checks/closes the file unread.
 
-Опубликованные данные и файлы предполагаются неизменяемыми; seed создаёт готовые файлы до записи ссылок в БД. При каждом скачивании содержимое не хешируется и не анализируется на безопасность. Контролируемая подготовка PDF, доступность его содержимого и защита storage остаются задачами приложения и оператора. Проверка HTML-страницы не устанавливает доступность самого PDF.
+A database record selects an opaque storage key. FileStore checks containment, regular-file type, and fstat size. Unavailable files return the same public 404 without a path. [AttachmentResponse](../../src/Platform/Http/AttachmentResponse.php) supplies application/pdf, disposition, ASCII/UTF-8 names, and nosniff. Access checks stay local. Range receives full 200. Files/metadata must remain immutable during delivery. Downloads do not hash or malware-scan files; PDF preparation/accessibility/storage protection belong to application/operator.
 
-Исходники примера подключаются явно через [bootstrap.php](bootstrap.php) из выбранной конфигурации. Обычное ядро не регистрирует namespace примера и не выполняет его SQL. PostgreSQLStorage создаётся заранее без PDO; handlers/repository/FileStore также не обращаются к данным при сборке. Runtime-архив содержит приложение, его миграцию и CLI seed; development tools, тесты и нагрузочные сценарии в него не входят.
+[Bootstrap](bootstrap.php) registers example sources explicitly. Core does not register the example or run its SQL. Construction creates objects without connecting/reading application data. Runtime archives include migration/seed/application, but no development tools/tests/load scripts.
 
-В распакованном runtime-архиве вместо development runner выполняйте `php bin/migrate.php migrate examples/document-catalog/migrations`. Команды seed и запуска серверов остаются теми же; проверки ниже выполняются только из исходного checkout.
+## Verification
 
-Проверки из checkout:
+In a runtime archive use `php bin/migrate.php migrate examples/document-catalog/migrations`; seed/RR commands are unchanged. Checkout checks:
 
 ```bash
 php tools/project.php verify
 php tools/project.php verify:integration
 ```
 
-Для второго запуска настройте отдельные `TEST_DB_*`, как описано в [инфраструктуре](../../docs/development/infrastructure-and-testing.md): они независимы от application `DB_*`. Unit-тесты не требуют сервиса БД. Фактические HTTP-проверки и замеры должны учитывать весь путь через выбранный сервер; наличие Body stream само по себе не доказывает ограниченную память.
+Integration uses separate TEST_DB_* independent of application DB_*. Unit tests need no database service. Actual HTTP/memory claims require the full server path.
 
-Входа, редакторских прав, CSRF, upload UI, изменения и публикации через HTTP пока нет. [Границы примера](../../docs/project/document-catalog-example.md) не задают backlog редактора: пример проверяет развитие общих механизмов ядра по [roadmap](../../docs/project/roadmap.md). Html/FileStore/Errors остаются локальными реализациями; общий контракт представления ошибок уже находится в core, общая механика attachment и прозрачное логирование также реализованы в core. Подключённая HTTP-диагностика пишет metadata, без payload; её [проверки и стоимость](../../docs/history/2026-10-18-file-responses.md) не меняют default pipeline каталога.
-
-Миграция каталога возвращает отдельные SQL statements в массиве; её DDL и версия завершаются одной транзакцией. После исправления ошибки up/down команду запускают явно заново. [Контракт миграций](../../docs/design/transactions-and-migrations.md) описывает атомарность, ограничения DDL и обновление собственных миграций с прежних string-сигнатур.
+Login/editor permissions/CSRF/upload UI/HTTP editing/publishing are absent. [Application boundaries](../../docs/project/document-catalog-example.md) do not establish a CMS backlog. Html/FileStore/Errors remain local; core errors/attachments/metadata logging are shared. [File checks](../../docs/history/2026-10-18-file-responses.md) describe logging costs without changing the catalog default pipeline. [Migration contract](../../docs/design/transactions-and-migrations.md) defines SQL arrays, atomicity, and explicit retry after corrections.

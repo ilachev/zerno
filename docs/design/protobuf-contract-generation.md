@@ -1,23 +1,23 @@
-# Генерация приложения из protobuf-контракта
+# Application generation from protobuf contracts
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Type: `design`. Status: `current`. Reviewed against code: 2026-10-23. English edition: 2026-11-13.
 
-Первый сквозной этап реализован: [echo.proto](../../contracts/echo.proto) задаёт DTO, unary RPC и стандартный google.api.http binding. [Генератор](../../tools/proto-gen/Generator.php) создаёт обычные PHP DTO, endpoint interface и HTTP adapter с явным RouteEntry. [Ручная реализация](../../examples/contract-echo/EchoEndpoint.php) подключается конструктором в [composition root](../../examples/contract-echo/config.php). Это проверочный API, а не прикладная подсистема.
+The first complete slice is implemented: [echo.proto](../../contracts/echo.proto) defines DTOs, a unary RPC, and standard google.api.http binding. The [generator](../../tools/proto-gen/Generator.php) emits plain PHP DTOs, an endpoint interface, and a handler with explicit RouteEntry. A [manual endpoint](../../examples/contract-echo/EchoEndpoint.php) is supplied by the [composition root](../../examples/contract-echo/config.php).
 
 ```text
-.proto → protoc → descriptor → DTO + endpoint interface + HTTP adapter/route
-                                   ↑ ручная реализация и явный new
-                                 общий App → RoadRunner 3.x
+.proto → protoc → descriptor → DTO + endpoint + HTTP adapter/route
+                                    ↑ manual implementation
+                                App → RoadRunner 3.x
 ```
 
-SQL, доступ, транзакции и бизнес-политика остаются в приложении. Генератор не создаёт repositories, domain models, контейнер, registry или service providers. Обычный RequestHandler остаётся самостоятельным способом добавить маршрут.
+Applications retain SQL, access rules, transactions, and policy. No repositories/domain models/container/registry/providers are generated. Ordinary RequestHandler remains an independent route mechanism.
 
-## Путь разработчика
+## Developer path
 
-1. Изменить contracts/echo.proto: messages и RPC с POST binding.
-2. Выполнить `php tools/project.php proto:gen`. Нужен установленный protoc; проверена версия 26.1. Ничего не скачивается.
-3. Реализовать generated EchoSendEndpoint, явно передать реализацию и предел тела в EchoSendHttp, подключить `$adapter->route()` к Router. Поля и HTTP path повторять вручную не требуется; изменение имени RPC потребует явной правки реализации и композиции.
-4. Выполнить verify и реальные RR3 HTTP checks. Несовместимая сигнатура реализации отклоняется PHP/PHPStan.
+1. Change messages/RPC/POST binding in contracts/echo.proto.
+2. Run proto:gen with installed protoc; 26.1 was checked. Nothing is downloaded.
+3. Implement EchoSendEndpoint and pass it plus a body limit to EchoSendHttp; register adapter->route(). Fields/paths need no manual duplicate. Renaming an RPC requires updating implementation/composition.
+4. Run verify and actual RR checks; PHP/PHPStan reject incompatible implementations.
 
 ```bash
 php tools/project.php proto:gen
@@ -27,60 +27,60 @@ php tools/project.php verify
 php tools/project.php http:check --rr=/path/to/rr3
 ```
 
-`proto:check` входит в verify и не требует compiler executable: он сверяет хеши .proto и bundled imports, хеш сохранённого [descriptor](../../contracts/echo.pb), заново генерирует PHP и сравнивает весь каталог output. Отсутствующий, лишний или изменённый файл означает ошибку. Эта проверка сама не доказывает происхождение descriptor из источника: полную сверку выполняет `proto:compile:check` через protoc. [echo.inputs.json](../../contracts/echo.inputs.json) — generated snapshot, не вручную поддерживаемый lockfile.
+proto:check runs without a compiler: it checks source/import/[descriptor](../../contracts/echo.pb) hashes and compares the entire regenerated output, rejecting missing/extra/changed files. This alone does not establish descriptor provenance; proto:compile:check recompiles. [echo.inputs.json](../../contracts/echo.inputs.json) is generated, not a hand-maintained lockfile.
 
-Компиляция использует argv array, предел 10 секунд, 64 КиБ diagnostics и 4 МиБ descriptor. Проверка модели и синтаксиса PHP выполняется до замены output. Генератор владеет только gen/Generated/Echo: новый набор сначала пишется в соседний временный каталог, затем заменяет прежний; файлы удалённых RPC исчезают. Descriptor/snapshot сохраняются после PHP; при прерывании между действиями check обнаружит рассогласование, повторный proto:gen его исправит. Одновременные запуски генерации не поддерживаются. Произвольные файлы в generated-каталог помещать нельзя.
+Compilation uses argv arrays, a ten-second timeout, 64 KiB diagnostics, and a 4 MiB descriptor bound. Model/PHP syntax are checked before replacing gen/Generated/Echo via a neighboring staging directory. Removed RPC artifacts disappear. Descriptor/snapshot are published after PHP; interruption can leave a mismatch detected by check and repaired by regeneration. Concurrent generation is unsupported. Put no arbitrary files in the owned directory.
 
-Runner намеренно собирает один конкретный контракт. Generator принимает descriptor отдельно; plugin registry, поиск сервисов и профили не вводились. Другому consumer потребуется явный вход/output в runner и соответствующая namespace-директория, а не runtime discovery.
+The runner builds one concrete contract. Generator takes a descriptor separately; another consumer needs explicit input/output/namespace configuration, not runtime discovery or a plugin registry.
 
-## Поддержанный контракт
+## Supported subset
 
-| Объявление | Текущая граница |
+| Declaration | Boundary |
 | --- | --- |
-| Файл | Один proto3 file, единственный import google/api/annotations.proto; только file option php_namespace под App\Generated |
-| Message | Верхний уровень, singular string с implicit presence; имя поля начинается со строчной буквы, состоит из ASCII букв/цифр и совпадает с JSON name |
-| RPC | Unary, вход/выход из этого файла; interface handle(RequestDto): ResponseDto |
-| Binding | Только google.api.http: literal POST path из букв/цифр/`/_-`, body: "*" |
-| Результат | final readonly DTO с public string properties, fromJson/toJson; interface и RequestHandler с route() |
+| File | One proto3 file; only google/api/annotations.proto import; only php_namespace option under App\Generated |
+| Message | Top-level singular strings, implicit presence; lower-case initial ASCII alphanumeric field name identical to JSON name |
+| RPC | Unary input/output in the same file; handle(RequestDto): ResponseDto |
+| HTTP | Literal POST path using letters/digits/`/_-`; body: "*" |
+| Output | Final readonly DTOs with public string fields/fromJson/toJson; interface and handler with route() |
 
-Числа, bytes, enum, repeated/map, optional/oneof, nested types, произвольные imports/options, GET, path/query transcoding, response_body, additional bindings и streaming не поддержаны. Они отклоняются при генерации; поддержка не имитируется потерей полей. Полный ProtoJSON, binary protobuf и gRPC не заявлены. PHP reserved words и коллизии generated type names также отклоняются.
+Numbers, bytes, enums, repeated/maps, optional/oneof, nesting, arbitrary imports/options, GET, path/query transcoding, response_body, additional bindings, and streaming fail generation. Full ProtoJSON, binary protobuf, and gRPC are not supported. Reserved PHP names and generated type collisions fail.
 
-## JSON и HTTP
+## JSON and HTTP
 
-Для string subset взяты [правила ProtoJSON](https://protobuf.dev/programming-guides/json/) об implicit defaults, null и неизвестных полях. DTO не реализуют Google Message и не сохраняют protobuf unknown binary fields.
+The subset follows [ProtoJSON](https://protobuf.dev/programming-guides/json/) implicit-default/null/unknown-field rules. DTOs do not implement Google Message or retain binary unknown fields.
 
-| Вход | Ответ Echo |
+| Input | Result |
 | --- | --- |
-| `{"message":"Привет"}` | 200, тот же JSON |
-| `{}`, `{"message":null}`, `{"message":""}` | 200, `{}`: default — пустая строка, default не выводится |
-| Неизвестное поле, включая null; неверный тип поля | 400 Invalid JSON request |
-| Пустое тело, повреждённый JSON/UTF-8, array/scalar/null root | 400 Invalid JSON request |
-| Повтор одного JSON key | Последнее значение, как у builtin json_decode; aliases запрещены |
-| Более 65 536 байтов в примере | 413 Request body too large |
-| Не application/json, отсутствующий/неоднозначный Content-Type или Content-Encoding кроме identity | 415 Unsupported media type |
-| Другой HTTP method | Общий routing 405/Allow: POST; adapter также проверяет method при прямом вызове |
-| I/O, exception реализации или ошибка output encoding | Общий ErrorResponse 500; подробности только в logger |
+| Nonempty string message, including Unicode | 200, same message |
+| {}, null message, or empty string | 200, {}; default empty strings are omitted |
+| Unknown field including null, or wrong field type | 400 Invalid JSON request |
+| Empty/malformed JSON/UTF-8, array/scalar/null root | 400 Invalid JSON request |
+| Duplicate key | Last value, following json_decode; aliases are rejected |
+| More than 65,536 bytes in the example | 413 Request body too large |
+| Missing/ambiguous/non-JSON Content-Type or non-identity Content-Encoding | 415 Unsupported media type |
+| Other method | Routing 405/Allow: POST; direct adapter calls also validate method |
+| I/O, endpoint exception, output encoding failure | Public 500 with private log details |
 
-Content-Type сравнивается без регистра до `;`, параметры не меняют UTF-8 decoding. Глубина JSON ограничена 32. Ошибки decode преобразуются в 400 только вокруг fromJson; InvalidArgumentException реализации не выдаётся за ошибку клиента. Adapter закрывает входной Body в finally, transport закрывает response body. Adapter не хранит request/DTO между вызовами.
+Content-Type comparison ignores case/parameters; decoding remains UTF-8 with depth 32. Only fromJson decode errors become 400; endpoint InvalidArgumentException remains a server failure. Adapter closes input in finally; transport closes output. Neither request nor DTO is retained.
 
-Body::readLimited проверяет реально прочитанные байты от текущего cursor без доверия Content-Length. Он ограничивает последующий decode, а не уже выполненную буферизацию входа в RR. Серверный ingress cap — отдельная настройка; профили и ограничения описаны в [ручном JSON-примере](../../examples/json-echo/README.md).
+Body::readLimited bounds actual bytes from the current cursor without trusting Content-Length. It bounds subsequent decoding, not earlier RR buffering. Server ingress limits are separate; see [manual JSON](../../examples/json-echo/README.md).
 
-## Runtime и поставка
+## Runtime and delivery
 
-Запрос загружает только готовый PHP. Контракты, descriptors, tools/proto-gen и third_party/codegen/proto отсутствуют в runtime archive; там есть generated PHP и [пример](../../examples/contract-echo/README.md). Новых runtime libraries нет. Google protobuf уже поставлялся для RR; descriptor reader используется процессом генерации, API DTO его не загружают. Bundled annotations/http/descriptor.proto и upstream licenses/hashes записаны в [manifest](../../third_party/codegen/proto/manifest.json).
+Only generated PHP is loaded at request time. Runtime archives exclude contracts/descriptors/tools/codegen sources and include the [example](../../examples/contract-echo/README.md). No new runtime library is added. Google protobuf was already required internally by RR; only the generator uses its descriptor reader. [Contract-source manifest](../../third_party/codegen/proto/manifest.json) records licenses/hashes.
 
-Объекты adapter/endpoint создаются при сборке приложения. Interface/type declarations могут загружаться при подключении маршрута; DTO/codec загружаются при API-вызове. /health и обычный маршрут не запускают генератор, не читают contract files и не открывают БД. Ядро и router не знают protobuf descriptors.
+Composition creates adapter/endpoint objects. Endpoint/interface declarations may load during registration; DTO/codec loads on API use. /health runs no generator, reads no contract, and opens no database. Core/router know no descriptors.
 
-## Выбор DTO и стоимость
+## DTO choice and measured costs
 
-Обычные readonly DTO выбраны для проверенного string subset: прямая PHP-сигнатура, builtin JSON и отсутствие descriptor pool при API-запросе. Стандартные protobuf messages дают существенно более широкий контракт и binary codec; новые типы потребуют отдельно оценить их преимущество, а не расширять собственный codec без проверки.
+Plain readonly DTOs provide direct signatures, builtin JSON, and no API descriptor-pool work for this subset. Standard protobuf messages provide a broader contract/binary codec; future types need a fresh comparison before extending a custom codec.
 
-Исторические [данные первого этапа](../history/2026-10-23-contract-generation.json), полученные до выбора RR единственным runtime, содержат пять отдельных процессов на вариант, по 20 000 операций, PHP 8.5.9, CLI OPcache off, одинаковый непустой JSON 254 байта. Варианты: прямые DTO, стандартные messages от protoc 26.1 с bundled Google runtime, ручной и generated HTTP handlers. Для protobuf сравниваются только те же messages, без HTTP annotations/services. Для handler-сравнения вход находится в общей поддержанной области; ручной пример требует message и выводит пустую строку явно, поэтому поведение за её пределами различается.
+[First-slice data](../history/2026-10-23-contract-generation.json), recorded before RR-only scope, contains five separate processes per variant, 20,000 operations each, PHP 8.5.9, CLI OPcache off, identical 254-byte nonempty JSON. Variants compare plain DTOs, protoc 26.1 messages with bundled Google runtime, manual/generated handlers. The protobuf comparison excludes services/HTTP annotations. Handler inputs stay in their common subset: the manual example requires message and emits empty strings explicitly, so behavior outside it differs.
 
-Измеряются холодная первая операция, число загруженных классов, PHP memory и steady decode/encode/handler. Это не native RSS и не доказательство отсутствия утечек. `http:check --measure-contract --rr=...` отдельно сравнивает по 100 последовательных запросов после прогрева через RR, чередуя порядок. В него входят сокет, routing и metadata logging. Короткая серия не выбирает основной runtime и не доказывает выигрыш в throughput. Генерация сокращает дублирование контракта; сама по себе она не ускоряет ручной handler.
+Cold first operation, loaded classes, PHP memory, and steady operations are measured, not native RSS or leak freedom. http:check --measure-contract --rr=... compares 100 warmed sequential requests in alternating order, including socket/routing/logging. It establishes neither throughput superiority nor a runtime winner. Generation reduces duplicated contracts without inherently accelerating manual code.
 
-## Проверки и дальнейшая граница
+## Verification and future work
 
-Root tests проверяют воспроизводимость, отказ на неподдержанных объявлениях, удаление устаревших файлов, типовую несовместимость, timeout compiler, JSON и предел тела. HTTP matrix проверяет JSON/HTML ErrorResponse, 400/405/413/415/500, request ID и следующий запрос того же RR worker. Runtime archive запускается отдельно без генератора/contract files. Команды и результаты сохранены в данных этапа.
+Tests cover reproducibility, unsupported declarations, retired files, incompatible types, compiler timeout, JSON, and limits. HTTP checks cover both error renderers, 400/405/413/415/500, request IDs, and the next worker request. The extracted archive runs without generator inputs.
 
-Будущие типы, presence и transcoding добавляются законченными сценариями с consumer и совместимостью wire contract. SDK, общая validation/mapping framework и генерация SQL не следуют из Echo-этапа. Старый генератор на Git f7b28ecad141a64bb7d0cfcb622256ccbde952c1 изучен как исторический источник; registry, profiles, старые handlers и API-модель не восстановлены.
+New types/presence/transcoding require complete consumer scenarios and wire-compatibility checks. Echo implies no SDK, general validation/mapping platform, or SQL generation. The old generator at f7b28ecad141a64bb7d0cfcb622256ccbde952c1 was inspected historically; its registry/profiles/handlers/model were not restored.

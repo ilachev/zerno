@@ -1,38 +1,40 @@
-# Переход на RoadRunner 3
+# Migration to RoadRunner 3
 
-Тип: `history`. Статус: `historical`. Проверено: 2026-10-20.
+Type: `history`. Status: `historical`. Verified: 2026-10-20. English edition: 2026-11-13.
 
-Состояние до перехода — `a0d0b12037dc804957144a469b81755ba1a06900`. Локальная платформа использовала RR2025.1.15. Целевой транспорт обновлён до RR3; общий App, функции композиции, явные handlers, SQL и SAPI остаются теми же. Текущая спецификация — [lifecycle](../architecture/request-lifecycle.md), поставка — [autonomous core](../design/autonomous-core.md). [Данные проверки](2026-10-20-roadrunner3.json) содержат upstream refs, provenance и результаты.
+Before: a0d0b12037dc804957144a469b81755ba1a06900, with local RR 2025.1.15. App/composition/handlers/SQL and then-supported SAPI remained. [Data](2026-10-20-roadrunner3.json) records refs/provenance/checks; [lifecycle](../architecture/request-lifecycle.md) and [delivery](../design/autonomous-core.md) own current behavior.
 
-## Состав и происхождение
+## Composition and provenance
 
-| Компонент | До | После |
+| Component | Before | After |
 | --- | --- | --- |
-| Server executable | 2025.1.15 | 3.0.0, darwin/arm64, Go 1.27.2 |
+| Server | 2025.1.15 | 3.0.0 darwin/arm64, Go 1.27.2 |
 | Worker | spiral/roadrunner-worker 3.6.2 | roadrunner/worker 3.8.0 |
 | HTTP | spiral/roadrunner-http 4.1.0 | roadrunner/http 4.2.1 |
 | Goridge | spiral/goridge 4.2.1 | roadrunner/goridge 4.6.0 |
-| API DTO | roadrunner-php/roadrunner-api-dto 1.14.1 | roadrunner/api-dto 2.1.0 |
-| Compatibility metadata | spiral/roadrunner 2025.1.11 | spiral/roadrunner 3.0.0 |
+| DTO | roadrunner-php/roadrunner-api-dto 1.14.1 | roadrunner/api-dto 2.1.0 |
+| Metadata | spiral/roadrunner 2025.1.11 | spiral/roadrunner 3.0.0 |
 
-Четыре PHP source packages получены из официальных GitHub tag/commit archives через withproxy, без package manager. Archive SHA-256, commit refs, notices и hashes файлов включены в runtime manifest. Полные upstream trees сохранены; число bundled files выросло с 1614 до 2098 во всех трёх distributions. Это стоимость статической поставки, не число загружаемых на запрос файлов. Google protobuf 5.34.0 и polyfill 1.32.0 не обновлялись.
+Four PHP trees came from official GitHub tag/commit archives through withproxy, without a package manager. Manifest records archive SHA-256/refs/notices/file hashes. Complete trees increased all-three-distribution files from 1,614 to 2,098. This is static footprint, not per-request loading. Google protobuf 5.34.0/polyfill 1.32.0 were unchanged.
 
-Tagged server composer.json ещё называет metapackage spiral/roadrunner, новые transport metadata также требуют roadrunner/roadrunner. Оригинальные декларации сохранены как provenance; package resolution не выполняется. PHP namespaces Spiral/RoadRunner/GPBMetadata остались upstream-именами, пути packages теперь roadrunner/*. Набор capabilities ядра не расширялся.
+Tagged server metadata still called the metapackage spiral/roadrunner while newer transport referenced roadrunner/roadrunner. Declarations stayed as provenance; no resolution occurs. Namespaces remain upstream; paths use roadrunner/*. Core capabilities did not expand.
 
-Бинарник 3.0.0 загружен отдельно в локальный ignored var/rr3/bin/rr. SHA-256 архива совпал с digest официального GitHub release asset. Это сверка с издательским HTTPS-источником, без независимой проверки подписи. Бинарник не включён в runtime archive и не скачивается при startup/build/check. Установленный Homebrew rr не заменялся; RR3 выбирается через PATH либо --rr у http:check.
+The separately downloaded 3.0.0 binary went into ignored var/rr3/bin/rr. Archive digest matched the official HTTPS release asset, without independent signature verification. It was neither packaged nor downloaded by project commands. Existing Homebrew RR was untouched; PATH/--rr selected RR 3.
 
-## Адаптации и наблюдаемое поведение
+## Adaptations and behavior
 
-Обе адаптации worker перебазированы на 3.8.0 и представлены patches с upstream/final hashes. Version::current возвращает pinned compatibility 3.0.0 без Composer InstalledVersions; это не определение версии executable. Неиспользуемые eager logger property/arguments/getter удалены без изменения frames. Native HttpWorker по-прежнему переводится в concrete HTTP-типы ядра. PSR/Nyholm/Composer runtime не возвращались; неиспользуемые upstream adapters остаются только источниками происхождения.
+Both worker patches were rebased to 3.8.0 with original/final hashes. Version reads pinned metadata without Composer; it does not detect executable version. The unused eager logger was removed without frame changes. Native HttpWorker feeds core types; PSR/Nyholm/Composer were not restored.
 
-HTTP 4.2 сохраняет числовые имена полей: PHP преобразует имя 123 в integer array key. Собственные Headers и SAPI/RR boundaries теперь явно учитывают этот случай. Реальные запрос/ответ сохраняют поле, multivalue headers и отдельные Set-Cookie остаются проверенными.
+HTTP 4.2 preserves numeric header names, including PHP integer keys. Core and SAPI/RR boundaries were adjusted. Actual requests/responses retain numeric/multiple headers and separate cookies.
 
-RR configs сохраняют version: '3' — формат YAML. В используемых конфигурациях нет серверного http.middleware, поэтому изменение upstream-порядка не требует перестановки. PHP Pipeline порядок не менялся. Root logger остаётся ERROR, канал server установлен INFO/production, чтобы сохранять PHP stderr, включая ошибки приложения. Проверка подтверждает JSON envelope с time/INFO, metadata и приватную ошибку в логе. Формат собственного PHP Logger не менялся. Очередь вывода upstream асинхронна; надёжный аудит событий под перегрузкой этим не заявляется.
+YAML version: '3' is config format. No server http.middleware required reordering; PHP Pipeline order stayed. Root log ERROR and server INFO/production preserve PHP stderr; checks confirm time/INFO envelopes, metadata, and private errors in logs. PHP Logger format stayed. Upstream asynchronous output is not a reliable overloaded audit guarantee.
 
-## Проверка и ограничения
+## Verification and limits
 
-Проверены root unit tests, PHPStan 10, style, docs, bundled integrity, SQL synchronization, SQL tool и PostgreSQL integration. Реальные FPM/RR3 проходят 204 HTTP-сценария с JSON/HTML ошибками, raw JSON/form/multipart uploads, числовыми/повторными полями, worker reuse, HEAD/204/304 и файлами до 16 MiB + 17 bytes при PHP memory_limit 32M. Дополнительный автономный тест передаёт бинарные кадры через настоящие Worker/StreamRelay и проверяет version без Composer/PSR logger. Пройден verify:full: root 231 tests / 923 assertions, SQL tool 167 / 625, PostgreSQL integration 32 / 272. Архив прошёл 43 HTTP-проверки с явными migrate/seed/rollback/reapply и 21 generated typed row; чистый runtime bootstrap создаёт настоящий Worker без Composer/PSR. tools/project.php run с локальным RR3 вернул health без БД. Счётчики и archive smoke записаны в JSON после полного gate.
+verify:full passed 231 unit/923 assertions, 167 SQL-tool/625, 32 PostgreSQL/272 with level-10 analysis/style/docs/integrity/sync. FPM/RR 3 passed 204 cases for both renderers, forms/uploads/numeric/multiple headers, state, bodyless responses, and large files under 32M. A real Worker/StreamRelay binary-frame test verified version without Composer/PSR logging.
 
-Миграция меняет платформенный executable и bundled transport; пользовательский путь — предоставить RR3 в PATH и запустить прежнюю функцию композиции. SAPI не требует RR3 или sockets; код приложения и DI-граф не меняются. Transport source trees выросли, добавлены явные правила логирования и ответственность за обновление двух patches. CPU/RSS, p95/p99 и throughput на сопоставимой нагрузке не измерялись; ускорение и production readiness не заявляются. Ограниченный memory smoke не доказывает долгосрочную устойчивость и полный охват client abort.
+Archive checks passed 43 HTTP cases with migrate/seed/rollback/reapply and twenty-one generated rows. Clean bootstrap created real Worker without Composer/PSR. Root run returned health without a database. Results are in JSON.
 
-Первичные источники: [релиз RR3](https://github.com/roadrunner-server/roadrunner/releases/tag/v3.0.0), [migration guide](https://github.com/roadrunner-server/docs/blob/release/v3/intro/v3-migration.md), [worker](https://github.com/roadrunner-php/worker/releases/tag/v3.8.0), [HTTP](https://github.com/roadrunner-php/http/releases/tag/v4.2.1). Проверка проекта выполнялась локально, результаты upstream не подменяют её.
+Users supplied RR 3 and reused composition. At this snapshot SAPI required neither RR 3 nor sockets. Costs included larger trees, explicit logging rules, and two maintained patches. Comparable CPU/RSS/latency/throughput were not measured. Memory smoke did not establish endurance/client-abort coverage/readiness.
+
+Primary references: [RR 3 release](https://github.com/roadrunner-server/roadrunner/releases/tag/v3.0.0), [migration guide](https://github.com/roadrunner-server/docs/blob/release/v3/intro/v3-migration.md), [worker](https://github.com/roadrunner-php/worker/releases/tag/v3.8.0), [HTTP](https://github.com/roadrunner-php/http/releases/tag/v4.2.1). Upstream results do not substitute for local checks.
