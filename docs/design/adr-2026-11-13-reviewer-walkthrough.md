@@ -2,7 +2,7 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **proposed**. Implementation status: **not started**. This is a decision proposal for the next iteration; the proposed command below does not exist yet.
+Decision status: **accepted** by the owner on 2026-11-13. Implementation status: **source slice implemented; archive and CI slices planned**. The current command checks source only and reports that limit explicitly.
 
 ## Context
 
@@ -10,9 +10,9 @@ The [portfolio purpose](../project/vision.md) prioritizes inspectable engineerin
 
 The document catalog is that consumer: explicit CLI migration and seed, PostgreSQL reads, HTML pagination/detail, private PDF download, and RoadRunner execution. It requires no new core capability, editor, authentication model, generated API, or SQL rewrite.
 
-## Findings from the current review
+## Findings from the original review
 
-The reviewed tree is based on Git `22dfa6d` with existing uncommitted implementation and documentation changes. A Git revision alone does not identify this working tree. The following observations concern that local state.
+The reviewed tree was based on Git `22dfa6d` with existing uncommitted implementation and documentation changes. A Git revision alone does not identify that working tree. The following observations record the pre-implementation state; the delivery table below tracks the implemented slices.
 
 | Boundary | Evidence in the repository | Remaining gap |
 | --- | --- | --- |
@@ -25,11 +25,11 @@ The reviewed tree is based on Git `22dfa6d` with existing uncommitted implementa
 
 Existing checks are useful and remain in place. The gap is their composition into a repeatable application walkthrough. The current review's `verify` passed 316 root tests and 1,448 assertions, documentation links, integrity, style, analysis, and generation synchronization. That result does not close the gap above.
 
-## Proposed decision
+## Decision
 
-Add a checkout-only `catalog:check` command, backed by a small concrete checker such as `tools/check-catalog.php`. It exercises the actual application rather than introducing another demonstration backend or a general scenario framework.
+Add a checkout-only `catalog:check` command, backed by the concrete [checker](../../tools/check-catalog.php). It exercises the actual application rather than introducing another demonstration backend or a general scenario framework.
 
-The intended interface after implementation is:
+The implemented source-phase interface is:
 
 ```bash
 # Requires an explicitly configured, separately prepared TEST_DB_* database.
@@ -38,7 +38,7 @@ php tools/project.php catalog:check --rr=/absolute/path/to/rr3 --report=var/cata
 
 The checker supplies an isolated environment to the existing entry points. PostgreSQL, PHP/extensions, and RR are prepared externally. The command installs or downloads no packages or executables and starts no Docker service. It constructs child-process `DB_*` settings exclusively from explicit `TEST_DB_*` settings and its owned schema, rather than inheriting application connection settings.
 
-The final command checks both the source tree and its freshly built runtime archive. Deliver the source phase first as an independently useful slice; its report must identify that limited coverage until the archive phase is implemented.
+The planned final command will check both the source tree and its freshly built runtime archive. The source phase is implemented as an independently useful slice; its report identifies that limited coverage until the archive phase is implemented.
 
 ## Application scenario
 
@@ -55,7 +55,7 @@ The test selects IDs from its own fixture rather than relying on an existing app
 
 The checker needs bounded execution and diagnostics. Proposed initial bounds are ten seconds for listener readiness, five seconds per HTTP request, 1 MiB per response, 256 KiB retained diagnostics per child, and 120 seconds for a complete source-and-archive run, plus bounded termination/cleanup. These are test limits for the small seeded PDFs, not deployment SLOs. A limit failure must name the phase and failed operation. Forced process termination by an external SIGKILL remains outside guaranteed cleanup.
 
-## Runtime archive phase
+## Runtime archive phase (planned)
 
 Build an owned archive with the existing `build` implementation, extract it into an owned temporary directory, and run the same scenario using the packaged `bin`, `public`, configuration, and example files. The checkout checker drives the test; it is not added to the runtime archive.
 
@@ -81,11 +81,11 @@ A dirty-state fingerprint does not make local changes available to another revie
 
 | Slice | Observable result | Acceptance |
 | --- | --- | --- |
-| 1. Source walkthrough | One command exercises migration/seed/HTML/PDF/errors through the real catalog and RR | Repeated runs pass independently; invalid prerequisites fail clearly; a deliberately failing assertion still cleans owned resources. Replace the stale root api.http request with the actual default GET/HEAD /health contract. |
+| 1. Source walkthrough — implemented | One command exercises migration/seed/HTML/PDF/errors through the real catalog and RR | Repeated runs pass independently; invalid prerequisites fail clearly; a deliberately failing assertion still cleans owned resources. Root api.http now uses the actual default GET/HEAD /health contract. |
 | 2. Packaged walkthrough | The same command repeats the scenario against an extracted runtime archive | Source and archive phases have separate fixtures; both appear in the report; missing packaged dependencies fail rather than being loaded from the checkout. |
 | 3. Reviewer path and CI | README leads to the finite walkthrough and CI retains its result | A validation job explicitly provides both PostgreSQL and pinned RR, runs the check, and preserves bounded diagnostics/report on failure. Keep the independent security release gate. |
 
-After each slice, update the canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) to describe only implemented behavior. The proposed command is not added to current command tables until it exists.
+After each slice, update the canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) to describe only implemented behavior. The source command now appears in current command tables; archive execution and CI invocation remain planned.
 
 Run the required checks, commit, and push each completed authorized slice before beginning the next, following the repository's standing delivery instruction. Record the revision and CI outcome in the handoff.
 

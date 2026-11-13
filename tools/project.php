@@ -26,6 +26,7 @@ function projectCommand(string $command, array $arguments = []): void
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
                 http:check             Check real RoadRunner 3 HTTP behavior; forwards RR options
+                catalog:check          Check the source catalog through PostgreSQL, CLI and RR; uses explicit TEST_DB_*
                 security:inventory     Print the bundled PHP package inventory; offline
                 security:audit         Audit PHP packages and PHP security policy; online advisory data only
                 security:platform      Check this PHP and an explicit RR binary; --rr=/path/to/rr
@@ -83,6 +84,10 @@ function projectCommand(string $command, array $arguments = []): void
             return;
         case 'http:check':
             projectRun([PHP_BINARY, $root . '/tools/check-http.php', ...$arguments], $root);
+
+            return;
+        case 'catalog:check':
+            projectRun([PHP_BINARY, $root . '/tools/check-catalog.php', ...$arguments], $root);
 
             return;
         case 'security:inventory':

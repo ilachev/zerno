@@ -825,7 +825,7 @@
       "path": "docs/design/adr-2026-11-13-reviewer-walkthrough.md",
       "kind": "design",
       "status": "current",
-      "summary": "Proposed bounded source/archive catalog walkthrough, isolated ownership, scoped result report, and CI acceptance; implementation has not started.",
+      "summary": "Accepted catalog walkthrough with the bounded source check implemented; archive execution and CI integration remain planned.",
       "read_when": [
         "Planning the next portfolio verification slice",
         "Reviewing the gap between PostgreSQL, HTTP-fixture, and runtime-archive checks"
@@ -835,6 +835,9 @@
         "config/routes.php",
         "examples/document-catalog",
         "tools/project.php",
+        "tools/check-catalog.php",
+        "tools/catalog-process.php",
+        "tools/http-wire.php",
         "tools/check-http.php",
         "tests/Integration/Examples/DocumentCatalog/CatalogApplicationTest.php",
         "tests/Integration/PostgreSqlTestDatabase.php",

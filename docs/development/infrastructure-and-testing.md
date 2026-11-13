@@ -1,6 +1,6 @@
 # Infrastructure and verification
 
-Type: `operations`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
+Type: `operations`. Status: `current`. Reviewed against code: 2026-11-13.
 
 The [PHP runner](../../tools/project.php) is the command interface; no package installation or Task is needed. CLI checks require PHP 8.5+; HTTP requires upstream PHP 8.5.12+, PDO, sockets, and RR 3.0.1+ in the 3.x line. PostgreSQL needs pdo_pgsql. Unit/tool checks need ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter and pdo_sqlite for migration fixtures. SQLite is not an application backend and is excluded from runtime.
 
@@ -17,6 +17,7 @@ Select RR through PATH or http:check --rr=/path/to/rr. Load checks require k6. D
 | proto:check | Source/descriptor hashes and exact PHP comparison, no compiler |
 | tools:sql:check | SQL tool style, PHPStan, tests |
 | http:check | Actual RR3, JSON/HTML errors and files with metadata logging |
+| catalog:check --rr=PATH --report=var/catalog-check.json | Source catalog: isolated TEST_DB_* schema, migration/seed CLI, RR HTML/PDF/errors and cleanup; explicit platform required |
 | security:inventory | Offline package versions from manifests |
 | security:audit | Online OSV/PHP release policy; advisory data only |
 | security:platform --rr=PATH | Current PHP and exact RR binary via bundled govulncheck |
@@ -54,5 +55,7 @@ php tools/project.php tools:sql:check
 ## HTTP, load, delivery
 
 The [HTTP guide](http-and-baseline.md) covers real listeners, temporary ports, body/hash/HEAD checks, and memory limits. A Body object or a unit test alone proves no full-pipeline memory bound. Short runs establish neither a runtime winner nor long-term stability.
+
+The [catalog source walkthrough](../../examples/document-catalog/README.md#reproduce-the-source-scenario) joins the actual application, CLI setup, PostgreSQL and RR. Unlike the integration-test profile's defaults, catalog:check requires all five TEST_DB_HOST/PORT/NAME/USER/PASSWORD values explicitly. It additionally needs PCNTL/POSIX and DOM, owns isolated schemas/files/process groups, and returns nonzero for scenario, deadline or cleanup failures. Its optional JSON records source-only coverage and checked input hashes. It runs separately from verify/verify:integration; extracted-archive execution and CI invocation are the remaining ADR slices.
 
 Distribution changes check SQL inputs, migration loading without application autoload, HTTP/RR, and extracted archives. [Historical reports](../README.md#historical-evidence) describe previous compositions and do not instruct restoring removed APIs.

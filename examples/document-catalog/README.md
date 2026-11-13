@@ -64,4 +64,26 @@ php tools/project.php verify:integration
 
 Integration uses separate TEST_DB_* independent of application DB_*. Unit tests need no database service. Actual HTTP/memory claims require the full server path.
 
+### Reproduce the source scenario
+
+The checkout-only command below runs the real catalog configuration through RoadRunner, the migration CLI, the seed CLI and PostgreSQL. Prepare a separate test database whose role may create/drop schemas, and provide a supported, separately audited RR binary. The checker requires Git, CLI PCNTL/POSIX and DOM in addition to the HTTP/PostgreSQL extensions. It starts no service and downloads nothing.
+
+```bash
+export TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=15432
+export TEST_DB_NAME=app_test TEST_DB_USER=app
+: "${TEST_DB_PASSWORD:?Set the separate test role password}"
+export TEST_DB_PASSWORD
+php tools/project.php catalog:check --rr=/absolute/path/to/rr3 --report=var/catalog-check.json
+```
+
+All five TEST_DB_* values must be explicit and nonempty; host/database must be single DSN values without whitespace or semicolons. Application DB_* and CATALOG_FILES_DIR are not used. The report parent directory must already exist. Omit --report for a console-only check; --help needs no services.
+
+Each run owns a fresh catalog_check_<random> schema, private files, and a loopback listener with one worker. It checks health/404/405 before migration without creating tables, then runs the shipped migration and seed twice. It verifies the 26 records (24 published, one draft, one withdrawn), unchanged second-seed records/files, English pagination (20+4), detail fields, PDF bytes/hash/headers and HEAD, no-store/no cookies, invalid cursor, hidden/missing records, uniform public 404s, and a successful download/health after restoring an unavailable fixture.
+
+Limits are 120 seconds for the source run, ten seconds for readiness, five seconds/1 MiB per HTTP response, fifteen seconds/256 KiB of retained diagnostics per CLI child, and five seconds per PostgreSQL connection/statement/lock wait. Fixture reads accept at most 26 regular PDFs of at most 1 MiB each with canonical storage keys; symlinks are rejected. Cleanup has bounded process termination and database waits in addition to the run deadline. Owned process groups stop before the schema/files are removed; cleanup failure returns nonzero. External SIGKILL cannot guarantee cleanup.
+
+The optional JSON identifies **source-only** coverage, named assertions/outcomes, cleanup, Git revision/dirty state, actual platform versions and RR hash. It enumerates SHA-256 for bootstrap/core/generated/configuration/entry-point/catalog/runtime-distribution files, the runtime inventory and checker inputs, and checks the same set again after execution. This is a scoped snapshot, not a fingerprint of every repository file. Reports contain no connection settings, passwords, absolute checkout paths or private child logs. Failures name the operation; detailed child output is withheld. Keep local reports in ignored var/. A dirty revision alone cannot be reproduced by another reviewer.
+
+This is the first implemented [ADR slice](../../docs/design/adr-2026-11-13-reviewer-walkthrough.md). Archive execution and wiring this command into CI remain planned; ordinary verify and verify:integration retain their existing service boundaries. The check establishes response/setup/cleanup behavior, not worker identity, security, throughput or sustained-load suitability.
+
 Login/editor permissions/CSRF/upload UI/HTTP editing/publishing are absent. [Application boundaries](../../docs/project/document-catalog-example.md) do not establish a CMS backlog. Html/FileStore/Errors remain local; core errors/attachments/metadata logging are shared. [File checks](../../docs/history/2026-10-18-file-responses.md) describe logging costs without changing the catalog default pipeline. [Migration contract](../../docs/design/transactions-and-migrations.md) defines SQL arrays, atomicity, and explicit retry after corrections.

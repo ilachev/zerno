@@ -9,14 +9,14 @@ The current purpose is an [engineering portfolio](../portfolio/overview.md) back
 | Status | Work | Completion evidence |
 | --- | --- | --- |
 | Implemented presentation | English entry points, contribution boundaries, workflow, and three case studies | README links to decisions, code, tests, and raw measurements |
-| Proposed, not implemented | [Reproducible catalog walkthrough](../design/adr-2026-11-13-reviewer-walkthrough.md) | One bounded source check, then the same migration/seed/HTML/PDF scenario against the extracted archive, followed by CI integration and a scoped report |
+| Source slice implemented; archive/CI planned | [Reproducible catalog walkthrough](../design/adr-2026-11-13-reviewer-walkthrough.md) | catalog:check joins source migration/seed/HTML/PDF/errors and cleanup through PostgreSQL/RR; next repeat against the archive, then integrate with CI |
 | Ongoing | Keep the working example and verification reproducible | Checkout instructions, service-free verify, separately documented PostgreSQL/RR requirements |
 | Open | Exercise the portfolio with a reviewer | A reviewer can follow a case into code, reproduce a check, and discuss the tradeoff |
 | Awaiting consumer | Extend an application or the core | A concrete scenario and a gap in existing primitives; no feature expansion solely for presentation |
 
 The portfolio attributes owner direction and agent execution explicitly. It makes no measured productivity claim or unsupported statement of personal authorship.
 
-The walkthrough ADR is the next proposed implementation scope. Its command does not exist yet. It closes the seam between the existing PostgreSQL, wire-fixture, and archive checks using the current catalog; it introduces no new application capability. Source, archive, and CI stages have separate acceptance criteria in the ADR. Exercising the portfolio with an independent reviewer remains open until that review occurs.
+The walkthrough ADR is accepted. Its source-only catalog:check command exists with bounded execution, isolated resources and a scoped report; archive and CI stages retain their separate acceptance criteria. It closes the seam between existing checks using the current catalog and introduces no new application capability. Exercising the portfolio with an independent reviewer remains open until that review occurs.
 
 ## Established technical baseline
 
