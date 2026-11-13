@@ -41,9 +41,9 @@ php tools/project.php verify:full
 php tools/project.php build local
 ```
 
-Build creates dist/zerno-VERSION.tar.gz with bootstrap, src/gen/config/public/bin, runtime distribution, documentation/README, RR configuration, and examples with migrations/seed/configuration. Ready SQL/API PHP is included. Generators, input contracts/descriptors/SQL, codegen sources, quality/security tools, tests, and load scripts are excluded. Release manifest references runtime only.
+Build creates dist/zerno-VERSION.tar.gz with bootstrap, src/gen/config/public/bin, runtime distribution, documentation/README, RR configuration, and examples with migrations/seed/configuration. --output-dir=DIR selects an explicit destination outside packaged source directories; private build scratch is created under that destination and removed on normal success/failure. This prevents self-inclusion and lets catalog:check own all packaging files when a build child times out. The ordinary default remains dist/. Ready SQL/API PHP is included. Generators, input contracts/descriptors/SQL, codegen sources, quality/security tools, tests, and load scripts are excluded. Release manifest references runtime only.
 
-Run `rr serve -c .rr.yaml` from the extracted root. Documentation links to tools/tests/contracts/sql refer to the checkout. RuntimeArchiveTest builds/extracts and checks exclusions, packaged /health composition, and CLI entry points; actual RR smoke runs separately on a supported platform.
+Run `rr serve -c .rr.yaml` from the extracted root. Documentation links to tools/tests/contracts/sql refer to the checkout. RuntimeArchiveTest remains service-free and checks exclusions, packaged /health composition, CLI entry points and an explicit output destination that preserves the default artifact. The separate [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) runs the complete packaged catalog scenario on prepared PostgreSQL/RR, checks source separation and deletes its owned archive/workspace.
 
 Packaged migrations run with `php bin/migrate.php migrate [directory]`; default is src/Migrations, catalog uses examples/document-catalog/migrations. CLI requires directory files directly and builds no HTTP graph. It creates no database; HTTP starts with no DDL.
 

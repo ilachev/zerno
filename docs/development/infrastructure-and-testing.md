@@ -17,12 +17,12 @@ Select RR through PATH or http:check --rr=/path/to/rr. Load checks require k6. D
 | proto:check | Source/descriptor hashes and exact PHP comparison, no compiler |
 | tools:sql:check | SQL tool style, PHPStan, tests |
 | http:check | Actual RR3, JSON/HTML errors and files with metadata logging |
-| catalog:check --rr=PATH --report=var/catalog-check.json | Source catalog: isolated TEST_DB_* schema, migration/seed CLI, RR HTML/PDF/errors and cleanup; explicit platform required |
+| catalog:check --rr=PATH --report=var/catalog-check.json | Source and freshly packaged catalog: independent TEST_DB_* schemas/files, migration/seed CLI, RR HTML/PDF/errors and cleanup |
 | security:inventory | Offline package versions from manifests |
 | security:audit | Online OSV/PHP release policy; advisory data only |
 | security:platform --rr=PATH | Current PHP and exact RR binary via bundled govulncheck |
 | perf:soak | Mixed k6 run against prepared SQL/files and supported RR |
-| build VERSION | Integrity and runtime archive; does not replace quality checks |
+| build VERSION [--output-dir=DIR] | Integrity and runtime archive; default dist/, explicit destination owns its build scratch; does not replace quality checks |
 | services:start | PostgreSQL Docker service, --pull never, no migrations |
 | services:stop / services:status | Compose stop/status |
 | run | RR core via .rr.yaml; /health needs no database |
@@ -56,6 +56,6 @@ php tools/project.php tools:sql:check
 
 The [HTTP guide](http-and-baseline.md) covers real listeners, temporary ports, body/hash/HEAD checks, and memory limits. A Body object or a unit test alone proves no full-pipeline memory bound. Short runs establish neither a runtime winner nor long-term stability.
 
-The [catalog source walkthrough](../../examples/document-catalog/README.md#reproduce-the-source-scenario) joins the actual application, CLI setup, PostgreSQL and RR. Unlike the integration-test profile's defaults, catalog:check requires all five TEST_DB_HOST/PORT/NAME/USER/PASSWORD values explicitly. It additionally needs PCNTL/POSIX and DOM, owns isolated schemas/files/process groups, and returns nonzero for scenario, deadline or cleanup failures. Its optional JSON records source-only coverage and checked input hashes. It runs separately from verify/verify:integration; extracted-archive execution and CI invocation are the remaining ADR slices.
+The [catalog walkthrough](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) runs the same application scenario against source and a freshly built/extracted runtime archive. Unlike the integration-test profile's defaults, catalog:check requires all five TEST_DB_HOST/PORT/NAME/USER/PASSWORD values explicitly. It additionally needs Git, PCNTL/POSIX, DOM, Phar and zlib. The phases own independent schemas/files/process groups; packaging owns its output/scratch/extraction workspace. Archive PHP file loading is limited to the extracted application and private fixtures. Failures in behavior, deadlines, changed inputs or cleanup return nonzero. Optional report format 2 records both phases, scoped input hashes and archive SHA-256. The command remains separate from verify/verify:integration; CI invocation is the remaining ADR slice.
 
 Distribution changes check SQL inputs, migration loading without application autoload, HTTP/RR, and extracted archives. [Historical reports](../README.md#historical-evidence) describe previous compositions and do not instruct restoring removed APIs.

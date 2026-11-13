@@ -2,7 +2,7 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **accepted** by the owner on 2026-11-13. Implementation status: **source slice implemented; archive and CI slices planned**. The current command checks source only and reports that limit explicitly.
+Decision status: **accepted** by the owner on 2026-11-13. Implementation status: **source and archive slices implemented; CI slice planned**. The command reports each attempted phase and its cleanup separately.
 
 ## Context
 
@@ -29,7 +29,7 @@ Existing checks are useful and remain in place. The gap is their composition int
 
 Add a checkout-only `catalog:check` command, backed by the concrete [checker](../../tools/check-catalog.php). It exercises the actual application rather than introducing another demonstration backend or a general scenario framework.
 
-The implemented source-phase interface is:
+The implemented source-and-archive interface is:
 
 ```bash
 # Requires an explicitly configured, separately prepared TEST_DB_* database.
@@ -38,7 +38,7 @@ php tools/project.php catalog:check --rr=/absolute/path/to/rr3 --report=var/cata
 
 The checker supplies an isolated environment to the existing entry points. PostgreSQL, PHP/extensions, and RR are prepared externally. The command installs or downloads no packages or executables and starts no Docker service. It constructs child-process `DB_*` settings exclusively from explicit `TEST_DB_*` settings and its owned schema, rather than inheriting application connection settings.
 
-The planned final command will check both the source tree and its freshly built runtime archive. The source phase is implemented as an independently useful slice; its report identifies that limited coverage until the archive phase is implemented.
+The command checks both the source tree and its freshly built runtime archive. Each phase has its own catalog scenario instance, schema, private files and server processes. JSON format 2 records the separate phases and archive digest; format 1 described the earlier source-only slice.
 
 ## Application scenario
 
@@ -53,15 +53,15 @@ For each phase, use a new random schema in the explicitly selected test database
 
 The test selects IDs from its own fixture rather than relying on an existing application's IDs. It uses the existing published-literal SQL and partial index; connecting the SQL generator is outside this decision. Sequential requests establish the checked response behavior; do not claim persistent worker identity without measuring it.
 
-The checker needs bounded execution and diagnostics. Proposed initial bounds are ten seconds for listener readiness, five seconds per HTTP request, 1 MiB per response, 256 KiB retained diagnostics per child, and 120 seconds for a complete source-and-archive run, plus bounded termination/cleanup. These are test limits for the small seeded PDFs, not deployment SLOs. A limit failure must name the phase and failed operation. Forced process termination by an external SIGKILL remains outside guaranteed cleanup.
+The checker bounds readiness to ten seconds, each HTTP request to five seconds/1 MiB, retained diagnostics to 256 KiB per child, and the combined source/archive run to 120 seconds, plus bounded termination/cleanup. Ordinary CLI children have fifteen seconds; a measured local build took about 34 seconds, so building has sixty seconds and extraction thirty, both within the total deadline. These are fixture limits, not deployment SLOs. The [guide](../../examples/document-catalog/README.md#reproduce-source-and-runtime-archive) records archive/file/SQL bounds. A failure names the phase and operation. External SIGKILL remains outside guaranteed cleanup.
 
-## Runtime archive phase (planned)
+## Runtime archive phase
 
 Build an owned archive with the existing `build` implementation, extract it into an owned temporary directory, and run the same scenario using the packaged `bin`, `public`, configuration, and example files. The checkout checker drives the test; it is not added to the runtime archive.
 
 The two phases use independent schemas and file directories. The archive phase verifies that tools, tests, load scenarios, codegen distributions, and contract inputs remain excluded. It must not repair the extracted tree by adding excluded dependencies or load source-checkout application classes into its worker. Keep the existing offline RuntimeArchiveTest for its separate responsibility.
 
-The checker builds only its own archive, rather than introducing an API for extracting arbitrary supplied archives. It removes its owned archive after recording the digest and outcome.
+The checker builds only its own archive, rather than introducing an API for extracting arbitrary supplied archives. build --output-dir places archive and scratch under the checker's private workspace, which can be cleaned even after child termination. Extraction rejects symlinks and checks entry/byte limits. The packaged inventory is runtime-only; excluded project inputs/tools remain absent. PHP open_basedir restricts archive worker and migration/seed file loading to the extracted app and private fixtures. The extracted files are fingerprinted before and after the scenario. The checker removes archive/workspace after recording digest, phase results and cleanup.
 
 ## Result and evidence
 
@@ -82,10 +82,10 @@ A dirty-state fingerprint does not make local changes available to another revie
 | Slice | Observable result | Acceptance |
 | --- | --- | --- |
 | 1. Source walkthrough — implemented | One command exercises migration/seed/HTML/PDF/errors through the real catalog and RR | Repeated runs pass independently; invalid prerequisites fail clearly; a deliberately failing assertion still cleans owned resources. Root api.http now uses the actual default GET/HEAD /health contract. |
-| 2. Packaged walkthrough | The same command repeats the scenario against an extracted runtime archive | Source and archive phases have separate fixtures; both appear in the report; missing packaged dependencies fail rather than being loaded from the checkout. |
+| 2. Packaged walkthrough — implemented | The same command repeats the scenario against an extracted runtime archive | Source and archive phases have separate fixtures; both appear in the report; missing packaged dependencies and attempted checkout fallback fail. Archive/workspace cleanup and preservation of the default build artifact are checked. |
 | 3. Reviewer path and CI | README leads to the finite walkthrough and CI retains its result | A validation job explicitly provides both PostgreSQL and pinned RR, runs the check, and preserves bounded diagnostics/report on failure. Keep the independent security release gate. |
 
-After each slice, update the canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) to describe only implemented behavior. The source command now appears in current command tables; archive execution and CI invocation remain planned.
+After each slice, update the canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) to describe only implemented behavior. Source and archive execution are current; CI invocation remains planned.
 
 Run the required checks, commit, and push each completed authorized slice before beginning the next, following the repository's standing delivery instruction. Record the revision and CI outcome in the handoff.
 

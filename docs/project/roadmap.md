@@ -9,14 +9,14 @@ The current purpose is an [engineering portfolio](../portfolio/overview.md) back
 | Status | Work | Completion evidence |
 | --- | --- | --- |
 | Implemented presentation | English entry points, contribution boundaries, workflow, and three case studies | README links to decisions, code, tests, and raw measurements |
-| Source slice implemented; archive/CI planned | [Reproducible catalog walkthrough](../design/adr-2026-11-13-reviewer-walkthrough.md) | catalog:check joins source migration/seed/HTML/PDF/errors and cleanup through PostgreSQL/RR; next repeat against the archive, then integrate with CI |
+| Source/archive implemented; CI planned | [Reproducible catalog walkthrough](../design/adr-2026-11-13-reviewer-walkthrough.md) | catalog:check repeats migration/seed/HTML/PDF/errors against source and a fresh runtime archive with independent fixtures and scoped evidence; next integrate with CI |
 | Ongoing | Keep the working example and verification reproducible | Checkout instructions, service-free verify, separately documented PostgreSQL/RR requirements |
 | Open | Exercise the portfolio with a reviewer | A reviewer can follow a case into code, reproduce a check, and discuss the tradeoff |
 | Awaiting consumer | Extend an application or the core | A concrete scenario and a gap in existing primitives; no feature expansion solely for presentation |
 
 The portfolio attributes owner direction and agent execution explicitly. It makes no measured productivity claim or unsupported statement of personal authorship.
 
-The walkthrough ADR is accepted. Its source-only catalog:check command exists with bounded execution, isolated resources and a scoped report; archive and CI stages retain their separate acceptance criteria. It closes the seam between existing checks using the current catalog and introduces no new application capability. Exercising the portfolio with an independent reviewer remains open until that review occurs.
+The walkthrough ADR is accepted. catalog:check now covers source and the extracted runtime archive with bounded execution, independent resources, PHP file-loading separation and a scoped report. CI integration retains its separate acceptance criteria. This uses the current catalog and introduces no new application capability. Exercising the portfolio with an independent reviewer remains open until that review occurs.
 
 ## Established technical baseline
 

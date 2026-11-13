@@ -8,6 +8,55 @@ use PHPUnit\Framework\TestCase;
 
 final class RuntimeArchiveTest extends TestCase
 {
+    public function testBuildRejectsDestinationInsidePackagedSources(): void
+    {
+        $root = \dirname(__DIR__, 4);
+        $build = $this->runProcess([PHP_BINARY, 'tools/project.php', 'build', 'invalid-destination', '--output-dir=' . $root . '/src'], $root);
+        self::assertNotSame(0, $build['exit']);
+        self::assertStringContainsString('outside packaged source directories', $build['output']);
+        self::assertFileDoesNotExist($root . '/src/zerno-invalid-destination.tar.gz');
+    }
+
+    public function testExplicitBuildDestinationPreservesTheDefaultArtifactAndCleansScratchFiles(): void
+    {
+        $root = \dirname(__DIR__, 4);
+        $version = 'owned-test-' . bin2hex(random_bytes(8));
+        $directory = sys_get_temp_dir() . '/zerno-build-' . $version;
+        self::assertTrue(mkdir($directory, 0o700));
+        $default = $root . '/dist/zerno-' . $version . '.tar.gz';
+        $ownedDefault = false;
+        $placeholder = null;
+
+        try {
+            if (!is_dir($root . '/dist')) {
+                self::assertTrue(mkdir($root . '/dist'));
+            }
+            $placeholder = fopen($default, 'xb');
+            self::assertIsResource($placeholder);
+            $ownedDefault = true;
+            self::assertSame(25, fwrite($placeholder, 'preserved default archive'));
+            fclose($placeholder);
+            $output = $directory . '/output with spaces';
+            $build = $this->runProcess([PHP_BINARY, 'tools/project.php', 'build', $version, '--output-dir=' . $output], $root);
+            self::assertSame(0, $build['exit'], $build['output']);
+            $archive = $output . '/zerno-' . $version . '.tar.gz';
+            self::assertFileExists($archive);
+            self::assertSame('preserved default archive', file_get_contents($default));
+            self::assertSame(1, iterator_count(new \FilesystemIterator($output, \FilesystemIterator::SKIP_DOTS)));
+            $package = new \PharData($archive);
+            self::assertTrue(isset($package['public/index.php']));
+            unset($package);
+        } finally {
+            if (\is_resource($placeholder)) {
+                fclose($placeholder);
+            }
+            if ($ownedDefault) {
+                unlink($default);
+            }
+            $this->removeDirectory($directory);
+        }
+    }
+
     public function testPackagedCoreAndMigrationEntryPointWorkWithoutDevelopmentTools(): void
     {
         $root = \dirname(__DIR__, 4);

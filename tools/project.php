@@ -26,7 +26,7 @@ function projectCommand(string $command, array $arguments = []): void
                 third-party:check      Verify the bundled dependency manifest and file hashes
                 docs:check             Verify the documentation inventory and local Markdown links
                 http:check             Check real RoadRunner 3 HTTP behavior; forwards RR options
-                catalog:check          Check the source catalog through PostgreSQL, CLI and RR; uses explicit TEST_DB_*
+                catalog:check          Check source and packaged catalog through PostgreSQL, CLI and RR; uses explicit TEST_DB_*
                 security:inventory     Print the bundled PHP package inventory; offline
                 security:audit         Audit PHP packages and PHP security policy; online advisory data only
                 security:platform      Check this PHP and an explicit RR binary; --rr=/path/to/rr
@@ -51,7 +51,8 @@ function projectCommand(string $command, array $arguments = []): void
                 perf:catalog           Run the public catalog HTML k6 scenario; uses BASE_URL and CASE
                 perf:soak              Run the mixed RoadRunner k6 scenario; uses BASE_URL and FILE_HASHES
                 perf:cleanup <schema>  Remove a baseline fixture created by perf:prepare
-                build [version]        Create a runtime tar.gz in dist/
+                build [version] [--output-dir=DIR]
+                                       Create a runtime tar.gz in dist/ or the explicit destination
 
                 Bundled PHP dependencies and quality tools are used directly; no installation step.
 
@@ -202,8 +203,23 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'build':
+            $version = $arguments[0] ?? 'dev';
+            $options = array_slice($arguments, 1);
+            if (str_starts_with($version, '--')) {
+                $version = 'dev';
+                $options = $arguments;
+            }
+            $outputDirectory = $root . '/dist';
+            $explicitOutput = false;
+            foreach ($options as $option) {
+                if ($explicitOutput || !str_starts_with($option, '--output-dir=') || strlen($option) <= 13) {
+                    throw new InvalidArgumentException('Expected build [version] [--output-dir=DIR].');
+                }
+                $outputDirectory = substr($option, 13);
+                $explicitOutput = true;
+            }
             projectCommand('third-party:check');
-            projectBuild($arguments[0] ?? 'dev');
+            projectBuild($version, $outputDirectory);
 
             return;
     }
@@ -343,26 +359,36 @@ function projectGzip(string $source, string $destination): void
     }
 }
 
-function projectBuild(string $version): void
+function projectBuild(string $version, string $outputDirectory): void
 {
     if (preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9._-]*\z/', $version) !== 1) {
         throw new InvalidArgumentException('The build version must contain only letters, digits, dots, underscores and hyphens.');
     }
     $root = dirname(__DIR__);
-    projectDirectory($root . '/dist');
-    projectDirectory($root . '/var');
-    $temporary = $root . '/var/release-' . bin2hex(random_bytes(8));
-    projectDirectory($temporary);
+    $inputs = [
+        'bootstrap.php', 'bootstrap', 'src', 'gen', 'config', 'public', 'bin',
+        'third_party/runtime', 'docs', 'README.md',
+        'examples/document-catalog', 'examples/json-echo', 'examples/contract-echo',
+        '.rr.yaml',
+    ];
+    projectDirectory($outputDirectory);
+    $outputDirectory = realpath($outputDirectory) ?: throw new RuntimeException('Could not resolve the build destination.');
+    foreach ([...$inputs, 'third_party'] as $relative) {
+        $input = realpath($root . '/' . $relative);
+        if ($input !== false && is_dir($input)
+            && ($outputDirectory === $input || str_starts_with($outputDirectory, $input . DIRECTORY_SEPARATOR))) {
+            throw new InvalidArgumentException('The build destination must be outside packaged source directories.');
+        }
+    }
+    $temporary = $outputDirectory . '/.zerno-build-' . bin2hex(random_bytes(8));
+    if (!mkdir($temporary, 0o700)) {
+        throw new RuntimeException('Could not create an owned build directory.');
+    }
     $tarPath = $temporary . '/application.tar';
 
     try {
         $archive = new PharData($tarPath);
-        foreach ([
-            'bootstrap.php', 'bootstrap', 'src', 'gen', 'config', 'public', 'bin',
-            'third_party/runtime', 'docs', 'README.md',
-            'examples/document-catalog', 'examples/json-echo', 'examples/contract-echo',
-            '.rr.yaml',
-        ] as $relative) {
+        foreach ($inputs as $relative) {
             $path = $root . '/' . $relative;
             if (!file_exists($path)) {
                 throw new RuntimeException('Missing runtime release input: ' . $relative);
@@ -412,7 +438,7 @@ function projectBuild(string $version): void
         $archive->addEmptyDir('var');
         unset($archive);
         projectGzip($tarPath, $tarPath . '.gz');
-        $output = $root . '/dist/zerno-' . $version . '.tar.gz';
+        $output = $outputDirectory . '/zerno-' . $version . '.tar.gz';
         if (!rename($tarPath . '.gz', $output)) {
             throw new RuntimeException('Could not publish release archive: ' . $output);
         }
