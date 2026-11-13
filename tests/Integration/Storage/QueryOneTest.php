@@ -56,6 +56,27 @@ final class QueryOneTest extends TestCase
         self::assertSame(['missing' => null], $this->storage->queryOne('SELECT NULL::TEXT AS missing'));
     }
 
+    public function testBooleanParametersPreserveFalseNullAndStatementReuse(): void
+    {
+        $this->storage->execute('CREATE TABLE flags (id BIGINT PRIMARY KEY, enabled BOOLEAN)');
+        $this->storage->execute('INSERT INTO flags (id, enabled) VALUES (:id, :enabled)', ['id' => 1, 'enabled' => false]);
+        foreach ([false, true, null, false] as $enabled) {
+            self::assertTrue($this->storage->execute('UPDATE flags SET enabled = :enabled WHERE id = :id', ['enabled' => $enabled, 'id' => 1]));
+            self::assertSame(['enabled' => $enabled], $this->storage->queryOne('SELECT enabled FROM flags WHERE enabled IS NOT DISTINCT FROM CAST(:enabled AS BOOLEAN)', ['enabled' => $enabled]));
+            self::assertSame([['enabled' => $enabled]], $this->storage->query('SELECT enabled FROM flags WHERE enabled IS NOT DISTINCT FROM CAST(:enabled AS BOOLEAN)', ['enabled' => $enabled]));
+        }
+        $sql = 'SELECT CAST(:value AS BOOLEAN) AS enabled';
+        self::assertSame(['enabled' => false], $this->storage->queryOne($sql, ['value' => false]));
+
+        try {
+            $this->storage->queryOne($sql);
+            self::fail('A cached statement must not reuse an omitted parameter');
+        } catch (StorageException $exception) {
+            self::assertInstanceOf(\PDOException::class, $exception->getPrevious());
+        }
+        self::assertSame(['enabled' => true], $this->storage->queryOne($sql, ['value' => true]));
+    }
+
     public function testPartialReadsReuseTheSameStatementAndConnection(): void
     {
         $sql = 'SELECT id FROM generate_series(1, 3) AS records(id) WHERE id >= CAST(:minimum AS INTEGER) ORDER BY id';

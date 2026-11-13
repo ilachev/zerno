@@ -1,6 +1,6 @@
 # Транзакции и миграции
 
-Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `design`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 Владелец текущего контракта Storage.transaction и Migration. [Архитектура](../architecture/overview.md) описывает композицию, [инфраструктура](../development/infrastructure-and-testing.md) — TEST_DB_* и запуск проверок. PostgreSQL — единственный backend приложения.
 
@@ -69,6 +69,20 @@ php bin/migrate.php rollback examples/document-catalog/migrations
 Неисправная версия и следующие действия сами не повторяются. Инициализация служебной таблицы migrations выполняется отдельно в MigrationRepository constructor; она может остаться после первой неудачной миграции. HTTP startup и services:start не запускают DDL. Остатки частичных миграций прежнего движка требуют отдельной сверки фактической схемы и версий; новый движок не удаляет их автоматически.
 
 Все миграции транзакционные. `CREATE INDEX CONCURRENTLY` и другие команды, запрещённые внутри transaction, приводят к ошибке PostgreSQL и откату текущей версии. Non-transactional флага нет. Запуски миграций оператор выполняет последовательно: механизма сериализации нескольких CLI-процессов или distributed lock проект не предоставляет.
+
+## BIGINT времени и явное обновление метаданных
+
+Новая служебная таблица migrations хранит executed_at как BIGINT, включая значения до PHP_INT_MAX. CREATE TABLE IF NOT EXISTS не изменяет уже существующую INTEGER-колонку. Её обновляет отдельная команда с обычными DB_* и DB_SCHEMA выбранного приложения:
+
+```bash
+php bin/migrate.php upgrade-metadata
+```
+
+Из checkout доступен эквивалент `php tools/project.php migrate upgrade-metadata`. Аргумент каталога для этого действия запрещён и проверяется до подключения. Команда не загружает application migrations или HTTP config: создаёт Storage/repository и выполняет `ALTER TABLE migrations ALTER COLUMN executed_at TYPE BIGINT` в транзакции. Строки, timestamps, primary key и имена применённых версий сохраняются; повторный вызов допустим. Неявного downcast и удаления истории нет.
+
+Оператор запускает обслуживание последовательно с остальными migration CLI в выбранной схеме. ALTER получает блокировку метаданных и может переписать таблицу; время зависит от её размера и конкурирующих операций. После окончания запускается новый CLI-процесс со свежим PDO: прежние cached prepared statements могут сохранять INTEGER-типы параметров. HTTP startup не меняется и в migrations не обращается. Если преобразование невозможно, PostgreSQL откатывает ALTER, исходная таблица остаётся; команда завершается ошибкой. Это явное обслуживание таблицы движка, не новая версия прикладной схемы.
+
+MigrationCliRecoveryTest проверяет создание BIGINT, границы PHP_INT_MAX, сохранение старой INTEGER-истории, отсутствие автоматического ALTER, повтор команды и ошибку преобразования на настоящем PostgreSQL.
 
 ## Цена и проверка
 

@@ -1,6 +1,6 @@
 # HTTP-проверки и baseline RoadRunner
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 RoadRunner 3.x — единственный HTTP runtime. PHP app и handler отделены от worker loop для композиции и unit tests; это не обещание других серверных адаптеров. executable RR3 и sockets — платформа, PHP libraries и tools уже включены.
 
@@ -14,9 +14,9 @@ php tools/project.php http:check --rr=/path/to/rr3
 
 [Checker](../../tools/check-http.php) создаёт временные конфигурации, свободный loopback port, файлы и один PHP worker с memory_limit=32M/RR_HTTP_CHUNK_SIZE=8192. После запуска останавливает свои процессы и удаляет свои fixtures. БД, package installation/download и дополнительные HTTP-серверы не нужны. Приготовленные JSON/HTML композиции используют настоящие внутренние компоненты; helper внешнего WorkerInterface применяется только в unit tests.
 
-Матрица проверяет routing/405/Allow, HEAD, 204/304, повторные headers/Set-Cookie, числовые имена headers, query/cookies/forms/nested upload и moveTo. Request ID и параметры проверяются в последовательных запросах одного worker. Файлы до 16 MiB + 17 байт проверяются по размеру и SHA-256; повторные передачи проверяют ограниченный рост PHP allocations после прогрева. Metadata logging не читает payload, исключения остаются в logger, ответ не раскрывает детали.
+Матрица проверяет routing/405/Allow, HEAD, 204/205/304, повторные headers/Set-Cookie, числовые имена headers, query/cookies/forms/nested upload с числовыми и строковыми ключами (включая name) и moveTo. Request ID и параметры проверяются в последовательных запросах одного worker. Файлы до 16 MiB + 17 байт проверяются по размеру и SHA-256; повторные передачи проверяют ограниченный рост PHP allocations после прогрева. Metadata logging не читает payload, исключения остаются в logger, ответ не раскрывает детали.
 
-Это ограниченная проверка HTTP/1.1. Полное соответствие HTTP, реальные HTTP/2/3, отмена клиента и длительная устойчивость не установлены. В частности, общий adapter пока не подавляет тело для 205 Reset Content; это отдельный известный пробел HTTP-семантики, не исправление данной смены состава.
+Это ограниченная проверка HTTP/1.1. Полное соответствие HTTP, реальные HTTP/2/3, отмена клиента и длительная устойчивость не установлены. 205 Reset Content подавляется без чтения body с нулевой длиной; streams закрываются runtime и для этого статуса.
 
 ## Ограниченный JSON
 
@@ -74,6 +74,44 @@ php tools/project.php perf:cleanup "$DB_SCHEMA"
 ```
 
 Cleanup проверяет имя, marker и роль-владельца; чужие схемы/БД/контейнеры не удаляются.
+
+## Смешанный длительный прогон
+
+`load-tests/soak/config.php` явно объединяет существующие baseline и HTTP fixtures. Два worker обслуживают SQL, малый JSON, ручной/generated Echo, последовательные route/query context, GET/HEAD файлов 1 MiB и 16 MiB + 17 байт, 204/205 и ожидаемые 400/404/405/500. SQL исполняется небольшими параллельными сериями по четыре запроса, чтобы нагрузка попадала в оба worker. Wrapper добавляет только диагностические headers с PID, числом запросов и PHP allocations/peak; запросы и body не удерживаются. Это проверочный граф, не минимальная композиция production-приложения.
+
+Нужны заранее подготовленные PHP 8.5.12+/pdo_pgsql/sockets/OPcache, RR3, PostgreSQL и k6. Из source checkout подготовьте свою baseline schema через `perf:prepare`, перенесите её TEST_DB_* в DB_* и DB_SCHEMA по инструкции выше. Подготовьте свои файлы и их hashes:
+
+```bash
+mkdir -p var/soak/files
+php -r 'require "tools/http-fixtures/AttachmentFiles.php"; echo json_encode(Project\HttpFixtures\AttachmentFiles::prepare($argv[1]), JSON_THROW_ON_ERROR);' var/soak/files > var/soak/hashes.json
+export WIRE_FILE_DIRECTORY="$PWD/var/soak/files"
+export FILE_HASHES="$(cat var/soak/hashes.json)"
+rr serve -w "$PWD" -c load-tests/soak/rr.yaml
+```
+
+Конфигурация слушает loopback port 19003, включает два worker без max_jobs recycling, memory_limit=64M и chunk size 8192. В контейнере RR должен быть PID 1; при публикации порта явно переопределите listener `-o http.address=0.0.0.0:19003`. Выбирайте существующий executable/образ платформы: команды проекта ничего не устанавливают. Перезапуск контейнера с автоматически выбранным host port требует повторно определить его через docker port.
+
+В другом терминале с теми же FILE_HASHES и фактическим BASE_URL:
+
+```bash
+BASE_URL=http://127.0.0.1:19003 RATE=10 DURATION=60s SUMMARY_PATH=var/soak/warmup.json php tools/project.php perf:soak --quiet
+BASE_URL=http://127.0.0.1:19003 RATE=10 DURATION=15m SUMMARY_PATH=var/soak/measure.json php tools/project.php perf:soak --quiet
+```
+
+RATE задаёт iterations/s, а не requests/s: серия SQL и пары context увеличивают число HTTP-запросов. Проверяются точные SQL/JSON/file hash результаты, собственный request ID, отсутствие переноса параметров/сессии, PHP telemetry и ожидаемые ошибки. k6 представляет body 204 как null; 205 имеет пустую строку. Запрет реальных bytes дополнительно проверяет raw http:check. Thresholds требуют всех checks, отсутствия сетевых/неожиданных HTTP failures и пропущенных iterations; ожидаемый 500 сам по себе не является transport failure, его status/privacy проверяются отдельно.
+
+Для Linux-контейнера с RR как PID 1 [sample.php](../../load-tests/soak/sample.php) снимает /proc RSS, kernel peak RSS, CPU ticks, start time и число FD для server и всех PHP workers, исключая собственный процесс. Например, в отдельном терминале выполните конечную серию из 194 samples с интервалом 5 s, охватывающую прогрев и измерение:
+
+```bash
+for sample in $(seq 1 194); do
+    docker exec "$SOAK_CONTAINER" php load-tests/soak/sample.php >> var/soak/processes.jsonl
+    sleep 5
+done
+```
+
+SOAK_CONTAINER — только созданный вами сервер. Узнайте CLK_TCK через getconf внутри него; CPU seconds = разность cpu_ticks / CLK_TCK. Сопоставляйте pid вместе со start_ticks, чтобы не пропустить restart или повторное использование PID. Сумма RSS включает общие страницы повторно; Zend allocations, kernel RSS/peak и память Docker VM — разные показатели. PostgreSQL и k6 учитывать отдельно. Сравните первые и последние 60 s после прогрева, extrema и FD, проверьте активность каждого worker. Нагрузку/срок, image/binary hashes, PHP flags и source hashes сохраняйте вместе с результатом. После остановки своего RR удалите только свою baseline schema через perf:cleanup и принадлежащие вам fixtures.
+
+[Отчёт от 2026-10-28](../history/2026-10-28-runtime-soak.md) и JSON сохраняют финальный прогон на подготовленной платформе. Пятнадцать минут подтверждают только наблюдаемое поведение этого сценария. Они не устанавливают многодневную устойчивость, пригодность любого stream, поведение при потере БД/отмене клиента или production SLO. Числовые ориентиры сравнимы только с тем же результатом, платформой и нагрузкой.
 
 ## Стоимость файлового пути
 

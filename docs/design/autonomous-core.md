@@ -1,6 +1,6 @@
 # Автономная поставка
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 Runtime, генерация, проверки и сборка не устанавливают пакеты и не скачивают dependencies. Только отдельные [security checks](../development/security.md) получают advisory data по сети; обычные verify/build автономны. PHP, расширения, PostgreSQL, RoadRunner 3.x executable и инструменты стенда — внешняя платформа. [Конкретный состав](../project/vision.md) не содержит optional-подсистем старого API.
 
@@ -40,6 +40,8 @@ php tools/project.php build local
 ```
 
 Build создаёт dist/zerno-VERSION.tar.gz: bootstrap, src/gen/config/public/bin, runtime distribution, docs/README, конфигурацию RR, каталог с migration/seed и [ручной POST JSON](../../examples/json-echo/README.md) с RR3 конфигурацией, а также [Echo из контракта](../../examples/contract-echo/README.md) и его готовый PHP. SQL/API generators, contracts/descriptors, codegen sources, quality PHARs/security binaries, тесты и нагрузочные scripts исключены. Release manifest ссылается только на runtime distribution. OpenAPI sidecar отсутствует.
+
+Запуск из корня распакованного архива: `rr serve -c .rr.yaml`. Корневой README разделяет команды checkout и runtime; ссылки включённой документации на tools/tests/contracts/sql относятся к source checkout. Автономный RuntimeArchiveTest собирает и распаковывает поставку, проверяет отсутствие development distributions, /health через упакованную композицию и доступность CLI migration entry point. Реальный RR smoke выполняется отдельно на поддерживаемой платформе.
 
 CLI migration в распакованном архиве: php bin/migrate.php migrate [migration-directory]. Default — src/Migrations; каталог передаёт examples/document-catalog/migrations. CLI явно собирает Storage/repository/loader/service и подключает файлы директории без HTTP graph. БД не создаётся автоматически, HTTP startup не выполняет DDL.
 

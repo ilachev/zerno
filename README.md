@@ -18,29 +18,45 @@
 
 ## Запуск
 
-Для HTTP нужны PHP 8.5.12+, PDO, sockets и установленный RoadRunner 3.0.1+ в ветке 3.x. Для БД дополнительно нужны pdo_pgsql и PostgreSQL. PHP libraries и quality/codegen tools поставляются статически, установка пакетов не требуется.
+Для HTTP нужны PHP 8.5.12+, PDO, sockets и установленный RoadRunner 3.0.1+ в ветке 3.x. Для БД дополнительно нужны pdo_pgsql и PostgreSQL. PHP libraries включены в обе поставки; quality/codegen tools доступны только в исходном checkout. Установка пакетов не требуется.
+
+Из корня исходного checkout:
 
 ```bash
 rr --version
 php tools/project.php run
 ```
 
+Из корня распакованного runtime-архива:
+
+```bash
+rr --version
+rr serve -c .rr.yaml
+```
+
+Runtime-архив содержит готовые PHP-артефакты и примеры. В нём нет tools/project.php, генераторов, тестов и входных contracts/sql. Разделы документации об этих инструментах и ссылки на их исходники относятся к checkout.
+
 [GET /health](http://127.0.0.1:8080/health) возвращает `{"status":"ok"}`; HEAD зарегистрирован отдельно. Запрос не открывает БД. При нескольких установках выберите RR3 через PATH: команды проекта executable не скачивают. `version: '3'` в YAML обозначает формат конфигурации.
 
 Единственная HTTP-точка входа — [public/index.php](public/index.php). [.rr.yaml](.rr.yaml) выбирает [config/core.php](config/core.php): `Closure(Logger): App`. APP_CONFIG задаёт другую явную функцию сборки. Logger и transport создаются в точке входа, routes получают готовые RequestHandler objects. Примеры — [ручной POST JSON](examples/json-echo/README.md), [Echo из .proto](examples/contract-echo/README.md), [каталог документов](examples/document-catalog/README.md).
 
-## База данных и генерация
+## База данных
 
 [config/storage.php](config/storage.php) читает DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD и DB_SCHEMA. Поддерживается PostgreSQL. PDO открывается при первой SQL-операции/транзакции. HTTP startup не запускает миграции.
 
 ```bash
-php tools/project.php migrate migrate
-php tools/project.php sql:gen
+php bin/migrate.php migrate
 ```
 
-Default migrations — пустой src/Migrations; второй аргумент задаёт каталог, например examples/document-catalog/migrations. [SQL inputs](sql/queries/catalog.sql) и [schema](sql/schema.sql) проверяют генератор отдельно от приложения, которое сохраняет прямой SQL. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
+Команда доступна и в checkout, и в runtime-архиве. Default migrations — пустой src/Migrations; второй аргумент задаёт каталог, например `php bin/migrate.php migrate examples/document-catalog/migrations`.
+
+Для существующей INTEGER-колонки истории выполните отдельно `php bin/migrate.php upgrade-metadata`; команда сохраняет версии и переводит executed_at в BIGINT. Подробности обслуживания — в [контракте миграций](docs/design/transactions-and-migrations.md#bigint-времени-и-явное-обновление-метаданных).
+
+Генерация выполняется только в checkout командой `php tools/project.php sql:gen`. [SQL inputs](sql/queries/catalog.sql) и [schema](sql/schema.sql) проверяют генератор отдельно от приложения, которое сохраняет прямой SQL. Подробности — в [SQL-контракте](docs/design/sql-gen-product.md).
 
 ## Проверки и поставка
+
+Следующие команды выполняются только в исходном checkout:
 
 ```bash
 php tools/project.php help
@@ -56,4 +72,4 @@ verify не требует внешних сервисов или protoc. verify
 
 Bundled RR использует protobuf/DTO libraries для своего транспорта; API Echo их не загружает как codec. Notices, происхождение и hashes описаны в [автономной поставке](docs/design/autonomous-core.md).
 
-Для агентов: [AGENTS.md](AGENTS.md), [правила кода](docs/development/coding-guidelines.md), [onboarding](docs/llm-onboarding.md), [индекс](docs/README.md). [Roadmap](docs/project/roadmap.md) задаёт ограниченные задачи; лицензия и политика публичных релизов собственного кода остаются открытыми.
+Для агентов в checkout: [AGENTS.md](AGENTS.md), [правила кода](docs/development/coding-guidelines.md), [onboarding](docs/llm-onboarding.md), [индекс](docs/README.md). [Roadmap](docs/project/roadmap.md) задаёт ограниченные задачи; лицензия и политика публичных релизов собственного кода остаются открытыми.

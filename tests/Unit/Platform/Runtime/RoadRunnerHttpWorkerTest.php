@@ -6,13 +6,15 @@ namespace Tests\Unit\Platform\Runtime;
 
 use App\Platform\Http\UploadedFile;
 use App\Platform\Runtime\RoadRunnerRuntime;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Spiral\RoadRunner\Payload;
 use Spiral\RoadRunner\WorkerInterface;
 
 final class RoadRunnerHttpWorkerTest extends TestCase
 {
-    public function testMapsNativeRequestsAndNestedUploadsWithoutChangingGlobals(): void
+    #[DataProvider('provideMapsNativeRequestsAndNestedUploadsWithoutChangingGlobalsCases')]
+    public function testMapsNativeRequestsAndNestedUploadsWithoutChangingGlobals(int|string $key): void
     {
         $original = [$_SERVER, $_GET, $_POST, $_COOKIE, $_FILES];
         $path = tempnam(sys_get_temp_dir(), 'zerno-rr-upload-');
@@ -26,7 +28,7 @@ final class RoadRunnerHttpWorkerTest extends TestCase
             'uri' => 'https://example.test/form?tags%5B%5D=a&tags%5B%5D=b',
             'headers' => ['Content-Type' => ['multipart/form-data'], 'X-Multiple' => ['first', 'second'], 123 => ['numeric']],
             'cookies' => ['name' => 'value'],
-            'uploads' => ['documents' => [['name' => 'file.txt', 'tmpName' => $path, 'size' => 8, 'error' => UPLOAD_ERR_OK, 'mime' => 'text/plain']]],
+            'uploads' => ['documents' => [$key => ['name' => 'file.txt', 'tmpName' => $path, 'size' => 8, 'error' => UPLOAD_ERR_OK, 'mime' => 'text/plain']]],
             'attributes' => ['trace' => 'first'],
             'rawQuery' => 'tags%5B%5D=a&tags%5B%5D=b',
             'parsed' => true,
@@ -56,7 +58,7 @@ final class RoadRunnerHttpWorkerTest extends TestCase
             self::assertSame('192.0.2.1:1234', $request->getServerParams()['REMOTE_ADDR']);
             $documents = $request->getUploadedFiles()['documents'];
             self::assertIsArray($documents);
-            $upload = $documents[0];
+            $upload = $documents[$key];
             self::assertInstanceOf(UploadedFile::class, $upload);
             self::assertSame('uploaded', (string) $upload->getStream());
             $upload->getStream()->close();
@@ -73,5 +75,14 @@ final class RoadRunnerHttpWorkerTest extends TestCase
         } finally {
             unlink($path);
         }
+    }
+
+    /** @return iterable<string, array{int|string}> */
+    public static function provideMapsNativeRequestsAndNestedUploadsWithoutChangingGlobalsCases(): iterable
+    {
+        yield 'numeric' => [0];
+        yield 'name' => ['name'];
+        yield 'metadata key' => ['tmpName'];
+        yield 'ordinary name' => ['other'];
     }
 }

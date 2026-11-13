@@ -55,7 +55,7 @@ final class PostgreSQLStorage extends AbstractStorage
     {
         try {
             $statement = $this->getStatement($sql);
-            $statement->execute($params);
+            $this->executeStatement($statement, $params);
             /** @var array<array-key, array<string, scalar|null>> $result */
             $result = $statement->fetchAll();
 
@@ -76,7 +76,7 @@ final class PostgreSQLStorage extends AbstractStorage
             $statement = $this->getStatement($sql);
 
             try {
-                $statement->execute($params);
+                $this->executeStatement($statement, $params);
                 /** @var array<string, scalar|null>|false $row */
                 $row = $statement->fetch(\PDO::FETCH_ASSOC);
 
@@ -98,10 +98,24 @@ final class PostgreSQLStorage extends AbstractStorage
         try {
             $statement = $this->getStatement($sql);
 
-            return $statement->execute($params);
+            return $this->executeStatement($statement, $params);
         } catch (\PDOException $e) {
             throw $this->recordFailure($e);
         }
+    }
+
+    /** @param array<string, scalar|null> $params */
+    private function executeStatement(\PDOStatement $statement, array $params): bool
+    {
+        foreach ($params as $name => $value) {
+            if (\is_bool($value)) {
+                // PDO execute arrays bind as strings; PostgreSQL rejects false converted to an empty string.
+                $params[$name] = $value ? 'true' : 'false';
+            }
+        }
+
+        // Supplying the complete array also clears bindings from an earlier execution.
+        return $statement->execute($params);
     }
 
     /**

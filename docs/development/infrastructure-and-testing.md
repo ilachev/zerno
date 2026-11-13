@@ -1,6 +1,6 @@
 # Инфраструктура и тестирование
 
-Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `operations`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 [PHP runner](../../tools/project.php) — единственный command interface; установка пакетов/Task не требуется. HTTP runtime: PHP 8.5.12+, PDO; технический минимум CLI checks — PHP 8.5; для БД — pdo_pgsql и PostgreSQL. Для unit/tool checks нужны ctype/dom/json/libxml/mbstring/tokenizer/xml/xmlwriter и pdo_sqlite для тестовой migration fixture. SQLite не является БД приложения и не входит в runtime archive.
 
@@ -20,11 +20,12 @@
 | security:inventory | Автономный список версий PHP packages из manifests |
 | security:audit | Online OSV и PHP security release policy; advisory data only |
 | security:platform --rr=PATH | Проверка текущего PHP и конкретного RR binary через bundled govulncheck |
+| perf:soak | Смешанный k6 прогон; заранее подготовленные SQL/files и поддерживаемый RR; методика в HTTP guide |
 | build VERSION | Integrity и runtime tar.gz; не заменяет quality gate |
 | services:start | Только PostgreSQL Docker service с --pull never, без миграций |
 | services:stop / services:status | Остановка / статус compose-проекта |
 | run | Только запуск RR core из .rr.yaml; не требует запуска БД для /health |
-| migrate [action] [directory] | Явный CLI DDL; default src/Migrations |
+| migrate [action] [directory] | migrate/rollback с default src/Migrations; upgrade-metadata без каталога обновляет BIGINT метаданных |
 
 Полный справочник — php tools/project.php help. proto:gen и proto:compile:check требуют установленный protoc (проверен 26.1); proto:check входит в verify и сверяет sources/descriptor/PHP без compiler. Нет cache/legacy load commands, Task aliases, Redis service или OpenAPI release sidecar. CI и release используют verify:full и build. [Security workflow](security.md) также выполняется ежедневно и для push/PR; release packaging/upload требует его успеха. Подготовка PHP/RR платформы в CI отделена от checks, а verify остаётся без сети.
 

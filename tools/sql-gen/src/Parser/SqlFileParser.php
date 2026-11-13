@@ -90,10 +90,16 @@ final class SqlFileParser implements NamedSqlFileParser
         $currentName = null;
         $currentKind = null;
         $currentLines = [];
+        $names = [];
 
         foreach ($lines as $line) {
             $header = $this->parseHeaderLine($line);
             if ($header !== null) {
+                $nameKey = strtolower($header['name']);
+                if (isset($names[$nameKey])) {
+                    throw new \RuntimeException("Duplicate SQL statement name {$header['name']} in {$path}");
+                }
+                $names[$nameKey] = true;
                 if ($currentName !== null && $currentKind !== null) {
                     $statements[] = $this->buildStatement($currentName, $currentKind, $currentLines, $path);
                 }

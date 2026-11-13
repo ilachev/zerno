@@ -36,6 +36,9 @@ final class StatementTableMapResolver
             $visibleTables[] = $primaryTable;
 
             foreach ($query->joins as $join) {
+                if (in_array($join->type, ['left', 'right', 'full'], true)) {
+                    throw new \RuntimeException("Outer JOIN is not supported until nullable row inference is implemented in query {$statement->name}");
+                }
                 $joinedTable = $this->resolveVisibleTable(
                     $join->table->table,
                     $join->table->alias,

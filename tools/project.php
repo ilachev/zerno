@@ -41,13 +41,14 @@ function projectCommand(string $command, array $arguments = []): void
                 sql:check:pg           Validate SQL against PostgreSQL using TEST_DB_* settings
                 tools:sql:check        Run style, PHPStan and tests for tools/sql-gen
                 tools:sql:<lint|fixcs|phpstan|test>
-                migrate                Run migrations; accepts action and migration directory
+                migrate                Run migrate/rollback with a directory, or upgrade-metadata without one
                 services:start         Start the PostgreSQL development service without running migrations
                 services:stop | services:status
                 run                    Start the HTTP/PDO core through RoadRunner
                 perf:prepare           Create an isolated PostgreSQL baseline fixture; uses TEST_DB_*
                 perf:baseline          Run the JSON or SELECT k6 baseline; uses BASE_URL and CASE
                 perf:catalog           Run the public catalog HTML k6 scenario; uses BASE_URL and CASE
+                perf:soak              Run the mixed RoadRunner k6 scenario; uses BASE_URL and FILE_HASHES
                 perf:cleanup <schema>  Remove a baseline fixture created by perf:prepare
                 build [version]        Create a runtime tar.gz in dist/
 
@@ -102,7 +103,7 @@ function projectCommand(string $command, array $arguments = []): void
         case 'phpstan':
             projectDirectory($root . '/var');
             $paths = $arguments === []
-                ? ['src', 'tests', 'config', 'public', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'tools/proto-gen', 'tools/security', 'gen/Generated/Echo', 'load-tests/baseline', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
+                ? ['src', 'tests', 'config', 'public', 'bin', 'bootstrap.php', 'bootstrap', 'tools/http-fixtures', 'tools/proto-gen', 'tools/security', 'gen/Generated/Echo', 'load-tests/baseline', 'load-tests/soak', 'examples', ...(glob($root . '/tools/*.php') ?: [])]
                 : [];
             projectRun([
                 PHP_BINARY, $root . '/tools/phpstan.php', 'analyse',
@@ -130,7 +131,6 @@ function projectCommand(string $command, array $arguments = []): void
 
             return;
         case 'sql:gen':
-            projectRemoveDirectory($root . '/gen/Generated/Sql');
             projectRun([PHP_BINARY, $root . '/tools/sql-gen/bin/sql-gen.php', ...$sqlArguments, ...$arguments], $root);
 
             return;
@@ -186,8 +186,13 @@ function projectCommand(string $command, array $arguments = []): void
             return;
         case 'perf:baseline':
         case 'perf:catalog':
+        case 'perf:soak':
             projectRequireExecutable('k6');
-            $scenario = $command === 'perf:catalog' ? 'catalog' : 'baseline';
+            $scenario = match ($command) {
+                'perf:catalog' => 'catalog',
+                'perf:soak' => 'soak',
+                default => 'baseline',
+            };
             projectRun(['k6', 'run', '--no-usage-report', $root . '/load-tests/' . $scenario . '/scenario.js', ...$arguments], $root);
 
             return;

@@ -4,12 +4,79 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Storage;
 
+use App\Platform\Storage\Migration\MigrationRepository;
 use App\Platform\Storage\PostgreSQLStorage;
 use PHPUnit\Framework\TestCase;
 use Tests\Integration\PostgreSqlTestDatabase;
 
 final class MigrationCliRecoveryTest extends TestCase
 {
+    public function testNewMetadataAcceptsBigintTimestamps(): void
+    {
+        $database = PostgreSqlTestDatabase::fromEnvironment();
+        $database->create();
+
+        try {
+            $storage = new PostgreSQLStorage($database->host, $database->port, $database->database, $database->username, $database->password, $database->schema);
+            new MigrationRepository($storage);
+            $storage->execute('INSERT INTO migrations (version, executed_at) VALUES (:version, :time)', ['version' => 'future', 'time' => PHP_INT_MAX]);
+            self::assertSame(['executed_at' => PHP_INT_MAX], $storage->queryOne('SELECT executed_at FROM migrations WHERE version = :version', ['version' => 'future']));
+        } finally {
+            $database->cleanup();
+        }
+    }
+
+    public function testExplicitMetadataUpgradePreservesRowsAndCanBeRepeated(): void
+    {
+        $database = PostgreSqlTestDatabase::fromEnvironment();
+        $database->create();
+
+        try {
+            $storage = new PostgreSQLStorage($database->host, $database->port, $database->database, $database->username, $database->password, $database->schema);
+            $storage->execute('CREATE TABLE migrations (version TEXT PRIMARY KEY, executed_at INTEGER NOT NULL)');
+            $storage->execute('INSERT INTO migrations (version, executed_at) VALUES (:version, :time)', ['version' => 'existing', 'time' => 2147483647]);
+            $repository = new MigrationRepository($storage);
+            $columnSql = 'SELECT data_type FROM information_schema.columns WHERE table_schema = :schema AND table_name = :table AND column_name = :column';
+            $columnParams = ['schema' => $database->schema, 'table' => 'migrations', 'column' => 'executed_at'];
+            self::assertSame(['data_type' => 'integer'], $storage->queryOne($columnSql, $columnParams));
+
+            [$status, $output] = $this->runCli($database, null, 'upgrade-metadata');
+            self::assertSame(0, $status, $output);
+            // A completed CLI upgrade is followed by a fresh graph, not cached integer parameter plans.
+            $storage = new PostgreSQLStorage($database->host, $database->port, $database->database, $database->username, $database->password, $database->schema);
+            $repository = new MigrationRepository($storage);
+            self::assertSame(['data_type' => 'bigint'], $storage->queryOne($columnSql, $columnParams));
+            self::assertSame([['version' => 'existing', 'executed_at' => 2147483647]], $storage->query('SELECT version, executed_at FROM migrations'));
+            $storage->execute('INSERT INTO migrations (version, executed_at) VALUES (:version, :time)', ['version' => 'future', 'time' => PHP_INT_MAX]);
+            $repository->add('after-upgrade');
+
+            [$status, $output] = $this->runCli($database, null, 'upgrade-metadata');
+            self::assertSame(0, $status, $output);
+            self::assertSame(['executed_at' => PHP_INT_MAX], $storage->queryOne('SELECT executed_at FROM migrations WHERE version = :version', ['version' => 'future']));
+            self::assertCount(3, $storage->query('SELECT version FROM migrations'));
+        } finally {
+            $database->cleanup();
+        }
+    }
+
+    public function testFailedMetadataUpgradePreservesTheExistingTable(): void
+    {
+        $database = PostgreSqlTestDatabase::fromEnvironment();
+        $database->create();
+
+        try {
+            $storage = new PostgreSQLStorage($database->host, $database->port, $database->database, $database->username, $database->password, $database->schema);
+            $storage->execute('CREATE TABLE migrations (version TEXT PRIMARY KEY, executed_at TEXT NOT NULL)');
+            $storage->execute('INSERT INTO migrations (version, executed_at) VALUES (:version, :time)', ['version' => 'invalid', 'time' => 'not a timestamp']);
+            [$status, $output] = $this->runCli($database, null, 'upgrade-metadata');
+            self::assertNotSame(0, $status);
+            self::assertStringContainsString('42804', $output);
+            self::assertSame([['version' => 'invalid', 'executed_at' => 'not a timestamp']], $storage->query('SELECT version, executed_at FROM migrations'));
+        } finally {
+            $database->cleanup();
+        }
+    }
+
     public function testASeparateCliRunResumesAfterCorrectingUpAndDown(): void
     {
         $database = PostgreSqlTestDatabase::fromEnvironment();
@@ -69,7 +136,7 @@ final class MigrationCliRecoveryTest extends TestCase
     }
 
     /** @return array{int, string} */
-    private function runCli(PostgreSqlTestDatabase $database, string $directory, string $action): array
+    private function runCli(PostgreSqlTestDatabase $database, ?string $directory, string $action): array
     {
         $errors = tmpfile();
         if ($errors === false) {
@@ -78,7 +145,7 @@ final class MigrationCliRecoveryTest extends TestCase
 
         try {
             $process = proc_open(
-                [PHP_BINARY, 'bin/migrate.php', $action, $directory],
+                [PHP_BINARY, 'bin/migrate.php', $action, ...($directory === null ? [] : [$directory])],
                 [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => $errors],
                 $pipes,
                 \dirname(__DIR__, 3),

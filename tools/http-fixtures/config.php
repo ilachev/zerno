@@ -53,6 +53,8 @@ return static function (Logger $logger): App {
         new RouteEntry('GET', '/__wire/files/{name}.json', $fixture),
         new RouteEntry('GET', '/__wire/a+b/{id}', $fixture),
         new RouteEntry('GET', '/__wire/status/204', $fixture),
+        new RouteEntry('GET', '/__wire/status/205', $fixture),
+        new RouteEntry('HEAD', '/__wire/status/205', $fixture),
         new RouteEntry('GET', '/__wire/status/304', $fixture),
         new RouteEntry('GET', '/__wire/headers', $fixture),
         new RouteEntry('GET', '/__wire/failure', $fixture),

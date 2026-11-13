@@ -1,0 +1,23 @@
+version: '3'
+
+server:
+  command: "php -d opcache.enable_cli=1 -d memory_limit=64M public/index.php"
+  env:
+    APP_CONFIG: load-tests/soak/config.php
+    RR_HTTP_CHUNK_SIZE: '8192'
+    WIRE_HTTP_LOGGING: '1'
+
+http:
+  address: 127.0.0.1:19003
+  max_request_size: 1
+  pool:
+    num_workers: 2
+    max_jobs: 0
+
+logs:
+  level: error
+  mode: production
+  channels:
+    server:
+      level: info
+      mode: production

@@ -66,7 +66,15 @@ final readonly class RoadRunnerHttpWorker
                 }
             }
         }
-        if ($method === 'HEAD' || $status < 200 || $status === 204 || $status === 304) {
+        if ($status === 205) {
+            foreach (array_keys($headers) as $name) {
+                if (strcasecmp((string) $name, 'Content-Length') === 0 || strcasecmp((string) $name, 'Transfer-Encoding') === 0) {
+                    unset($headers[$name]);
+                }
+            }
+            $headers['Content-Length'] = ['0'];
+        }
+        if ($method === 'HEAD' || $status < 200 || $status === 204 || $status === 205 || $status === 304) {
             $this->http->respond($status, '', $headers);
 
             return;
@@ -131,7 +139,7 @@ final readonly class RoadRunnerHttpWorker
             if (!\is_array($file)) {
                 throw new \InvalidArgumentException('Invalid RoadRunner upload');
             }
-            if (!isset($file['name'])) {
+            if (!\array_key_exists('name', $file) || \is_array($file['name'])) {
                 $uploads[$index] = $this->uploads($file);
 
                 continue;

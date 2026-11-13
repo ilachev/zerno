@@ -13,18 +13,27 @@ use App\Platform\Storage\Migration\MigrationService;
 use App\Platform\Storage\Storage;
 
 $action = $argv[1] ?? 'migrate';
-if (!in_array($action, ['migrate', 'rollback'], true)) {
-    throw new InvalidArgumentException('Invalid action. Use migrate or rollback');
+if (!in_array($action, ['migrate', 'rollback', 'upgrade-metadata'], true)) {
+    throw new InvalidArgumentException('Invalid action. Use migrate, rollback or upgrade-metadata');
+}
+if ($action === 'upgrade-metadata' && count($argv ?? []) > 2) {
+    throw new InvalidArgumentException('upgrade-metadata does not accept a migration directory');
 }
 $directory = $argv[2] ?? __DIR__ . '/../src/Migrations';
-if (!is_dir($directory)) {
+if ($action !== 'upgrade-metadata' && !is_dir($directory)) {
     throw new InvalidArgumentException('Migration directory does not exist: ' . $directory);
 }
 /** @var Storage $storage */
 $storage = require __DIR__ . '/../config/storage.php';
+$repository = new MigrationRepository($storage);
+if ($action === 'upgrade-metadata') {
+    $repository->upgradeMetadata();
+
+    return;
+}
 $command = new MigrateCommand(new MigrationService(
     $storage,
-    new MigrationRepository($storage),
+    $repository,
     new MigrationLoader($directory, new ReadableOutputLogger()),
 ));
 

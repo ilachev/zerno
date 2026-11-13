@@ -19,11 +19,19 @@ final readonly class MigrationRepository
         $sql = <<<'SQL'
                 CREATE TABLE IF NOT EXISTS migrations (
                     version TEXT PRIMARY KEY,
-                    executed_at INTEGER NOT NULL
+                    executed_at BIGINT NOT NULL
                 )
             SQL;
 
         $this->storage->execute($sql);
+    }
+
+    /** Explicit CLI maintenance; ordinary construction does not alter an existing table. */
+    public function upgradeMetadata(): void
+    {
+        $this->storage->transaction(function (): void {
+            $this->storage->execute('ALTER TABLE migrations ALTER COLUMN executed_at TYPE BIGINT');
+        });
     }
 
     /**

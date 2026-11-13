@@ -321,6 +321,8 @@ function wireMatrix(int $port, string $errorFormat): int
         ['GET', '/__wire/failure', 500, null, []],
         ['HEAD', '/__wire/failure', 500, null, []],
         ['GET', '/__wire/status/204', 204, null, []],
+        ['GET', '/__wire/status/205', 205, null, []],
+        ['HEAD', '/__wire/status/205', 205, null, []],
         ['GET', '/__wire/status/304', 304, null, []],
         ['GET', '/__wire/headers', 200, [], []],
     ];
@@ -340,7 +342,11 @@ function wireMatrix(int $port, string $errorFormat): int
             wireSame([$errorFormat === 'html' ? 'text/html; charset=utf-8' : 'application/json'], $response->headers['content-type'] ?? [], $context . ' error representation');
             wireSame([], $response->headers['set-cookie'] ?? [], $context . ' no session');
         }
-        if ($method === 'HEAD' || $status === 204 || $status === 304) {
+        if ($status === 205) {
+            wireSame(['0'], $response->headers['content-length'] ?? [], $context . ' zero length');
+            wireSame([], $response->headers['transfer-encoding'] ?? [], $context . ' no transfer coding');
+        }
+        if ($method === 'HEAD' || $status === 204 || $status === 205 || $status === 304) {
             wireSame('', $response->body, $context . ' forbidden body');
         } elseif ($status >= 400) {
             if ($errorFormat === 'html') {
@@ -425,21 +431,23 @@ function wireInputs(int $port): int
     wireSame([
         'query' => [], 'cookies' => [], 'parsed' => null, 'body' => '{"name":"Alice"}', 'upload' => null,
     ], json_decode($json->body, true, 512, JSON_THROW_ON_ERROR), 'JSON input');
-    $multipart = "--zerno-boundary\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\nAlice\r\n"
-        . "--zerno-boundary\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nuploaded\r\n--zerno-boundary--\r\n";
-    $file = wireHttp($port, 'POST', '/__wire/input', ['Content-Type' => 'multipart/form-data; boundary=zerno-boundary'], $multipart);
-    wireSame(200, $file->status, 'Multipart input status');
-    wireSame([
-        'query' => [], 'cookies' => [], 'parsed' => ['name' => 'Alice'], 'body' => null,
-        'upload' => ['name' => 'example.txt', 'type' => 'text/plain', 'size' => 8, 'sha256' => hash('sha256', 'uploaded'), 'closedAfterMove' => true],
-    ], json_decode($file->body, true, 512, JSON_THROW_ON_ERROR), 'Multipart upload and move');
+    foreach (['0', 'name', 'other'] as $key) {
+        $multipart = "--zerno-boundary\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\nAlice\r\n"
+            . "--zerno-boundary\r\nContent-Disposition: form-data; name=\"files[{$key}]\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nuploaded\r\n--zerno-boundary--\r\n";
+        $file = wireHttp($port, 'POST', '/__wire/input', ['Content-Type' => 'multipart/form-data; boundary=zerno-boundary'], $multipart);
+        wireSame(200, $file->status, 'Multipart input status');
+        wireSame([
+            'query' => [], 'cookies' => [], 'parsed' => ['name' => 'Alice'], 'body' => null,
+            'upload' => ['name' => 'example.txt', 'type' => 'text/plain', 'size' => 8, 'sha256' => hash('sha256', 'uploaded'), 'closedAfterMove' => true],
+        ], json_decode($file->body, true, 512, JSON_THROW_ON_ERROR), 'Multipart upload and move');
+    }
     $next = wireHttp($port, 'GET', '/__wire/input', []);
     wireSame(200, $next->status, 'Next input status');
     wireSame([
         'query' => [], 'cookies' => [], 'parsed' => null, 'body' => null, 'upload' => null,
     ], json_decode($next->body, true, 512, JSON_THROW_ON_ERROR), 'Next request reset');
 
-    return 4;
+    return 6;
 }
 
 /** @param array<int, string> $hashes */

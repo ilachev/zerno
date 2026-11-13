@@ -27,8 +27,8 @@ final readonly class FixtureHandler implements RequestHandler
         if ($path === '/__wire/input') {
             $upload = null;
             $files = $request->getUploadedFiles()['files'] ?? [];
-            if (\is_array($files) && isset($files[0])) {
-                $file = $files[0];
+            if (\is_array($files) && $files !== []) {
+                $file = reset($files);
                 if (!$file instanceof UploadedFile) {
                     throw new \RuntimeException('Invalid uploaded file fixture');
                 }
@@ -63,6 +63,7 @@ final readonly class FixtureHandler implements RequestHandler
         }
         $status = match ($path) {
             '/__wire/status/204' => 204,
+            '/__wire/status/205' => 205,
             '/__wire/status/304' => 304,
             default => 200,
         };

@@ -14,9 +14,16 @@ final readonly class GeneratedOutputChecker
     public function assertSynchronized(string $outputDir, array $expectedFiles): void
     {
         $expectedByPath = [];
+        $pathKeys = [];
 
         foreach ($expectedFiles as $generatedFile) {
-            $expectedByPath[$this->normalizePath($generatedFile->path)] = $generatedFile->content;
+            $path = $this->normalizePath($generatedFile->path);
+            $pathKey = strtolower($path);
+            if (isset($pathKeys[$pathKey])) {
+                throw new \RuntimeException('Duplicate generated PHP path: ' . $path);
+            }
+            $pathKeys[$pathKey] = true;
+            $expectedByPath[$path] = $generatedFile->content;
         }
 
         $existingFiles = $this->findExistingFiles($outputDir);

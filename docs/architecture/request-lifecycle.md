@@ -1,6 +1,6 @@
 # Поток HTTP-запроса
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 Документ описывает существующие композиции приложения. Общая карта компонентов находится в [обзоре архитектуры](overview.md), команды запуска и проверки — в [инфраструктуре и тестировании](../development/infrastructure-and-testing.md).
 
@@ -28,9 +28,9 @@ RoadRunner HTTP → RoadRunnerHttpWorker::waitRequest()
                → следующий waitRequest()
 ```
 
-[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при null из waitRequest(). Ошибки worker не перехватываются. [RoadRunnerHttpWorker](../../src/Platform/Runtime/RoadRunnerHttpWorker.php) переводит native RR Request в Request ядра без изменения $_SERVER/$_GET/$_POST/$_COOKIE/$_FILES; переносит headers, query, cookies, parsed form, attributes и nested uploads. Server params содержат REMOTE_ADDR, REQUEST_METHOD и исходный RR REQUEST_URI. Native RR parsed form передаётся отдельно от body; JSON сохраняется исходной строкой без автоматического decode.
+[`RoadRunnerRuntime`](../../src/Platform/Runtime/RoadRunnerRuntime.php) завершает цикл при null из waitRequest(). Ошибки worker не перехватываются. [RoadRunnerHttpWorker](../../src/Platform/Runtime/RoadRunnerHttpWorker.php) переводит native RR Request в Request ядра без изменения $_SERVER/$_GET/$_POST/$_COOKIE/$_FILES; переносит headers, query, cookies, parsed form, attributes и nested uploads, включая строковые ключи вроде files[name]. Server params содержат REMOTE_ADDR, REQUEST_METHOD и исходный RR REQUEST_URI. Native RR parsed form передаётся отдельно от body; JSON сохраняется исходной строкой без автоматического decode.
 
-Перед отправкой адаптер подавляет body для HEAD/1xx/204/304 без чтения/перемотки исходного; для 1xx/204 удаляет Content-Length. Runtime закрывает response body в finally, включая transport error. App::handle ничего не отправляет и не закрывает.
+Перед отправкой адаптер подавляет body для HEAD/1xx/204/205/304 без чтения/перемотки исходного; для 1xx/204 удаляет Content-Length. Для 205 удаляет прежние Content-Length/Transfer-Encoding и задаёт Content-Length: 0, включая HEAD; это реализует запрет содержимого из [RFC 9110 §15.3.6](https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.6). Runtime закрывает response body в finally, включая transport error. App::handle ничего не отправляет и не закрывает.
 
 Текущий HTTP check пройден на PHP 8.5.12/RoadRunner 3.0.1 с worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0 и DTO 2.1.0. Нативный RR HttpWorker обслуживает protocol/frames, собственный адаптер — HTTP-типы и чтение Body. RR_HTTP_CHUNK_SIZE=8192 включает чтение с одним chunk lookahead (до двух chunks в адаптере); default 0 материализует body строкой. Seekable body перематывается, non-seekable читается с текущей позиции; запрещённые тела отправляются пустой строкой даже при включённых chunks. После native completion при ошибке генератора адаптер повторно выбрасывает ошибку чтения. Отмена клиента остаётся поведением upstream; длительная устойчивость всех типов потоков не заявляется. Проверка больших regular files входит в http:check.
 

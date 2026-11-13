@@ -84,7 +84,10 @@ final class RoadRunnerRuntimeTest extends TestCase
     {
         $observed = new ObservedStream('must not be read');
         $body = $observed->open();
-        $response = new Response($status, ['Content-Length' => '17', 'X-Example' => 'preserved'], $body);
+        $headers = $status === 205
+            ? ['content-length' => '17', 'tRaNsFeR-EnCoDiNg' => 'chunked', 'X-Example' => 'preserved']
+            : ['Content-Length' => '17', 'X-Example' => 'preserved'];
+        $response = new Response($status, $headers, $body);
         $transport = $this->createMock(WorkerInterface::class);
         $transport->expects(self::exactly(2))->method('waitPayload')->willReturn(
             new Payload('', json_encode([
@@ -111,6 +114,10 @@ final class RoadRunnerRuntimeTest extends TestCase
                 self::assertSame(['preserved'], $header['headers']['X-Example']);
                 if ($status < 200 || $status === 204) {
                     self::assertArrayNotHasKey('Content-Length', $header['headers']);
+                } elseif ($status === 205) {
+                    self::assertSame(['0'], $header['headers']['Content-Length']);
+                    self::assertArrayNotHasKey('content-length', $header['headers']);
+                    self::assertArrayNotHasKey('tRaNsFeR-EnCoDiNg', $header['headers']);
                 } else {
                     self::assertSame(['17'], $header['headers']['Content-Length']);
                 }
@@ -132,6 +139,8 @@ final class RoadRunnerRuntimeTest extends TestCase
             yield 'HEAD success, chunk ' . $chunkSize => [200, 'HEAD', $chunkSize];
             yield 'HEAD error, chunk ' . $chunkSize => [500, 'HEAD', $chunkSize];
             yield 'no content, chunk ' . $chunkSize => [204, 'GET', $chunkSize];
+            yield 'reset content, chunk ' . $chunkSize => [205, 'GET', $chunkSize];
+            yield 'reset content HEAD, chunk ' . $chunkSize => [205, 'HEAD', $chunkSize];
             yield 'not modified, chunk ' . $chunkSize => [304, 'GET', $chunkSize];
         }
         yield 'informational, buffered' => [103, 'GET', 0];

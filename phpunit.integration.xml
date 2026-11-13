@@ -4,9 +4,6 @@
          bootstrap="tests/Integration/bootstrap.php"
          cacheDirectory="var/phpunit"
          colors="true">
-    <php>
-        <env name="STORAGE_ENGINE" value="pgsql"/>
-    </php>
     <testsuites>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>

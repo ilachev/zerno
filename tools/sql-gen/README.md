@@ -1,6 +1,6 @@
 # SQL PHP Generator
 
-Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-20.
+Тип: `tool-guide`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 `sql-gen` создаёт typed query и row classes из [sql/schema.sql](../../sql/schema.sql) и именованных запросов [sql/queries](../../sql/queries). Он запускается отдельно и не требуется при исполнении уже generated queries.
 
@@ -15,7 +15,7 @@ php tools/project.php sql:check:pg
 php tools/project.php tools:sql:check
 ```
 
-`sql:gen` обновляет `gen/Generated/Sql`. `sql:check` без БД проверяет отсутствующие, устаревшие и лишние generated PHP-файлы. `sql:check:pg` использует `TEST_DB_*` и отдельную случайную schema; проверяет запросы через PostgreSQL `PREPARE`, не выполняя их. `tools:sql:check` запускает style, PHPStan и tests инструмента.
+`sql:gen` подготавливает полный набор в staging и заменяет выделенный `gen/Generated/Sql` после успешной записи. Ошибка генерации/staging сохраняет прежний набор; успешная замена удаляет устаревшие файлы. Не запускайте генерацию одновременно в один output или во время исполнения этого output приложением. `sql:check` без БД проверяет отсутствующие, устаревшие и лишние generated PHP-файлы. `sql:check:pg` использует `TEST_DB_*` и отдельную случайную schema; проверяет запросы через PostgreSQL `PREPARE`, не выполняя их. `tools:sql:check` запускает style, PHPStan и tests инструмента.
 
 ## Входы и выходы
 
@@ -27,9 +27,9 @@ WHERE status = :status AND id = :id
 LIMIT 1;
 ```
 
-Поддержаны markers `:one`, `:many`, `:exec`. Результат — readonly `*Query` с typed constructor/`create()`, `sql()`, `params()` и, для result rows, `rowClass()`; row classes имеют типизированные поля. Отдельных `*Params` и `*Queries` facade сейчас нет.
+Поддержаны markers `:one`, `:many`, `:exec`. Имена запросов уникальны в файле без учёта регистра; коллизии модулей и конечных PHP-путей отвергаются до записи. Input directory должен содержать хотя бы один SQL-файл. Результат — readonly `*Query` с typed constructor/`create()`, `sql()`, `params()` и, для result rows, `rowClass()`; row classes имеют типизированные поля. Отдельных `*Params` и `*Queries` facade сейчас нет.
 
-Основные конструкции: ограниченные SELECT/JOIN/WHERE/ORDER BY/LIMIT, INSERT с placeholders/upsert/RETURNING, UPDATE с placeholder assignments/RETURNING и DELETE с WHERE. Полная grammar и известные ограничения, включая outer JOIN nullability, описаны в [контракте sql-gen](../../docs/design/sql-gen-product.md). Поддержка всего PostgreSQL не заявляется. Текущие project SQL inputs показывают структуру каталога с параметризованным status; приложение сохраняет прямой SQL с published literal для partial index. Runtime DDL находится в migration приложения.
+Основные конструкции: ограниченные SELECT/INNER JOIN/WHERE/ORDER BY/LIMIT, INSERT с placeholders/upsert/RETURNING, UPDATE с placeholder assignments/RETURNING и DELETE с WHERE. Полная grammar и известные ограничения, включая явный отказ LEFT/RIGHT/FULL JOIN до реализации nullability, описаны в [контракте sql-gen](../../docs/design/sql-gen-product.md). Поддержка всего PostgreSQL не заявляется. Текущие project SQL inputs показывают структуру каталога с параметризованным status; приложение сохраняет прямой SQL с published literal для partial index. Runtime DDL находится в migration приложения.
 
 Generated queries используют [runtime SQL contracts](../../src/Platform/Storage/Sql). Nette, Phplrt и Typhoon нужны инструменту, а не приложению при исполнении queries.
 

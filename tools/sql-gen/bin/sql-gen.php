@@ -7,6 +7,7 @@ use SqlGen\Application\SqlGenerationService;
 use SqlGen\Config\DefaultSqlGenerationProfile;
 use SqlGen\Config\GeneratorConfig;
 use SqlGen\Config\SqlGenerationProfileResolver;
+use SqlGen\Generator\GeneratedOutputWriter;
 
 require_once __DIR__ . '/../bootstrap.php';
 
@@ -59,12 +60,4 @@ $config = new GeneratorConfig(
 
 $generationService = new SqlGenerationService();
 
-foreach ($generationService->generate($config) as $generatedFile) {
-    $directory = dirname($generatedFile->path);
-    if (!is_dir($directory) && !mkdir($directory, 0o777, true) && !is_dir($directory)) {
-        fwrite(STDERR, "Failed to create directory: {$directory}\n");
-        exit(1);
-    }
-
-    file_put_contents($generatedFile->path, $generatedFile->content);
-}
+(new GeneratedOutputWriter())->replace($config->outputDir, $generationService->generate($config));

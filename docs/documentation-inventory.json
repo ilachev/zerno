@@ -386,7 +386,8 @@
         "tools/http-fixtures",
         "load-tests/baseline",
         "tools/project.php",
-        "load-tests/files"
+        "load-tests/files",
+        "load-tests/soak"
       ]
     },
     {
@@ -631,7 +632,8 @@
         "tests/Integration/Storage/TransactionRecoveryTest.php",
         "tests/Integration/Storage/MigrationRecoveryTest.php",
         "tests/Integration/Storage/MigrationCliRecoveryTest.php",
-        "tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php"
+        "tests/Unit/Platform/Storage/Migration/MigrationServiceTest.php",
+        "bin/migrate.php"
       ]
     },
     {
@@ -688,6 +690,42 @@
         "third_party/manifest.json",
         "tools/security/assessments/roadrunner.json",
         "tools/security/assessments/roadrunner-imports.json"
+      ]
+    },
+    {
+      "id": "adr-contract-correctness-2026-10-28",
+      "path": "docs/design/adr-2026-10-28-contract-correctness.md",
+      "kind": "design",
+      "status": "accepted-plan",
+      "summary": "ADR: исправление контрактов SQL/PDO/uploads и runtime quickstart до расширения ядра.",
+      "read_when": [
+        "Реализация замечаний ревью от 2026-10-28",
+        "Планирование расширения SQL/API"
+      ],
+      "source_paths": [
+        "src/Platform/Storage/PostgreSQLStorage.php",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "tools/sql-gen",
+        "tools/project.php",
+        "README.md"
+      ]
+    },
+    {
+      "id": "runtime-soak-2026-10-28",
+      "path": "docs/history/2026-10-28-runtime-soak.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "HTTP 205, явный BIGINT metadata upgrade и ограниченный 15-минутный mixed RR soak с RSS/CPU всех workers.",
+      "read_when": [
+        "Проверка длительности и границ runtime measurement",
+        "Сравнение повторного mixed workload"
+      ],
+      "source_paths": [
+        "load-tests/soak",
+        "src/Platform/Runtime/RoadRunnerHttpWorker.php",
+        "src/Platform/Storage/Migration/MigrationRepository.php",
+        "bin/migrate.php",
+        "docs/history/2026-10-28-runtime-soak.json"
       ]
     }
   ],
@@ -885,6 +923,21 @@
       "source_paths": [
         "contracts/echo.proto",
         "tools/proto-gen/run.php"
+      ]
+    },
+    {
+      "id": "runtime-soak-data-2026-10-28",
+      "path": "docs/history/2026-10-28-runtime-soak.json",
+      "kind": "reference",
+      "status": "historical",
+      "summary": "Полные k6 summaries, Linux process samples, source/platform hashes и агрегаты финального soak.",
+      "read_when": [
+        "Проверка числовых наблюдений длительного RR прогона"
+      ],
+      "source_paths": [
+        "load-tests/soak/scenario.js",
+        "load-tests/soak/sample.php",
+        "load-tests/soak/rr.yaml"
       ]
     }
   ],

@@ -10,6 +10,16 @@ use SqlGen\Generator\GeneratedFile;
 
 final class GeneratedOutputCheckerTest extends TestCase
 {
+    public function testRejectsDuplicateExpectedPathsBeforeComparingOutput(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Duplicate generated PHP path');
+        (new GeneratedOutputChecker())->assertSynchronized('output', [
+            new GeneratedFile('output/FindQuery.php', 'first'),
+            new GeneratedFile('output/findQuery.php', 'second'),
+        ]);
+    }
+
     public function testPassesWhenGeneratedFilesAreSynchronized(): void
     {
         $workspace = sys_get_temp_dir() . '/sql-gen-check-pass-' . uniqid('', true);

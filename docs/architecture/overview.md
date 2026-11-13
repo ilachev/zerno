@@ -1,6 +1,6 @@
 # Текущая архитектура
 
-Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-23.
+Тип: `architecture`. Статус: `current`. Сверено с кодом: 2026-10-28.
 
 Проект поставляет HTTP/PDO-контур, SQL/API-генерацию, проверочный каталог и Echo из контракта. [Границы](../project/vision.md), [правила кода](../development/coding-guidelines.md) и [история явной сборки](../history/2026-10-20-explicit-composition.md) объясняют принятый состав. Контейнер, autowiring и providers удалены.
 
@@ -18,7 +18,7 @@ RequestContext → ErrorHandler → Routing → RouteHandlerResolver → гот�
 
 ## Транспорт и ресурсы
 
-[public/index.php](../../public/index.php) — единственная HTTP-точка входа. Она передаёт RoadRunnerLogger в APP_CONFIG функцию, явно создаёт native transport и запускает RoadRunnerRuntime. Default APP_CONFIG — config/core.php. CLI commands строят собственные графы без HTTP loop.
+[public/index.php](../../public/index.php) — единственная HTTP-точка входа. Она передаёт RoadRunnerLogger в APP_CONFIG функцию, явно создаёт native transport и запускает RoadRunnerRuntime. Default APP_CONFIG — config/core.php. CLI commands строят собственные графы без HTTP loop. Действие bin/migrate.php upgrade-metadata явно переводит существующий migrations.executed_at в BIGINT; обычный migrate/HTTP такой ALTER не выполняет.
 
 Целевой server — RoadRunner 3.x, отдельный executable платформы. Текущий security floor: PHP 8.5.12+ и RR 3.0.1+; [аудит платформы](../development/security.md) проверяется отдельно от HTTP-корректности. Native transport sources: worker 3.8.0, HTTP 4.2.1, Goridge 4.6.0, API DTO 2.1.0. PHP namespaces сохранены upstream, пути packages следуют roadrunner/*.
 
@@ -34,7 +34,7 @@ AttachmentResponse принимает stream/размер, создаёт без
 
 [config/storage.php](../../config/storage.php) явно создаёт PostgreSQLStorage из DB_HOST/PORT/NAME/USER/PASSWORD/SCHEMA. Конструктор не открывает PDO: первая query/queryOne/execute/transaction/lastInsertId создаёт соединение и устанавливает quoted search_path. PDO публикуется в объекте после успешной инициализации и используется повторно. Ошибка подключения теперь возникает при первой операции. Кеш native prepared statements ограничен 100 SQL-запросами.
 
-HTTP core вообще не создаёт Storage. Каталог создаёт его и handlers при сборке; /health/404/405 не выполняют SQL. Это имеет стоимость чтения config/создания PHP objects, но не подключения к БД. query получает fetchAll, queryOne читает первую строку через fetch и закрывает PDO cursor; SqlExecutor.fetchOne и lookup каталога используют queryOne. SQL не переписывается, prepared statements переиспользуются. Native buffer cached statement может сохраняться после closeCursor; ограничение возвращаемых БД строк задаётся явным LIMIT. [SQL-контракт](../design/sql-gen-product.md#runtime-и-применение) описывает семантику, ошибки и цену.
+HTTP core вообще не создаёт Storage. Каталог создаёт его и handlers при сборке; /health/404/405 не выполняют SQL. Это имеет стоимость чтения config/создания PHP objects, но не подключения к БД. query получает fetchAll, queryOne читает первую строку через fetch и закрывает PDO cursor; SqlExecutor.fetchOne и lookup каталога используют queryOne. SQL не переписывается, prepared statements переиспользуются. Общий execution path нормализует boolean-параметры для PostgreSQL, сохраняя полный набор bindings на каждом вызове. Native buffer cached statement может сохраняться после closeCursor; ограничение возвращаемых БД строк задаётся явным LIMIT. [SQL-контракт](../design/sql-gen-product.md#runtime-и-применение) описывает семантику, ошибки и цену.
 
 Storage.transaction владеет одной транзакцией, отклоняет вложенность и сохраняет пойманную внутри callback SQL-ошибку до rollback. Cleanup после неудачного commit не затирает исходный SQLSTATE; при сбое rollback TransactionRollbackException сохраняет обе причины. [Контракт транзакций и миграций](../design/transactions-and-migrations.md) описывает границы и потерю соединения.
 
