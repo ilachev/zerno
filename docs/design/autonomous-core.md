@@ -1,6 +1,6 @@
 # Autonomous delivery
 
-Type: `architecture`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
+Type: `architecture`. Status: `current`. Reviewed against code: 2026-11-13.
 
 Runtime, generation, checks, and builds install/download no dependencies. Only separate [security checks](../development/security.md) retrieve advisory data. PHP/extensions, PostgreSQL, RR 3.x, and measurement tools are external platform requirements. [Scope](../project/vision.md) excludes speculative legacy subsystems.
 
@@ -15,7 +15,7 @@ Runtime, generation, checks, and builds install/download no dependencies. Only s
 
 The [root manifest](../../third_party/manifest.json) hashes distribution manifests; each lists files/SHA-256. The [checker](../../tools/check-third-party.php) rejects unlisted files/symlinks offline. Runtime loads no generator/quality libraries.
 
-Pinned transport: roadrunner/worker 3.8.0, http 4.2.1, goridge 4.6.0, api-dto 2.1.0. Spiral/RoadRunner/GPBMetadata namespaces remain upstream. The spiral/roadrunner compatibility metapackage is v3.0.0; upstream metadata retains its former name while newer packages reference roadrunner/roadrunner. These declarations record provenance, not package resolution. CI provisions RR 3.0.1 from a fixed release URL/hash before checks; project commands do not download it. sockets is separate.
+Pinned transport: roadrunner/worker 3.8.0, http 4.2.1, goridge 4.6.0, api-dto 2.1.0. Spiral/RoadRunner/GPBMetadata namespaces remain upstream. The spiral/roadrunner compatibility metapackage is v3.0.0; upstream metadata retains its former name while newer packages reference roadrunner/roadrunner. These declarations record provenance, not package resolution. CI separately provisions a [security rebuild](../development/security.md#pinned-security-rebuild-from-2026-11-13) of RR 3.0.1 from fixed upstream sources, a checked-in dependency patch and a hash-pinned Go toolchain before checks. This external platform step downloads Go modules; project commands do not. sockets is separate.
 
 Trees retain version/ref/license/notices. Retained protobuf/polyfill provenance identifies the earlier installed snapshot. Transport archives came from upstream tags/commits over HTTPS with recorded archive hashes. Local hashes establish integrity, not independent publisher-signature authentication. Upstream composer metadata remains provenance rather than installer input.
 

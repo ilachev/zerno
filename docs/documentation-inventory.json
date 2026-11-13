@@ -696,6 +696,7 @@
         "src/Platform/Runtime/PhpRuntime.php",
         "public/index.php",
         ".github/workflows/security.yml",
+        ".github/platform/roadrunner-security.patch",
         ".github/dependabot.yml",
         "third_party/manifest.json",
         "tools/security/assessments/roadrunner.json",

@@ -1,6 +1,6 @@
 # Dependency and platform security monitoring
 
-Type: `operations`. Status: `current`. Reviewed against code: 2026-10-28. English edition: 2026-11-13.
+Type: `operations`. Status: `current`. Reviewed against code: 2026-11-13.
 
 Install-free delivery still includes third-party PHP and a Go RoadRunner executable. [Manifest hashes](../../third_party/manifest.json) establish integrity, not absence of known vulnerabilities. This owns security-check scope; [delivery architecture](../design/autonomous-core.md) owns packaging.
 
@@ -30,15 +30,31 @@ Inventory is offline. Audit sends only package names/versions to api.osv.dev and
 
 No check installs tools/packages. Bundled govulncheck v1.9.0 was built with Go 1.27.3 for Linux amd64/macOS arm64. [Tools manifest](../../third_party/tools/manifest.json) records binaries, checksums, flags, and notices. Scanning needs no Go toolchain. The two binaries add about 20 MiB to checkout and are excluded from runtime.
 
-Only advisory-data retrieval is permitted online. verify/full/generation/build remain offline. CI provisions the external pinned platform before checks. HTTP requests contact no advisory service; PHP floor is checked once at worker startup. No speedup is claimed.
+Within project commands, only advisory-data retrieval is permitted online. verify/full/generation/build remain offline. A separate CI provisioning step downloads the pinned external Go toolchain, RoadRunner sources and Go modules before checks; it does not install PHP project dependencies. HTTP requests contact no advisory service; PHP floor is checked once at worker startup. No speedup is claimed.
 
-Network errors, invalid/incomplete responses, OSV pagination, and unclassified findings fail. HTTPS responses are bounded to 4 MiB/30-second socket timeout; security subprocesses to 120 seconds/2 MiB diagnostics; RR version check to ten seconds/64 KiB; the job to fifteen minutes. SARIF-mode govulncheck exit 0 does not mean no findings. ScanReport checks full binary/symbol results; each requires no vulnerability or a valid not_affected review. Scanner failure always blocks. Optional --report saves unfiltered SARIF while stdout reports classification.
+Network errors, invalid/incomplete responses, OSV pagination, and unclassified findings fail. HTTPS responses are bounded to 4 MiB/30-second socket timeout; security subprocesses to 120 seconds/2 MiB diagnostics; RR version check to ten seconds/64 KiB. The CI job is bounded to twenty-five minutes, including a cold platform build. SARIF-mode govulncheck exit 0 does not mean no findings. ScanReport checks full binary/symbol results; each requires no vulnerability or a valid not_affected review. Scanner failure always blocks. Optional --report saves unfiltered SARIF while stdout reports classification.
 
 ## CI and release
 
 The [workflow](../../.github/workflows/security.yml) runs daily at 06:17 UTC, manually, and through reusable CI/release calls. CI invokes it on master push/PR independently of offline quality. Packaging/upload require success. Local offline build alone does not authorize release.
 
-The job checks tool hashes, PHP/RR versions, advisories, and actual HTTP. One failed audit does not suppress another's diagnostics. Text/SARIF artifacts remain for fourteen days. Permissions are contents: read; checkout retains no credentials. Scheduled checks use the default branch and require enabled Actions; notifications follow user settings. The workflow was active after the 2026-10-23 push. Branch protection/alerts/account settings are not enabled remotely by code changes.
+The job checks tool hashes, PHP/RR versions, advisories, and actual HTTP. One failed audit does not suppress another's diagnostics. Text/SARIF artifacts, platform input/binary hashes and Go build information remain for fourteen days. Permissions are contents: read; checkout retains no credentials. Scheduled checks use the default branch and require enabled Actions; notifications follow user settings. The workflow was active after the 2026-10-23 push. Branch protection/alerts/account settings are not enabled remotely by code changes.
+
+## Pinned security rebuild from 2026-11-13
+
+The original RR 3.0.1 binary is affected by [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859) in net/http and [GO-2026-6865](https://pkg.go.dev/vuln/GO-2026-6865) in compress/fse and compress/huff0. These packages are imported by RoadRunner. A not_affected review cannot dismiss them. The changed GO-2026-5932 advisory also invalidated the older review's advisory hash.
+
+No newer official RR 3.x release was available when this change was prepared. CI builds a Zerno security rebuild from upstream revision `ed89c2ec991f64b072297fcbee5ad7f058779199`, rather than downloading the affected release executable. The workflow pins SHA-256 for that source archive and the official Linux amd64 Go 1.27.4 archive. The checked-in [dependency patch](../../.github/platform/roadrunner-security.patch) changes only go.mod/go.sum:
+
+- [Go 1.27.4](https://go.dev/doc/devel/release#go1.27.4) fixes the affected standard library.
+- [klauspost/compress 1.20.2](https://github.com/klauspost/compress/releases/tag/v1.20.2) fixes the imported compression packages.
+- x/crypto 0.59.0 and x/net 0.62.0 remove the older module findings; their selected dependency graph also updates x/sync, x/sys and x/text.
+
+Provisioning applies the patch without fuzz, checks the resulting go.mod/go.sum hashes, downloads the fixed module graph through the Go proxy/checksum database, verifies modules, and builds with Go toolchain switching disabled, CGO disabled and `-mod=readonly`. Input hashes are checked again after the build. No dependency upgrade occurs during a run. This adds platform compilation and module-download time to CI; it adds no request-time work or package installation to project commands.
+
+The executable retains upstream base version 3.0.1 and a fixed rebuild timestamp. Its actual binary hash and Go build information identify the security rebuild; it is not the official release artifact. The existing minimum RR version check alone is insufficient for deployment: run security:platform against the exact supplied executable. Local macOS arm64 verification found no govulncheck results and passed all 288 JSON/HTML HTTP cases. CI repeats the audits and HTTP checks on its actual Linux amd64 build, with no new exceptions. This is not a byte-for-byte reproducibility or deployment-security claim.
+
+When a corrected official release is available, review and pin it, run the same audits/HTTP checks, and remove the temporary dependency patch. Do not transfer an audit conclusion between binaries.
 
 ## Recorded baseline and response
 
@@ -47,6 +63,8 @@ On 2026-10-23, PHP2Shell was associated with [GHSA-w8hw-w9fx-j79w](https://githu
 [RR 3.0.1](https://github.com/roadrunner-server/roadrunner/releases/tag/v3.0.1) updated Go to 1.27.3 for [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809). CI on 2026-10-23 and the 2026-10-27 scheduled run failed only GO-2026-5932 while quality/package/HTTP checks passed. The 2026-10-28 audit added GO-2026-6860/6866 in x/net/html. SARIF retains all three findings.
 
 ## RR 3.0.1 assessment from 2026-10-28
+
+This is historical evidence for the original official binary, not approval of that binary against current advisories or of the security rebuild above. The original review and import evidence remain unchanged.
 
 The reviewed official Linux amd64 executable has SHA-256 `1584e42a826596cb31fa70479bc4d6169ad658415e0db955f36bdf7239e8bf94`. Without a symbol table, govulncheck substitutes known vulnerable symbols from modules. The resulting call wording is not an established call chain.
 

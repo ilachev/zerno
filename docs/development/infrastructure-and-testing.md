@@ -27,7 +27,7 @@ Select RR through PATH or http:check --rr=/path/to/rr. Load checks require k6. D
 | run | RR core via .rr.yaml; /health needs no database |
 | migrate [action] [directory] | migrate/rollback; upgrade-metadata takes no directory |
 
-Use `php tools/project.php help` for the full interface. protoc 26.1 was checked for full compilation. No cache/legacy load commands, Task aliases, Redis service, or OpenAPI sidecar remain. CI/release run verify:full/build and separate [security gates](security.md). CI platform provisioning precedes checks; verify itself remains offline.
+Use `php tools/project.php help` for the full interface. protoc 26.1 was checked for full compilation. No cache/legacy load commands, Task aliases, Redis service, or OpenAPI sidecar remain. CI/release run verify:full/build and separate [security gates](security.md). CI's security job prepares a pinned RoadRunner source rebuild with corrected Go/dependencies before auditing that actual executable and checking HTTP; see the [platform recipe](security.md#pinned-security-rebuild-from-2026-11-13). Only this external platform provisioning downloads tools/modules; verify itself remains offline.
 
 ## Application database
 

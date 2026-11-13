@@ -51,7 +51,7 @@ php tools/project.php security:platform --rr=/path/to/rr3
 php tools/project.php build local
 ```
 
-The [verification guide](docs/development/infrastructure-and-testing.md) covers platform requirements and isolation. Separate [security checks](docs/development/security.md) retrieve advisory data; unresolved findings and service failures block release. Historical checks do not establish the security of a different binary or a later deployment.
+The [verification guide](docs/development/infrastructure-and-testing.md) covers platform requirements and isolation. Separate [security checks](docs/development/security.md) retrieve advisory data; unresolved findings and service failures block release. CI uses a pinned [RoadRunner security rebuild](docs/development/security.md#pinned-security-rebuild-from-2026-11-13); the minimum version alone does not establish that a supplied binary is free of known findings. Historical checks do not establish the security of a different binary or a later deployment.
 
 From an extracted runtime archive:
 
