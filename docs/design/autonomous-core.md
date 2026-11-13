@@ -47,4 +47,4 @@ Run `rr serve -c .rr.yaml` from the extracted root. Documentation links to tools
 
 Packaged migrations run with `php bin/migrate.php migrate [directory]`; default is src/Migrations, catalog uses examples/document-catalog/migrations. CLI requires directory files directly and builds no HTTP graph. It creates no database; HTTP starts with no DDL.
 
-CI/release use verify:full and build, plus an independent online security gate required before packaging/upload. Checks install no PHP packages. HTTP/load checks are explicit. Removing old API migrations does not drop tables in existing user databases.
+CI/release use verify:full and build. CI additionally runs the source/archive catalog walkthrough and retains its [scoped evidence](../../examples/document-catalog/README.md#ci-evidence). Validation and Security use the same [pinned platform script](../../.github/platform/build-roadrunner.sh) in independent jobs. Release packaging/upload require the online security gate. Checks install no PHP packages; external platform provisioning stays separate. Load checks remain explicit. Removing old API migrations does not drop tables in existing user databases.

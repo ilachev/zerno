@@ -2,7 +2,7 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **accepted** by the owner on 2026-11-13. Implementation status: **source and archive slices implemented; CI slice planned**. The command reports each attempted phase and its cleanup separately.
+Decision status: **accepted** by the owner on 2026-11-13. Implementation status: **source, archive and CI slices implemented**. The command reports each attempted phase and its cleanup separately; CI retains the scoped evidence.
 
 ## Context
 
@@ -83,9 +83,11 @@ A dirty-state fingerprint does not make local changes available to another revie
 | --- | --- | --- |
 | 1. Source walkthrough — implemented | One command exercises migration/seed/HTML/PDF/errors through the real catalog and RR | Repeated runs pass independently; invalid prerequisites fail clearly; a deliberately failing assertion still cleans owned resources. Root api.http now uses the actual default GET/HEAD /health contract. |
 | 2. Packaged walkthrough — implemented | The same command repeats the scenario against an extracted runtime archive | Source and archive phases have separate fixtures; both appear in the report; missing packaged dependencies and attempted checkout fallback fail. Archive/workspace cleanup and preservation of the default build artifact are checked. |
-| 3. Reviewer path and CI | README leads to the finite walkthrough and CI retains its result | A validation job explicitly provides both PostgreSQL and pinned RR, runs the check, and preserves bounded diagnostics/report on failure. Keep the independent security release gate. |
+| 3. Reviewer path and CI — implemented | README leads to the finite walkthrough and CI retains its result | Validate supplies PostgreSQL and pinned RR, runs the check, and retains JSON/256 KiB console/platform provenance for fourteen days, including failed attempts after platform preparation. The independent Security release gate is preserved. |
 
-After each slice, update the canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) to describe only implemented behavior. Source and archive execution are current; CI invocation remains planned.
+The canonical [example guide](../../examples/document-catalog/README.md), [verification guide](../development/infrastructure-and-testing.md), and [roadmap](../project/roadmap.md) describe the three implemented slices. README links directly to the finite setup/command and CI artifact instructions.
+
+CI validation and Security call the same pinned external-platform script in independent jobs. This keeps version/hash policy in one place and lets application checks run independently of advisory-service failures, at the cost of a second platform build. The validation job uses pipefail, drains excess output while retaining at most 256 KiB, and requires a nonempty JSON report on success. An uncancelled run uploads the catalog artifact after platform preparation even if checking or subsequent packaging fails. Release security dependencies and service-free local verify remain unchanged.
 
 Run the required checks, commit, and push each completed authorized slice before beginning the next, following the repository's standing delivery instruction. Record the revision and CI outcome in the handoff.
 

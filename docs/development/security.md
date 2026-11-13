@@ -36,7 +36,7 @@ Network errors, invalid/incomplete responses, OSV pagination, and unclassified f
 
 ## CI and release
 
-The [workflow](../../.github/workflows/security.yml) runs daily at 06:17 UTC, manually, and through reusable CI/release calls. CI invokes it on master push/PR independently of offline quality. Packaging/upload require success. Local offline build alone does not authorize release.
+The [workflow](../../.github/workflows/security.yml) runs daily at 06:17 UTC, manually, and through reusable CI/release calls. CI invokes it on master push/PR independently of application validation. Release packaging/upload require its success. Local offline build alone does not authorize release.
 
 The job checks tool hashes, PHP/RR versions, advisories, and actual HTTP. One failed audit does not suppress another's diagnostics. Text/SARIF artifacts, platform input/binary hashes and Go build information remain for fourteen days. Permissions are contents: read; checkout retains no credentials. Scheduled checks use the default branch and require enabled Actions; notifications follow user settings. The workflow was active after the 2026-10-23 push. Branch protection/alerts/account settings are not enabled remotely by code changes.
 
@@ -44,7 +44,7 @@ The job checks tool hashes, PHP/RR versions, advisories, and actual HTTP. One fa
 
 The original RR 3.0.1 binary is affected by [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859) in net/http and [GO-2026-6865](https://pkg.go.dev/vuln/GO-2026-6865) in compress/fse and compress/huff0. These packages are imported by RoadRunner. A not_affected review cannot dismiss them. The changed GO-2026-5932 advisory also invalidated the older review's advisory hash.
 
-No newer official RR 3.x release was available when this change was prepared. CI builds a Zerno security rebuild from upstream revision `ed89c2ec991f64b072297fcbee5ad7f058779199`, rather than downloading the affected release executable. The workflow pins SHA-256 for that source archive and the official Linux amd64 Go 1.27.4 archive. The checked-in [dependency patch](../../.github/platform/roadrunner-security.patch) changes only go.mod/go.sum:
+No newer official RR 3.x release was available when this change was prepared. CI builds a Zerno security rebuild from upstream revision `ed89c2ec991f64b072297fcbee5ad7f058779199`, rather than downloading the affected release executable. The [shared CI preparation script](../../.github/platform/build-roadrunner.sh) pins SHA-256 for that source archive and the official Linux amd64 Go 1.27.4 archive. Security and catalog validation call it independently; the existing security audits and release dependency remain unchanged. The checked-in [dependency patch](../../.github/platform/roadrunner-security.patch) changes only go.mod/go.sum:
 
 - [Go 1.27.4](https://go.dev/doc/devel/release#go1.27.4) fixes the affected standard library.
 - [klauspost/compress 1.20.2](https://github.com/klauspost/compress/releases/tag/v1.20.2) fixes the imported compression packages.

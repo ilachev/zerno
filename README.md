@@ -43,6 +43,14 @@ php tools/project.php run
 
 [GET /health](http://127.0.0.1:8080/health) returns `{"status":"ok"}` without opening a database connection. HEAD is registered separately. `verify` needs no external services or protoc; `verify:full` adds SQL-tool checks and PostgreSQL integration through `TEST_DB_*`.
 
+For a finite application walkthrough, [prepare the separate test database and platform](examples/document-catalog/README.md#reproduce-source-and-runtime-archive), then run:
+
+```bash
+php tools/project.php catalog:check --rr=/path/to/rr3 --report=var/catalog-check.json
+```
+
+CI runs this source-and-runtime-archive scenario on pushes/PRs to master. Its [catalog evidence](examples/document-catalog/README.md#ci-evidence) includes both phase results, cleanup, input/archive hashes and platform provenance, retained for fourteen days.
+
 ```bash
 php tools/project.php verify:full
 php tools/project.php http:check --rr=/path/to/rr3

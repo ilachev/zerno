@@ -44,10 +44,43 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
-          extensions: dom, fileinfo, mbstring, pdo_sqlite, pdo_pgsql, sockets, xml, xmlwriter
+          extensions: dom, fileinfo, mbstring, pcntl, pdo_sqlite, pdo_pgsql, phar, posix, sockets, xml, xmlwriter, zlib
           coverage: none
           tools: none
       - name: Verify bundled sources, tools and application
         run: php tools/project.php verify:full
+      - name: Prepare pinned RoadRunner platform
+        id: platform
+        run: bash .github/platform/build-roadrunner.sh
+      - name: Check source and packaged catalog
+        id: catalog
+        run: |
+          set -euo pipefail
+          mkdir -p var/catalog-ci
+          cp var/security/platform-buildinfo.json var/security/platform-inputs.sha256.txt var/security/platform-sha256.txt var/catalog-ci/
+          php tools/project.php catalog:check --rr="$PWD/var/security/bin/rr" --report=var/catalog-ci/report.json 2>&1 | (
+            # Retain one extra byte to detect overflow, then drain so checker cleanup can finish.
+            dd bs=8192 iflag=count_bytes count=262145 status=none | tee var/catalog-ci/console.txt
+            cat > /dev/null
+            if [ "$(wc -c < var/catalog-ci/console.txt)" -gt 262144 ]; then
+              truncate --size=262144 var/catalog-ci/console.txt
+              printf '%s\n' 'Catalog diagnostics exceeded 256 KiB.' >&2
+              exit 1
+            fi
+          )
+          test -s var/catalog-ci/report.json
       - name: Build runtime distribution
         run: php tools/project.php build ci
+      - name: Preserve catalog report and platform provenance
+        if: ${{ !cancelled() && steps.platform.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: catalog-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            var/catalog-ci/report.json
+            var/catalog-ci/console.txt
+            var/catalog-ci/platform-buildinfo.json
+            var/catalog-ci/platform-inputs.sha256.txt
+            var/catalog-ci/platform-sha256.txt
+          if-no-files-found: error
+          retention-days: 14

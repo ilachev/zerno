@@ -696,6 +696,7 @@
         "src/Platform/Runtime/PhpRuntime.php",
         "public/index.php",
         ".github/workflows/security.yml",
+        ".github/platform/build-roadrunner.sh",
         ".github/platform/roadrunner-security.patch",
         ".github/dependabot.yml",
         "third_party/manifest.json",
@@ -825,7 +826,7 @@
       "path": "docs/design/adr-2026-11-13-reviewer-walkthrough.md",
       "kind": "design",
       "status": "current",
-      "summary": "Accepted catalog walkthrough with bounded source/archive checks, independent fixtures and scoped evidence; CI integration remains planned.",
+      "summary": "Implemented source/archive catalog walkthrough, independent fixtures, CI execution and retained scoped evidence.",
       "read_when": [
         "Planning the next portfolio verification slice",
         "Reviewing the gap between PostgreSQL, HTTP-fixture, and runtime-archive checks"
@@ -845,6 +846,7 @@
         "tests/Unit/Platform/Runtime/RuntimeArchiveTest.php",
         ".github/workflows/ci.yml",
         ".github/workflows/security.yml",
+        ".github/platform/build-roadrunner.sh",
         "docs/portfolio/overview.md",
         "docs/project/roadmap.md"
       ]
