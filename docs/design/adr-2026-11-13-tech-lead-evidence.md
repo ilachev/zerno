@@ -2,7 +2,7 @@
 
 Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
-Decision status: **accepted for slice 1**. Implementation status: **slice 1 implemented; slices 2–3 pending**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience and authorized the factual case and CI snapshot on 2026-11-13. The personal review record and employer reading path remain planned.
+Decision status: **accepted for slices 1–2**. Implementation status: **slice 1 implemented; slice 2 partial; slice 3 pending**. The owner selected **Tech Lead / Lead Engineer** as the intended portfolio audience and authorized both the factual package and the review stage on 2026-11-13. The review record captures owner direction and delegated agent assessment; the original personal design/risk-review criterion remains open.
 
 ## Context and roadmap reconciliation
 
@@ -39,7 +39,7 @@ The preferred episode is the distinction between removing an obsolete applicatio
 2. [e6ae4f6](https://github.com/ilachev/zerno/commit/e6ae4f66b6940c850454af2c269b01a8965ff274) recorded the subsequent correction and scoped generation direction.
 3. [5fe818f](https://github.com/ilachev/zerno/commit/5fe818f53f4084383c1f47a60fc55d33a6f2128c) implemented the limited Echo consumer.
 
-The [case](../portfolio/scope-and-composition.md) now links the initial boundary, the agent's overreach as attributed by the historical report, the recorded clarification, the narrower implementation and its checks. It distinguishes facts from retrospective agent analysis and leaves personal review pending. The [generation contract](protobuf-contract-generation.md) owns the implemented behavior; no claim assigns every later design detail to the owner.
+The [case](../portfolio/scope-and-composition.md) now links the initial boundary, the agent's overreach as attributed by the historical report, the recorded clarification, the narrower implementation and its checks. It distinguishes facts from retrospective agent analysis and links the [dated review record](../portfolio/api-generation-review-2026-11-13.md). The [generation contract](protobuf-contract-generation.md) owns the implemented behavior; no claim assigns every later design detail to the owner.
 
 Current catalog CI can demonstrate that the present repository remains executable. It does not retroactively validate the old scope snapshot or independently prove who made the historical decision.
 
@@ -74,16 +74,18 @@ Use the existing inventory for navigation. Snapshot validation should check JSON
 | Slice | Result | Acceptance |
 | --- | --- | --- |
 | 1. Factual review package — implemented | Existing case follows the linked scope-correction episode; one CI baseline is preserved | Facts have sources; historical attribution is labelled; unknown owner reasoning remains pending; the raw snapshot matches its recorded hashes/revision, fits the size budget and stays excluded from runtime |
-| 2. Owner technical review — pending | Add a dated, substantive owner review of the specified revision | Notes explain a design choice, an alternative and a risk/limit; confirm their attribution. Resolve any genuine finding through an ordinary bounded change and relevant checks, or record reasoned acceptance |
+| 2. Owner technical review — partial | Dated record at 765cf2d captures the owner's source-of-truth direction and delegated technical assessment | Original acceptance remains open: personal owner notes explain a design choice, an alternative and a risk/limit. Resolve any genuine finding through an ordinary bounded change and relevant checks, or record reasoned acceptance |
 | 3. Employer reading path — pending | README/overview lead to the case, review and evidence in one short route | A reader can locate the owner constraint, agent work, correction/acceptance, relevant diff and reproduction command; keep the case compact and separate current checks from historical results |
 
 Slice 1 uses repository facts: the original five artifact entries plus captured run/artifact metadata and payload checksums. Import validation checked the ZIP digest, report/run/platform/cleanup bindings and all 1,777 selected source hashes against Git blobs at f1ed996. The complete bundle fits the 1 MiB budget. The snapshot guide records provenance and a PHP-only payload integrity check. Raw historical reports remain unchanged.
 
-Slice 2 requires the owner's actual technical input; an agent-authored approval cannot satisfy it. Technical documentation work and routine authorized delivery continue under the existing repository rules.
+During slice 2, the owner confirmed that .proto should be the source of truth for endpoints, with other possible artifacts unspecified. Asked about DTO representation and accepted risks, the owner delegated both to the agent. The resulting record attributes the current DTO recommendation, alternatives and scoped risk judgments to the agent. Compiler-free/full-compilation and actual HTTP checks support the assessment at the recorded revision. No implementation change was justified by that scoped review.
+
+This completes the delegated assessment, while leaving the original personal owner design/risk-review criterion open. An instruction to delegate does not establish the owner's detailed technical reasoning. Do not fill that gap with an agent-authored personal approval. Technical documentation work and routine authorized delivery continue under the existing repository rules.
 
 After the reading path exists, arrange a voluntary 15–20 minute read-through with a relevant engineer through the owner. Ask what decision they could attribute to the owner, what the agent did, what they would challenge, and whether the evidence/reproduction route was clear. Record actual feedback and resulting changes. Until then, independent validation remains open; a second agent is not an independent human reader.
 
-Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check and inspect a built archive for snapshot exclusion; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. Slice 1 does not claim completion of the owner's technical review or the employer reading path.
+Implementation follows the standing per-slice verify/commit/push workflow. Documentation changes require docs:check and verify. Snapshot/import or packaging changes also exercise the actual source/archive check and inspect a built archive for snapshot exclusion; behavioral changes use the appropriate PostgreSQL/HTTP checks. Do not add tests merely for prose. The recorded delegation does not close the personal review criterion or the employer reading path.
 
 ## Alternatives and tradeoffs
 

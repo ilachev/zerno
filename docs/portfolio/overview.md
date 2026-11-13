@@ -4,7 +4,7 @@ Type: `design`. Status: `current`. Reviewed: 2026-11-13.
 
 Zerno is a working PHP HTTP/PostgreSQL system used to demonstrate engineering with LLM assistance. The portfolio follows decisions through implementation and verification, including defects and limits that a successful default check did not reveal.
 
-The owner is targeting **Tech Lead / Lead Engineer** roles. The [technical-leadership ADR](../design/adr-2026-11-13-tech-lead-evidence.md) has its first slice implemented: a source-backed scope-correction case and a durable CI baseline. The personal owner review and employer reading path remain pending.
+The owner is targeting **Tech Lead / Lead Engineer** roles. The [technical-leadership ADR](../design/adr-2026-11-13-tech-lead-evidence.md) has its factual case/CI slice implemented and review slice partially implemented. The [dated record](api-generation-review-2026-11-13.md) captures owner direction and delegated agent assessment. Personal owner design/risk review and the employer reading path remain open.
 
 The project began as an autonomous PHP foundation for websites and applications, with municipal and public-sector developers as a priority audience. Its current presentation focuses on the engineering process. This change does not establish adoption, production readiness, or a reason for every team to build a framework.
 
@@ -15,6 +15,8 @@ The owner sets direction, supplies constraints, requests reviews, and authorizes
 LLM agents performed substantial investigation, implementation, test development, documentation, and measurement work. The [contract ADR](../design/adr-2026-10-28-contract-correctness.md) and [runtime report](../history/2026-10-28-runtime-soak.md) record outcomes. They do not establish who first conceived every earlier design decision. Earlier changes are described as project decisions unless their authorship is independently documented.
 
 The portfolio makes no percentage claim about human-written code and no measured claim about time saved. The owner's direction and the agent's execution are both part of the account. The [workflow](workflow.md) explains responsibilities and checks.
+
+In the generation follow-up, the owner confirmed .proto as the intended source of truth for endpoints and asked the agent to decide DTO representation and risk disposition. The record attributes those technical judgments to the agent.
 
 ## Cases to inspect
 

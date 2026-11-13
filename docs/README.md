@@ -9,6 +9,7 @@ Start with the portfolio to understand the engineering process, then follow its 
 - [Overview and contribution boundaries](portfolio/overview.md)
 - [Working with an LLM](portfolio/workflow.md)
 - [Correcting API-generation scope and explicit composition](portfolio/scope-and-composition.md)
+- [API-generation review record](portfolio/api-generation-review-2026-11-13.md): owner direction and delegated technical assessment at 765cf2d.
 - [Defects beyond a passing suite](portfolio/contract-correctness.md)
 - [Persistent runtime measurement](portfolio/runtime-measurement.md)
 
@@ -36,7 +37,7 @@ Start with the portfolio to understand the engineering process, then follow its 
 - [Autonomous delivery](design/autonomous-core.md): bootstrap, distributions, manifests, packaging.
 - [Correctness ADR](design/adr-2026-10-28-contract-correctness.md): review defects and implemented decisions.
 - [Reproducible catalog ADR](design/adr-2026-11-13-reviewer-walkthrough.md): implemented source/archive walkthrough, CI execution and retained scoped evidence.
-- [Technical-leadership evidence ADR](design/adr-2026-11-13-tech-lead-evidence.md): implemented scope-correction case and durable CI baseline; owner review and employer reading path pending.
+- [Technical-leadership evidence ADR](design/adr-2026-11-13-tech-lead-evidence.md): implemented case/CI package and partial review record; personal owner design/risk review and employer reading path open.
 - [Protobuf generation](design/protobuf-contract-generation.md): the first limited Echo slice and accepted direction.
 - [Transactions and migrations](design/transactions-and-migrations.md): atomicity, errors, recovery, metadata upgrade.
 - [SQL-generation contract](design/sql-gen-product.md) and [tool guide](../tools/sql-gen/README.md).

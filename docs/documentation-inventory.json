@@ -753,7 +753,8 @@
       "source_paths": [
         "README.md",
         "docs/project/vision.md",
-        "docs/project/roadmap.md"
+        "docs/project/roadmap.md",
+        "docs/portfolio/api-generation-review-2026-11-13.md"
       ]
     },
     {
@@ -777,7 +778,7 @@
       "path": "docs/portfolio/scope-and-composition.md",
       "kind": "history",
       "status": "historical",
-      "summary": "Source-backed case of over-broad API-generation removal, recorded owner correction, bounded Echo implementation and pending personal review.",
+      "summary": "Source-backed API-generation scope-correction case, linked owner direction and delegated assessment, with personal design/risk review open.",
       "read_when": [
         "Reviewing the engineering portfolio",
         "Following claims into implementation and verification evidence"
@@ -791,7 +792,8 @@
         "contracts/echo.proto",
         "examples/contract-echo/config.php",
         "tests/Unit/Codegen",
-        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+        "portfolio-evidence/catalog-ci-f1ed996/README.md",
+        "docs/portfolio/api-generation-review-2026-11-13.md"
       ]
     },
     {
@@ -861,7 +863,7 @@
       "path": "docs/design/adr-2026-11-13-tech-lead-evidence.md",
       "kind": "design",
       "status": "current",
-      "summary": "Partially implemented Tech Lead / Lead Engineer evidence: factual scope-correction case and permanent CI snapshot; owner review and employer reading path pending.",
+      "summary": "Implemented case/CI package and partial review slice: owner direction and delegated technical assessment recorded; personal design/risk review and employer reading path open.",
       "read_when": [
         "Planning the next portfolio stage",
         "Assessing owner/agent attribution and technical leadership evidence"
@@ -881,7 +883,8 @@
         "tools/check-catalog.php",
         "tools/project.php",
         "README.md",
-        "portfolio-evidence/catalog-ci-f1ed996/README.md"
+        "portfolio-evidence/catalog-ci-f1ed996/README.md",
+        "docs/portfolio/api-generation-review-2026-11-13.md"
       ]
     },
     {
@@ -904,6 +907,31 @@
         "tools/check-catalog.php",
         "tools/project.php",
         "docs/portfolio/scope-and-composition.md"
+      ]
+    },
+    {
+      "id": "api-generation-review-2026-11-13",
+      "path": "docs/portfolio/api-generation-review-2026-11-13.md",
+      "kind": "history",
+      "status": "historical",
+      "summary": "Dated review at 765cf2d: owner source-of-truth direction, delegated DTO/risk assessment, alternatives, reconsideration triggers and compiler/HTTP checks.",
+      "read_when": [
+        "Inspecting owner direction and delegated technical judgment",
+        "Assessing API-generation alternatives, accepted limits and verification scope"
+      ],
+      "source_paths": [
+        "docs/portfolio/scope-and-composition.md",
+        "docs/design/adr-2026-11-13-tech-lead-evidence.md",
+        "docs/design/protobuf-contract-generation.md",
+        "contracts/echo.proto",
+        "gen/Generated/Echo",
+        "tools/proto-gen/Generator.php",
+        "tools/proto-gen/run.php",
+        "tools/proto-gen/Output.php",
+        "examples/contract-echo/config.php",
+        "tests/Unit/Codegen/ProtoGeneratorTest.php",
+        "tests/Unit/Codegen/ContractEchoTest.php",
+        "tools/check-http.php"
       ]
     }
   ],

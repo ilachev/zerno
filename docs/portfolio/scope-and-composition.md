@@ -8,7 +8,7 @@ An LLM agent narrowed Zerno to an HTTP/PostgreSQL core and removed the old appli
 
 **Historical-report attribution:** the [scope report](../history/2026-10-20-core-scope.md) records the owner's choice of a concrete HTTP/PDO core and removal of unrelated subsystems. Its [subsequent correction](../history/2026-10-20-core-scope.md#subsequent-user-correction) attributes the overly broad generator removal to the agent and the clarification to the owner.
 
-**Repository facts:** the commits below show what was removed, what clarification was recorded, and what later shipped. This is an agent-authored reconstruction from those sources, not a recovered prompt transcript or a personal technical-review record. The owner's detailed reasoning and retrospective review remain pending under [ADR slice 2](../design/adr-2026-11-13-tech-lead-evidence.md#delivery-slices-and-acceptance).
+**Repository facts:** the commits below show what was removed, what clarification was recorded, and what later shipped. This is an agent-authored reconstruction from those sources. In the [2026-11-13 review record](api-generation-review-2026-11-13.md), the owner confirms .proto as the intended source of truth for endpoints and delegates DTO/risk assessment to the agent. Personal owner reasoning about those tradeoffs remains open under [ADR slice 2](../design/adr-2026-11-13-tech-lead-evidence.md#delivery-slices-and-acceptance).
 
 ## Decision trail
 
@@ -49,4 +49,4 @@ php tools/project.php verify
 php tools/project.php http:check --rr=/absolute/path/to/rr3
 ```
 
-The snapshot guide links the separate PostgreSQL/RoadRunner catalog reproduction command. No comparative productivity baseline was recorded. A dated owner review of design choices, alternatives and accepted risks is the next evidence step.
+The snapshot guide links the separate PostgreSQL/RoadRunner catalog reproduction command. No comparative productivity baseline was recorded. The dated review record distinguishes the owner's stated direction from delegated technical judgment; the original personal design/risk-review criterion remains open.
