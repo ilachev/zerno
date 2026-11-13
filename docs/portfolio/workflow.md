@@ -37,7 +37,7 @@ Checks follow the changed behavior. Documentation checks establish link and inve
 
 ## Hand off the change
 
-The handoff states what changed, why, how it was checked, and what remains unresolved. Source inputs and generated output stay separate. Ordinary checks do not install packages. The agent preserves unrelated work and leaves committing and publishing to the owner's authorization.
+The handoff states what changed, why, how it was checked, and what remains unresolved. Source inputs and generated output stay separate. Ordinary checks do not install packages. Under the owner's standing instruction, each completed authorized stage passes its required checks, is committed, and is pushed to the configured upstream before the next stage starts. Preserve unrelated work, use normal fast-forward pushes, and report commit, push, and CI outcomes. Release creation and unrelated publication require their own authorized scope.
 
 Project documentation is written in English; conversation with the owner remains in Russian. Third-party notices and raw historical artifacts retain their original contents. Unicode test fixtures deliberately include other languages.
 

@@ -84,4 +84,5 @@ php tools/project.php verify:full
 - Use one-space concatenation, trailing commas in multiline arrays/arguments/parameters and imports ordered classes, functions, constants. Do not import global namespace symbols.
 - Interfaces have no `Interface` suffix. Comments explain reasons where needed and are always in English, including temporary code.
 - Use `self::assert*` in PHPUnit tests. Do not introduce mocks for internal services.
+- After each completed authorized stage, run its required checks, commit the cohesive change, and push it to the configured upstream before starting the next stage. The owner has authorized this routine commit/push workflow. Preserve unrelated work, use normal fast-forward pushes, and never bypass checks or force-push. Report the commit, push result, and CI status; investigate failures without presenting an unsuccessful check as passed.
 - Commit messages are short single-line sentences in English, with no agent attribution. Preserve unrelated user changes.

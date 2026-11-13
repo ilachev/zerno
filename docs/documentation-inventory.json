@@ -818,6 +818,31 @@
         "docs/history/2026-10-28-runtime-soak.json",
         "load-tests/soak"
       ]
+    },
+    {
+      "id": "adr-reviewer-walkthrough-2026-11-13",
+      "path": "docs/design/adr-2026-11-13-reviewer-walkthrough.md",
+      "kind": "design",
+      "status": "current",
+      "summary": "Proposed bounded source/archive catalog walkthrough, isolated ownership, scoped result report, and CI acceptance; implementation has not started.",
+      "read_when": [
+        "Planning the next portfolio verification slice",
+        "Reviewing the gap between PostgreSQL, HTTP-fixture, and runtime-archive checks"
+      ],
+      "source_paths": [
+        "api.http",
+        "config/routes.php",
+        "examples/document-catalog",
+        "tools/project.php",
+        "tools/check-http.php",
+        "tests/Integration/Examples/DocumentCatalog/CatalogApplicationTest.php",
+        "tests/Integration/PostgreSqlTestDatabase.php",
+        "tests/Unit/Platform/Runtime/RuntimeArchiveTest.php",
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        "docs/portfolio/overview.md",
+        "docs/project/roadmap.md"
+      ]
     }
   ],
   "artifacts": [
